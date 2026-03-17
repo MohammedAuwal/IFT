@@ -1,42 +1,147 @@
-name: Android CI
+name: Android CI (Release APK)
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: android-release-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    env:
+      FLUTTER_CHANNEL: stable
+      FLUTTER_VERSION: 3.24.5
+      PUB_CACHE: ${{ github.workspace }}/.pub-cache
+      GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
 
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up JDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: temurin
-        java-version: 17
+      - name: Prepare cache directories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${PUB_CACHE}"
+          mkdir -p "${GRADLE_USER_HOME}"
+          mkdir -p "${{ runner.temp }}/flutter"
 
-    - name: Install Gradle
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gradle
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Generate Gradle Wrapper
-      run: |
-        cd android
-        gradle wrapper --gradle-version 8.3 --distribution-type all
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.GRADLE_USER_HOME }}/caches
+            ${{ env.GRADLE_USER_HOME }}/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties', '**/*.gradle*', '**/settings.gradle*') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
-    - name: Build APK
-      run: |
-        cd android
-        chmod +x ./gradlew
-        ./gradlew assembleDebug
+      - name: Install Linux deps for Flutter
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xz-utils unzip curl git libglu1-mesa
+          sudo apt-get clean
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug-apk
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Cache Flutter SDK
+        id: cache-flutter
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/flutter
+          key: flutter-${{ runner.os }}-${{ env.FLUTTER_CHANNEL }}-${{ env.FLUTTER_VERSION }}
+
+      - name: Download Flutter SDK
+        if: steps.cache-flutter.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          FLUTTER_ROOT_BASE="${{ runner.temp }}/flutter"
+          mkdir -p "${FLUTTER_ROOT_BASE}"
+          TARBALL="flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz"
+          URL="https://storage.googleapis.com/flutter_infra_release/releases/${FLUTTER_CHANNEL}/linux/${TARBALL}"
+          echo "Downloading Flutter from: ${URL}"
+          cd "${{ runner.temp }}"
+          curl -L --fail --retry 8 --retry-delay 5 --retry-all-errors \
+            -o "${TARBALL}" "${URL}"
+          tar -xJf "${TARBALL}" -C "${FLUTTER_ROOT_BASE}"
+
+      - name: Add Flutter to PATH
+        run: |
+          set -euo pipefail
+          echo "${{ runner.temp }}/flutter/flutter/bin" >> "$GITHUB_PATH"
+          echo "FLUTTER_ROOT=${{ runner.temp }}/flutter/flutter" >> "$GITHUB_ENV"
+
+      - name: Flutter sanity check
+        run: |
+          set -euo pipefail
+          flutter --version
+          flutter config --no-analytics
+          flutter doctor -v
+
+      - name: Write android/local.properties
+        run: |
+          set -euo pipefail
+          SDK_DIR="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "${SDK_DIR}" ]; then
+            echo "ERROR: ANDROID_SDK_ROOT/ANDROID_HOME not set."
+            exit 1
+          fi
+          echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
+          echo "sdk.dir=${SDK_DIR}" >> android/local.properties
+
+      - name: Cache Pub packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PUB_CACHE }}
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          flutter pub get
+
+      - name: Build Release APK
+        run: |
+          set -euo pipefail
+          flutter build apk --release --no-tree-shake-icons
+
+      - name: Verify APK exists
+        run: |
+          set -euo pipefail
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: APK not found at $APK"
+            exit 1
+          fi
+          echo "APK size: $(wc -c < "$APK") bytes"
+
+      - name: Show build outputs
+        run: |
+          set -euo pipefail
+          ls -la build/app/outputs/flutter-apk/ || true
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
