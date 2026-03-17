@@ -1,6 +1,6 @@
 name: mix
 description: A minimal Flutter project for Mix app.
-publish_to: "none" # since this is not for pub.dev
+publish_to: "none"
 
 version: 1.0.0+1
 
