@@ -2,20 +2,14 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 
-    // Firebase / Google Services
+    // Flutter
+    id 'dev.flutter.flutter-gradle-plugin'
+
+    // Firebase
     id 'com.google.gms.google-services'
 }
 
 android {
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
     namespace 'com.maamahsmix.app'
     compileSdk 34
 
@@ -27,18 +21,28 @@ android {
         versionName "1.0"
     }
 
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
     buildTypes {
         release {
+            // For now, sign release like debug so CI builds easily.
+            signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
 
-dependencies {
-    // Match Kotlin plugin version to avoid conflicts
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+flutter {
+    source '../..'
+}
 
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
+dependencies {
 }
