@@ -13,15 +13,28 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    # Install OpenJDK
     - name: Set up JDK
       uses: actions/setup-java@v3
       with:
-        distribution: 'temurin'
+        distribution: temurin
         java-version: 17
 
+    # Install Gradle CLI
+    - name: Install Gradle
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gradle
+
+    # Generate Gradle Wrapper
+    - name: Generate Gradle Wrapper
+      run: gradle wrapper
+
+    # Build APK
     - name: Build APK
       run: ./gradlew assembleDebug
 
+    # Upload APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
