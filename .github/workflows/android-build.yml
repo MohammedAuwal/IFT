@@ -23,12 +23,37 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      # Cache the debug keystore so SHA-1 stays stable across workflow runs
+      - name: Cache Android debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
+      # Create android/app/google-services.json from a GitHub Secret (Base64)
+      - name: Restore google-services.json (Firebase)
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GOOGLE_SERVICES_JSON_B64:-}" ]; then
+            echo "ERROR: Missing secret GOOGLE_SERVICES_JSON_B64"
+            exit 1
+          fi
+
+          mkdir -p android/app
+          echo "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
+
+          echo "google-services.json restored:"
+          ls -la android/app/google-services.json
+
       - name: Bootstrap Gradle wrapper (if missing)
         shell: bash
         run: |
           set -euo pipefail
 
-          # If the wrapper already exists in android/, skip bootstrapping
           if [ -f "android/gradlew" ]; then
             echo "android/gradlew exists, skipping wrapper bootstrap."
             exit 0
@@ -45,8 +70,15 @@ jobs:
           unzip -q gradle-8.3-bin.zip
 
           "$RUNNER_TEMP/gradle-8.3/bin/gradle" -p "$GITHUB_WORKSPACE/android" wrapper --gradle-version 8.3
-
           chmod +x "$GITHUB_WORKSPACE/android/gradlew"
+
+      - name: Print signing report (SHA-1 for Firebase / Google Sign-In)
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android
+          ./gradlew :app:signingReport
 
       - name: Build Debug APK (android/)
         shell: bash
