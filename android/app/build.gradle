@@ -3,7 +3,6 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 
     // Flutter
-    id 'dev.flutter.flutter-gradle-plugin'
 
     // Firebase
     id 'com.google.gms.google-services'
