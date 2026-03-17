@@ -7,9 +7,14 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,20 +23,41 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v3
-
-      - name: Build Debug APK
+      - name: Bootstrap Gradle wrapper (if missing)
+        shell: bash
         run: |
           set -euo pipefail
-          if [ -f "./android/gradlew" ]; then
-            chmod +x ./android/gradlew
-            ./android/gradlew assembleDebug
-          else
-            chmod +x ./gradlew
-            ./gradlew -p android assembleDebug
+
+          # If the wrapper already exists in android/, skip bootstrapping
+          if [ -f "android/gradlew" ]; then
+            echo "android/gradlew exists, skipping wrapper bootstrap."
+            exit 0
           fi
 
-      - uses: actions/upload-artifact@v4
+          echo "android/gradlew not found. Bootstrapping wrapper using Gradle 8.3..."
+
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip curl
+          sudo apt-get clean
+
+          cd "$RUNNER_TEMP"
+          curl -L --fail -o gradle-8.3-bin.zip https://services.gradle.org/distributions/gradle-8.3-bin.zip
+          unzip -q gradle-8.3-bin.zip
+
+          "$RUNNER_TEMP/gradle-8.3/bin/gradle" -p "$GITHUB_WORKSPACE/android" wrapper --gradle-version 8.3
+
+          chmod +x "$GITHUB_WORKSPACE/android/gradlew"
+
+      - name: Build Debug APK (android/)
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
