@@ -25,15 +25,12 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Set up Gradle (cache)
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Build Debug APK
+      - name: Build Debug APK (android subproject)
         shell: bash
         run: |
           set -euo pipefail
 
-          # Support either wrapper location:
+          # Build the Gradle project located in ./android
           if [ -f "./android/gradlew" ]; then
             chmod +x ./android/gradlew
             ./android/gradlew assembleDebug
