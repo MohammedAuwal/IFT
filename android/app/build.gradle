@@ -32,7 +32,6 @@ android {
 
     buildTypes {
         release {
-            // For now, sign release like debug so CI builds easily.
             signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
