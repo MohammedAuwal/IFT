@@ -30,24 +30,33 @@ jobs:
           path: ~/.android/debug.keystore
           key: android-debug-keystore-v1
 
-      # Create android/app/google-services.json from a GitHub Secret (Base64)
+      # Restore google-services.json from a multi-line GitHub Secret (no base64)
       - name: Restore google-services.json (Firebase)
         shell: bash
         env:
-          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           set -euo pipefail
 
-          if [ -z "${GOOGLE_SERVICES_JSON_B64:-}" ]; then
-            echo "ERROR: Missing secret GOOGLE_SERVICES_JSON_B64"
+          if [ -z "${GOOGLE_SERVICES_JSON:-}" ]; then
+            echo "ERROR: Missing secret GOOGLE_SERVICES_JSON"
+            echo "Create it in GitHub: Settings -> Secrets and variables -> Actions"
             exit 1
           fi
 
           mkdir -p android/app
-          echo "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
 
-          echo "google-services.json restored:"
-          ls -la android/app/google-services.json
+          # Write secret content to file (strip Windows CR if present)
+          printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '\r' > android/app/google-services.json
+
+          # Validate JSON without printing it
+          python3 - <<'PY'
+          import json, os
+          p = "android/app/google-services.json"
+          with open(p, "r", encoding="utf-8") as f:
+              json.load(f)
+          print("google-services.json is valid JSON. bytes =", os.path.getsize(p))
+          PY
 
       - name: Bootstrap Gradle wrapper (if missing)
         shell: bash
