@@ -1,4 +1,4 @@
-name: Android Build (Debug)
+name: Android Build (Debug APK)
 
 on:
   push:
@@ -23,55 +23,39 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Optional: keep debug signing stable across runs (so installs update instead of failing)
-      - name: Cache Android debug keystore
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: android-debug-keystore-v1
+      - uses: gradle/actions/setup-gradle@v3
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      # If you want to keep google-services.json out of git:
-      # Create a multi-line secret named GOOGLE_SERVICES_JSON.
-      # If secret is not set, this step will NOT overwrite your committed file.
-      - name: Restore google-services.json (optional)
+      - name: Bootstrap Gradle wrapper (if missing)
         shell: bash
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           set -euo pipefail
-          if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
-            mkdir -p android/app
-            printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d '\r' > android/app/google-services.json
-            python3 - <<'PY'
-          import json
-          json.load(open("android/app/google-services.json","r",encoding="utf-8"))
-          print("google-services.json OK")
-          PY
-          else
-            echo "GOOGLE_SERVICES_JSON secret not set. Using repo file if present."
+
+          if [ -f "android/gradlew" ]; then
+            chmod +x android/gradlew
+            exit 0
           fi
 
-      - name: Flutter pub get
-        shell: bash
-        run: |
-          set -euo pipefail
-          flutter pub get
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip curl
+          sudo apt-get clean
 
-      - name: Build Debug APK (Flutter)
+          cd "$RUNNER_TEMP"
+          curl -L --fail -o gradle-8.3-bin.zip https://services.gradle.org/distributions/gradle-8.3-bin.zip
+          unzip -q gradle-8.3-bin.zip
+
+          "$RUNNER_TEMP/gradle-8.3/bin/gradle" -p "$GITHUB_WORKSPACE/android" wrapper --gradle-version 8.3
+          chmod +x "$GITHUB_WORKSPACE/android/gradlew"
+
+      - name: Build Debug APK
         shell: bash
         run: |
           set -euo pipefail
-          flutter build apk --debug
+          cd android
+          ./gradlew --no-daemon clean assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
