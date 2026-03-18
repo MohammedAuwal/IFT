@@ -10,12 +10,12 @@ flutter {
 
 android {
     namespace "com.maamahsmix.app"
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.maamahsmix.app"
-        minSdkVersion 26       // Android 8.0+
-        targetSdkVersion 35
+        minSdkVersion 26
+        targetSdkVersion 36
         versionCode 1
         versionName "1.0.0"
     }
@@ -31,8 +31,14 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
         }
     }
+}
+
+dependencies {
+    // Basic AndroidX core for Flutter compatibility
+    implementation "androidx.core:core-ktx:1.13.1"
 }
