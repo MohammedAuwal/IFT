@@ -8,6 +8,8 @@ class RideModel {
   final String status;
   final String? driver;
   final double price;
+  final String note;
+  final String eta;
   final DateTime createdAt;
 
   RideModel({
@@ -20,6 +22,8 @@ class RideModel {
     required this.status,
     required this.driver,
     required this.price,
+    required this.note,
+    required this.eta,
     required this.createdAt,
   });
 
@@ -34,6 +38,8 @@ class RideModel {
       status: (map['status'] ?? 'searching').toString(),
       driver: map['driver']?.toString(),
       price: ((map['price'] ?? 0) as num).toDouble(),
+      note: (map['note'] ?? '').toString(),
+      eta: (map['eta'] ?? '').toString(),
       createdAt: DateTime.tryParse((map['createdAt'] ?? '').toString()) ?? DateTime.now(),
     );
   }
@@ -48,6 +54,8 @@ class RideModel {
       'status': status,
       'driver': driver,
       'price': price,
+      'note': note,
+      'eta': eta,
       'createdAt': createdAt.toIso8601String(),
     };
   }

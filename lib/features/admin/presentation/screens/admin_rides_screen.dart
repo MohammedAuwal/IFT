@@ -79,6 +79,11 @@ class AdminRidesScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
+                      'Ride Type: ${ride.rideType}',
+                      style: GoogleFonts.poppins(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
                       'Status: ${ride.status}',
                       style: GoogleFonts.poppins(
                         color: const Color(0xFFC29B40),
@@ -90,16 +95,23 @@ class AdminRidesScreen extends StatelessWidget {
                         'Driver: ${ride.driver}',
                         style: GoogleFonts.poppins(color: Colors.white70),
                       ),
+                    if (ride.note.isNotEmpty)
+                      Text(
+                        'Note: ${ride.note}',
+                        style: GoogleFonts.poppins(color: Colors.white70),
+                      ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         _statusButton(ride.id, 'searching'),
-                        _assignDriverButton(ride.id, 'Musa'),
+                        _assignDriverButton(ride.id, 'Musa', '5 mins'),
+                        _assignDriverButton(ride.id, 'Ibrahim', '8 mins'),
                         _statusButton(ride.id, 'on_the_way'),
                         _statusButton(ride.id, 'ride_in_progress'),
                         _statusButton(ride.id, 'completed'),
+                        _statusButton(ride.id, 'cancelled'),
                       ],
                     ),
                   ],
@@ -115,19 +127,23 @@ class AdminRidesScreen extends StatelessWidget {
   Widget _statusButton(String rideId, String status) {
     return ElevatedButton(
       onPressed: () async {
-        await firebaseService.updateRideStatus(rideId: rideId, status: status);
+        await firebaseService.updateRideStatus(
+          rideId: rideId,
+          status: status,
+        );
       },
       child: Text(status),
     );
   }
 
-  Widget _assignDriverButton(String rideId, String driver) {
+  Widget _assignDriverButton(String rideId, String driver, String eta) {
     return ElevatedButton(
       onPressed: () async {
         await firebaseService.updateRideStatus(
           rideId: rideId,
           status: 'driver_assigned',
           driver: driver,
+          eta: eta,
         );
       },
       child: Text('Assign $driver'),

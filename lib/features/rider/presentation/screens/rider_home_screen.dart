@@ -16,6 +16,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
   final _pickupCtrl = TextEditingController();
   final _destinationCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
 
   String _rideType = 'car';
 
@@ -24,6 +25,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   Future<void> _bookRide() async {
     final pickup = _pickupCtrl.text.trim();
     final destination = _destinationCtrl.text.trim();
+    final note = _noteCtrl.text.trim();
 
     if (pickup.isEmpty || destination.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -32,26 +34,36 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
       return;
     }
 
-    await firebaseService.createRide(
-      pickup: pickup,
-      destination: destination,
-      rideType: _rideType,
-      price: _estimatedPrice,
-    );
+    try {
+      await firebaseService.createRide(
+        pickup: pickup,
+        destination: destination,
+        rideType: _rideType,
+        price: _estimatedPrice,
+        note: note,
+      );
 
-    _pickupCtrl.clear();
-    _destinationCtrl.clear();
+      _pickupCtrl.clear();
+      _destinationCtrl.clear();
+      _noteCtrl.clear();
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ride booked successfully')),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ride booked successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
+    }
   }
 
   @override
   void dispose() {
     _pickupCtrl.dispose();
     _destinationCtrl.dispose();
+    _noteCtrl.dispose();
     super.dispose();
   }
 
@@ -77,15 +89,26 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
         stream: firebaseService.watchUserRides(),
         builder: (context, snapshot) {
           final rides = snapshot.data ?? [];
-          final activeRide = rides.where((r) => r.status != 'completed').isNotEmpty
-              ? rides.firstWhere((r) => r.status != 'completed')
-              : null;
+          RideModel? activeRide;
+
+          try {
+            activeRide = rides.firstWhere(
+              (r) => r.status != 'completed' && r.status != 'cancelled',
+            );
+          } catch (_) {
+            activeRide = null;
+          }
 
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
               if (activeRide != null)
-                _RideStatusCard(ride: activeRide)
+                _RideStatusCard(
+                  ride: activeRide,
+                  onCancel: () async {
+                    await firebaseService.cancelRide(activeRide!.id);
+                  },
+                )
               else
                 const EmptyStateCard(
                   icon: Icons.local_taxi_outlined,
@@ -144,6 +167,21 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _noteCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Special note (optional)',
+                        prefixIcon: const Icon(Icons.note_alt_outlined),
+                        filled: true,
+                        fillColor: const Color(0xFFF5F5F5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Ride Type',
@@ -194,10 +232,10 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton.icon(
-                        onPressed: _bookRide,
+                        onPressed: activeRide == null ? _bookRide : null,
                         icon: const Icon(Icons.local_taxi_rounded),
                         label: Text(
-                          'Confirm Ride',
+                          activeRide == null ? 'Confirm Ride' : 'Active Ride Exists',
                           style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -222,8 +260,12 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
 class _RideStatusCard extends StatelessWidget {
   final RideModel ride;
+  final VoidCallback onCancel;
 
-  const _RideStatusCard({required this.ride});
+  const _RideStatusCard({
+    required this.ride,
+    required this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -263,10 +305,15 @@ class _RideStatusCard extends StatelessWidget {
           ),
           if (ride.driver != null) ...[
             const SizedBox(height: 6),
-            Text(
-              'Driver: ${ride.driver}',
-              style: GoogleFonts.poppins(),
-            ),
+            Text('Driver: ${ride.driver}', style: GoogleFonts.poppins()),
+          ],
+          if (ride.eta.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('ETA: ${ride.eta}', style: GoogleFonts.poppins()),
+          ],
+          if (ride.note.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Note: ${ride.note}', style: GoogleFonts.poppins()),
           ],
           const SizedBox(height: 6),
           Text(
@@ -274,6 +321,14 @@ class _RideStatusCard extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w700,
               color: const Color(0xFFC29B40),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onCancel,
+              child: const Text('Cancel Ride'),
             ),
           ),
         ],

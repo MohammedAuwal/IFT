@@ -433,14 +433,33 @@ class FirebaseService {
             snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
   }
 
+  Future<bool> hasActiveRide() async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    final snapshot = await firestore
+        .collection(AppConstants.ridesCollection)
+        .where('userId', isEqualTo: user.uid)
+        .get();
+
+    final rides = snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList();
+    return rides.any((r) => r.status != 'completed' && r.status != 'cancelled');
+  }
+
   Future<void> createRide({
     required String pickup,
     required String destination,
     required String rideType,
     required double price,
+    String note = '',
   }) async {
     final user = currentUser;
     if (user == null) return;
+
+    final active = await hasActiveRide();
+    if (active) {
+      throw Exception('You already have an active ride');
+    }
 
     final id = DateTime.now().millisecondsSinceEpoch.toString();
 
@@ -454,6 +473,8 @@ class FirebaseService {
       status: 'searching',
       driver: null,
       price: price,
+      note: note,
+      eta: '5 mins',
       createdAt: DateTime.now(),
     );
 
@@ -464,10 +485,18 @@ class FirebaseService {
     required String rideId,
     required String status,
     String? driver,
+    String? eta,
   }) async {
     await firestore.collection(AppConstants.ridesCollection).doc(rideId).set({
       'status': status,
       if (driver != null) 'driver': driver,
+      if (eta != null) 'eta': eta,
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> cancelRide(String rideId) async {
+    await firestore.collection(AppConstants.ridesCollection).doc(rideId).set({
+      'status': 'cancelled',
     }, SetOptions(merge: true));
   }
 

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/services/permission_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,6 +17,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   final _firebaseService = FirebaseService();
+  final _permissionService = PermissionService();
 
   late final AnimationController _controller;
   late final Animation<double> _fade;
@@ -44,6 +46,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _start() async {
+    await _permissionService.requestStartupPermissions();
     await Future.delayed(const Duration(seconds: 6));
 
     if (!mounted) return;
