@@ -71,6 +71,34 @@ class FirebaseService {
         .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
   }
 
+  Stream<int> watchProductsCount() {
+    return firestore
+        .collection(AppConstants.productsCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> watchOrdersCount() {
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> watchRidesCount() {
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> watchAdminsCount() {
+    return firestore
+        .collection(AppConstants.adminsCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length + 1);
+  }
+
   Stream<List<String>> watchCategories() {
     return firestore
         .collection('categories')
@@ -230,6 +258,15 @@ class FirebaseService {
       if (data == null) return <Map<String, dynamic>>[];
       return List<Map<String, dynamic>>.from(data['cart'] ?? []);
     });
+  }
+
+  Stream<int> watchCartCount() {
+    return watchCart().map(
+      (cart) => cart.fold<int>(
+        0,
+        (sum, item) => sum + ((item['qty'] ?? 1) as int),
+      ),
+    );
   }
 
   Future<void> _saveLocalCart(List<Map<String, dynamic>> cart) async {

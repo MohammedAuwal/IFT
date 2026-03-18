@@ -93,7 +93,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
             Text(
-              'Manage products, categories & orders',
+              'Manage products, categories, rides & orders',
               style: GoogleFonts.poppins(
                 color: Colors.white70,
                 fontSize: 12,
@@ -122,6 +122,72 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          StreamBuilder<int>(
+            stream: _firebaseService.watchProductsCount(),
+            builder: (context, pSnap) {
+              return StreamBuilder<int>(
+                stream: _firebaseService.watchOrdersCount(),
+                builder: (context, oSnap) {
+                  final products = pSnap.data ?? 0;
+                  final orders = oSnap.data ?? 0;
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Products',
+                          value: '$products',
+                          color: gold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Orders',
+                          value: '$orders',
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          StreamBuilder<int>(
+            stream: _firebaseService.watchRidesCount(),
+            builder: (context, rSnap) {
+              return StreamBuilder<int>(
+                stream: _firebaseService.watchAdminsCount(),
+                builder: (context, aSnap) {
+                  final rides = rSnap.data ?? 0;
+                  final admins = aSnap.data ?? 1;
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Rides',
+                          value: '$rides',
+                          color: Colors.lightBlueAccent,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Admins',
+                          value: '$admins',
+                          color: Colors.purpleAccent,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -176,16 +242,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          _ActionCard(
-            icon: Icons.category_outlined,
-            title: 'Manage Categories',
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ManageCategoriesScreen()),
-              );
-            },
           ),
           const SizedBox(height: 18),
           if (_isSuperAdmin) ...[
@@ -389,6 +445,50 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         border: Border.all(color: Colors.white10),
       ),
       child: child,
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  final String title;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF171A21),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 22,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
