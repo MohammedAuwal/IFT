@@ -10,6 +10,12 @@ class RideModel {
   final double price;
   final String note;
   final String eta;
+  final double? pickupLat;
+  final double? pickupLng;
+  final double? destinationLat;
+  final double? destinationLng;
+  final double? driverLat;
+  final double? driverLng;
   final DateTime createdAt;
 
   RideModel({
@@ -24,6 +30,12 @@ class RideModel {
     required this.price,
     required this.note,
     required this.eta,
+    this.pickupLat,
+    this.pickupLng,
+    this.destinationLat,
+    this.destinationLng,
+    this.driverLat,
+    this.driverLng,
     required this.createdAt,
   });
 
@@ -40,6 +52,12 @@ class RideModel {
       price: ((map['price'] ?? 0) as num).toDouble(),
       note: (map['note'] ?? '').toString(),
       eta: (map['eta'] ?? '').toString(),
+      pickupLat: (map['pickupLat'] as num?)?.toDouble(),
+      pickupLng: (map['pickupLng'] as num?)?.toDouble(),
+      destinationLat: (map['destinationLat'] as num?)?.toDouble(),
+      destinationLng: (map['destinationLng'] as num?)?.toDouble(),
+      driverLat: (map['driverLat'] as num?)?.toDouble(),
+      driverLng: (map['driverLng'] as num?)?.toDouble(),
       createdAt: DateTime.tryParse((map['createdAt'] ?? '').toString()) ?? DateTime.now(),
     );
   }
@@ -56,6 +74,12 @@ class RideModel {
       'price': price,
       'note': note,
       'eta': eta,
+      'pickupLat': pickupLat,
+      'pickupLng': pickupLng,
+      'destinationLat': destinationLat,
+      'destinationLng': destinationLng,
+      'driverLat': driverLat,
+      'driverLng': driverLng,
       'createdAt': createdAt.toIso8601String(),
     };
   }

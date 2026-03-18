@@ -115,8 +115,8 @@ class AdminRidesScreen extends StatelessWidget {
                         runSpacing: 8,
                         children: [
                           _statusButton(ride.id, 'searching'),
-                          _assignDriverButton(ride.id, 'Musa', '5 mins'),
-                          _assignDriverButton(ride.id, 'Ibrahim', '8 mins'),
+                          _assignDriverButton(ride.id, 'Musa', '5 mins', 9.0765, 7.3986),
+                          _assignDriverButton(ride.id, 'Ibrahim', '8 mins', 9.0865, 7.4086),
                           _statusButton(ride.id, 'on_the_way'),
                           _statusButton(ride.id, 'ride_in_progress'),
                           _statusButton(ride.id, 'completed'),
@@ -146,7 +146,13 @@ class AdminRidesScreen extends StatelessWidget {
     );
   }
 
-  Widget _assignDriverButton(String rideId, String driver, String eta) {
+  Widget _assignDriverButton(
+    String rideId,
+    String driver,
+    String eta,
+    double lat,
+    double lng,
+  ) {
     return ElevatedButton(
       onPressed: () async {
         await firebaseService.updateRideStatus(
@@ -154,6 +160,8 @@ class AdminRidesScreen extends StatelessWidget {
           status: 'driver_assigned',
           driver: driver,
           eta: eta,
+          driverLat: lat,
+          driverLng: lng,
         );
       },
       child: Text('Assign $driver'),

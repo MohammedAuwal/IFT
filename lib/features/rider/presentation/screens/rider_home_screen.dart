@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
+import 'package:mix/features/rider/presentation/screens/ride_map_screen.dart';
 import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/services/location_service.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
@@ -14,6 +16,7 @@ class RiderHomeScreen extends StatefulWidget {
 
 class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final firebaseService = FirebaseService();
+  final locationService = LocationService();
 
   final _pickupCtrl = TextEditingController();
   final _destinationCtrl = TextEditingController();
@@ -36,12 +39,18 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     }
 
     try {
+      final current = await locationService.getCurrentLatLng();
+
       await firebaseService.createRide(
         pickup: pickup,
         destination: destination,
         rideType: _rideType,
         price: _estimatedPrice,
         note: note,
+        pickupLat: current?.latitude,
+        pickupLng: current?.longitude,
+        destinationLat: current != null ? current.latitude + 0.02 : null,
+        destinationLng: current != null ? current.longitude + 0.02 : null,
       );
 
       _pickupCtrl.clear();
@@ -114,6 +123,13 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => RideDetailScreen(ride: activeRide!),
+                      ),
+                    );
+                  },
+                  onOpenMap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => RideMapScreen(ride: activeRide!),
                       ),
                     );
                   },
@@ -337,11 +353,13 @@ class _RideStatusCard extends StatelessWidget {
   final RideModel ride;
   final VoidCallback onCancel;
   final VoidCallback onTap;
+  final VoidCallback onOpenMap;
 
   const _RideStatusCard({
     required this.ride,
     required this.onCancel,
     required this.onTap,
+    required this.onOpenMap,
   });
 
   @override
@@ -403,12 +421,22 @@ class _RideStatusCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onCancel,
-                child: const Text('Cancel Ride'),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onOpenMap,
+                    child: const Text('Open Map'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onCancel,
+                    child: const Text('Cancel Ride'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

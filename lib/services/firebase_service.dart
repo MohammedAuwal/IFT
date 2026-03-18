@@ -99,6 +99,73 @@ class FirebaseService {
         .map((snapshot) => snapshot.docs.length + 1);
   }
 
+  Stream<int> watchActiveRideCount() {
+    final user = currentUser;
+    if (user == null) return Stream.value(0);
+
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) {
+      final rides = snapshot.docs
+          .map((doc) => RideModel.fromMap(doc.id, doc.data()))
+          .where((ride) => ride.status != 'completed' && ride.status != 'cancelled')
+          .toList();
+      return rides.length;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> watchRecentAdminActivity() {
+    final productStream = firestore
+        .collection(AppConstants.productsCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'type': 'product',
+                'title': 'Product: ${data['name'] ?? 'Unnamed'}',
+                'subtitle': '₦${data['price'] ?? 0}',
+                'createdAt': data['createdAt'] ?? '',
+              };
+            }).toList());
+
+    final orderStream = firestore
+        .collection(AppConstants.ordersCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'type': 'order',
+                'title': 'Order: ${doc.id}',
+                'subtitle': 'Status: ${data['status'] ?? 'pending'}',
+                'createdAt': data['createdAt'] ?? '',
+              };
+            }).toList());
+
+    final rideStream = firestore
+        .collection(AppConstants.ridesCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'type': 'ride',
+                'title': 'Ride: ${doc.id}',
+                'subtitle': '${data['pickup'] ?? ''} → ${data['destination'] ?? ''}',
+                'createdAt': data['createdAt'] ?? '',
+              };
+            }).toList());
+
+    return productStream.asyncMap((products) async {
+      final orders = await orderStream.first;
+      final rides = await rideStream.first;
+
+      final merged = [...products, ...orders, ...rides];
+      merged.sort((a, b) => (b['createdAt'] ?? '').toString().compareTo((a['createdAt'] ?? '').toString()));
+      return merged.take(8).toList();
+    });
+  }
+
   Stream<List<String>> watchCategories() {
     return firestore
         .collection('categories')
@@ -489,6 +556,10 @@ class FirebaseService {
     required String rideType,
     required double price,
     String note = '',
+    double? pickupLat,
+    double? pickupLng,
+    double? destinationLat,
+    double? destinationLng,
   }) async {
     final user = currentUser;
     if (user == null) return;
@@ -512,6 +583,12 @@ class FirebaseService {
       price: price,
       note: note,
       eta: '5 mins',
+      pickupLat: pickupLat,
+      pickupLng: pickupLng,
+      destinationLat: destinationLat,
+      destinationLng: destinationLng,
+      driverLat: null,
+      driverLng: null,
       createdAt: DateTime.now(),
     );
 
@@ -523,11 +600,15 @@ class FirebaseService {
     required String status,
     String? driver,
     String? eta,
+    double? driverLat,
+    double? driverLng,
   }) async {
     await firestore.collection(AppConstants.ridesCollection).doc(rideId).set({
       'status': status,
       if (driver != null) 'driver': driver,
       if (eta != null) 'eta': eta,
+      if (driverLat != null) 'driverLat': driverLat,
+      if (driverLng != null) 'driverLng': driverLng,
     }, SetOptions(merge: true));
   }
 
