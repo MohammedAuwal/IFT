@@ -12,7 +12,20 @@
           "package_name": "com.maamahsmix.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "532487766810-ra381kbjef7dlpcml79o479p3putpvlr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.maamahsmix.app",
+            "certificate_hash": "cc920ce467852666c0140da9ed0f656108922c73"
+          }
+        },
+        {
+          "client_id": "532487766810-vn55nr9i2u1po47vqljbtnghn5r8loms.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDRN6iGyxOFCCl2CEaprdSt16bdUCpRuik"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "532487766810-vn55nr9i2u1po47vqljbtnghn5r8loms.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
