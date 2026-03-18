@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
 import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
@@ -99,12 +100,23 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
             activeRide = null;
           }
 
+          final history = rides
+              .where((r) => r.status == 'completed' || r.status == 'cancelled')
+              .toList();
+
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
               if (activeRide != null)
                 _RideStatusCard(
                   ride: activeRide,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => RideDetailScreen(ride: activeRide!),
+                      ),
+                    );
+                  },
                   onCancel: () async {
                     await firebaseService.cancelRide(activeRide!.id);
                   },
@@ -250,6 +262,69 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 18),
+              Text(
+                'Ride History',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (history.isEmpty)
+                Text(
+                  'No past rides yet',
+                  style: GoogleFonts.poppins(color: Colors.black54),
+                )
+              else
+                ...history.map(
+                  (ride) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => RideDetailScreen(ride: ride),
+                          ),
+                        );
+                      },
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFC29B40),
+                        child: Icon(Icons.history_rounded, color: Colors.white),
+                      ),
+                      title: Text(
+                        '${ride.pickup} → ${ride.destination}',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        ride.status,
+                        style: GoogleFonts.poppins(
+                          color: ride.status == 'completed'
+                              ? Colors.green
+                              : Colors.redAccent,
+                        ),
+                      ),
+                      trailing: Text(
+                        '₦${ride.price.toStringAsFixed(0)}',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          color: gold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           );
         },
@@ -261,77 +336,82 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 class _RideStatusCard extends StatelessWidget {
   final RideModel ride;
   final VoidCallback onCancel;
+  final VoidCallback onTap;
 
   const _RideStatusCard({
     required this.ride,
     required this.onCancel,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '🚗 Ride in Progress',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text('From: ${ride.pickup}', style: GoogleFonts.poppins()),
-          Text('To: ${ride.destination}', style: GoogleFonts.poppins()),
-          const SizedBox(height: 10),
-          Text(
-            'Status: ${ride.status}',
-            style: GoogleFonts.poppins(
-              color: Colors.orange,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (ride.driver != null) ...[
-            const SizedBox(height: 6),
-            Text('Driver: ${ride.driver}', style: GoogleFonts.poppins()),
           ],
-          if (ride.eta.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text('ETA: ${ride.eta}', style: GoogleFonts.poppins()),
-          ],
-          if (ride.note.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text('Note: ${ride.note}', style: GoogleFonts.poppins()),
-          ],
-          const SizedBox(height: 6),
-          Text(
-            'Fare: ₦${ride.price.toStringAsFixed(0)}',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFC29B40),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '🚗 Ride in Progress',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onCancel,
-              child: const Text('Cancel Ride'),
+            const SizedBox(height: 10),
+            Text('From: ${ride.pickup}', style: GoogleFonts.poppins()),
+            Text('To: ${ride.destination}', style: GoogleFonts.poppins()),
+            const SizedBox(height: 10),
+            Text(
+              'Status: ${ride.status}',
+              style: GoogleFonts.poppins(
+                color: Colors.orange,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+            if (ride.driver != null) ...[
+              const SizedBox(height: 6),
+              Text('Driver: ${ride.driver}', style: GoogleFonts.poppins()),
+            ],
+            if (ride.eta.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text('ETA: ${ride.eta}', style: GoogleFonts.poppins()),
+            ],
+            if (ride.note.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text('Note: ${ride.note}', style: GoogleFonts.poppins()),
+            ],
+            const SizedBox(height: 6),
+            Text(
+              'Fare: ₦${ride.price.toStringAsFixed(0)}',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFC29B40),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onCancel,
+                child: const Text('Cancel Ride'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

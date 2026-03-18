@@ -8,9 +8,12 @@ import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
 import 'package:mix/features/rider/presentation/screens/rider_home_screen.dart';
+import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
+import 'package:mix/features/shared/presentation/widgets/active_service_card.dart';
 import 'package:mix/features/shared/presentation/widgets/app_shimmer_loader.dart';
 import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/product_model.dart';
+import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class ProductListScreen extends StatefulWidget {
@@ -37,6 +40,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
     'Oils',
     'General',
   ];
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,12 +77,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Mix',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20,
-                            color: const Color(0xFF1D1D1F),
-                          )),
+                      Text(
+                        'Mix',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          color: const Color(0xFF1D1D1F),
+                        ),
+                      ),
                       Text(
                         'Hi, $displayName 👋',
                         style: GoogleFonts.poppins(
@@ -92,14 +103,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   },
                   icon: const Icon(Icons.local_taxi_outlined),
                 ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => CartScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.shopping_cart_outlined),
-                ),
+                if (!widget.showBottomNav)
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => CartScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                  ),
               ],
             ),
           ),
@@ -164,49 +176,38 @@ class _ProductListScreenState extends State<ProductListScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          StreamBuilder(
+          StreamBuilder<List<RideModel>>(
             stream: _firebaseService.watchUserRides(),
             builder: (context, snapshot) {
               final rides = snapshot.data ?? [];
-              final activeRide = rides.where((r) => r.status != 'completed').isNotEmpty
-                  ? rides.firstWhere((r) => r.status != 'completed')
-                  : null;
+              RideModel? activeRide;
+
+              try {
+                activeRide = rides.firstWhere(
+                  (r) => r.status != 'completed' && r.status != 'cancelled',
+                );
+              } catch (_) {
+                activeRide = null;
+              }
 
               if (activeRide == null) return const SizedBox.shrink();
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
+                child: ActiveServiceCard(
+                  icon: Icons.local_taxi_rounded,
+                  title: 'Ride in Progress',
+                  subtitle: '${activeRide.pickup} → ${activeRide.destination}',
+                  status: activeRide.status,
+                  eta: activeRide.eta.isEmpty ? null : activeRide.eta,
+                  trailingText: activeRide.driver ?? 'Searching driver',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => RideDetailScreen(ride: activeRide!),
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        backgroundColor: Color(0xFFC29B40),
-                        child: Icon(Icons.local_taxi_rounded, color: Colors.white),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Ride Status: ${activeRide.status} • ${activeRide.driver ?? "Searching driver"}',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               );
             },
