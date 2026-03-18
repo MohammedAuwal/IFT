@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
+import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
 
 class AddProductScreen extends StatefulWidget {
@@ -20,21 +21,37 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _repo = ProductRepository();
   final _cloudinaryService = CloudinaryService();
   final _imageService = ImagePickService();
+  final _firebaseService = FirebaseService();
 
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
-  final _categoryCtrl = TextEditingController();
   final _variantsCtrl = TextEditingController();
+  final _stockQtyCtrl = TextEditingController(text: '0');
+  final _promoTextCtrl = TextEditingController();
+  final _promoDiscountCtrl = TextEditingController(text: '0');
 
   File? _selectedImage;
   bool _featured = false;
   bool _inStock = true;
   bool _loading = false;
 
+  String? _selectedCategory;
+
   Future<void> _pickImage() async {
     final file = await _imageService.pickImageWithFallback();
     if (file == null) return;
+
+    final sizeBytes = await file.length();
+    const maxBytes = 3 * 1024 * 1024;
+
+    if (sizeBytes > maxBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image too large. Max allowed is 3MB')),
+      );
+      return;
+    }
 
     setState(() => _selectedImage = file);
   }
@@ -42,8 +59,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
     final description = _descCtrl.text.trim();
-    final category = _categoryCtrl.text.trim().isEmpty ? 'General' : _categoryCtrl.text.trim();
+    final category = (_selectedCategory == null || _selectedCategory!.trim().isEmpty)
+        ? 'General'
+        : _selectedCategory!.trim();
     final price = double.tryParse(_priceCtrl.text.trim());
+    final stockQty = int.tryParse(_stockQtyCtrl.text.trim()) ?? 0;
+    final promoDiscount = double.tryParse(_promoDiscountCtrl.text.trim()) ?? 0;
     final variants = _variantsCtrl.text
         .split(',')
         .map((e) => e.trim())
@@ -77,7 +98,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         category: category,
         featured: _featured,
         inStock: _inStock,
+        stockQuantity: stockQty,
         variants: variants,
+        promoText: _promoTextCtrl.text.trim(),
+        promoDiscountPercent: promoDiscount,
       );
 
       await _repo.addProduct(product);
@@ -102,8 +126,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _priceCtrl.dispose();
-    _categoryCtrl.dispose();
     _variantsCtrl.dispose();
+    _stockQtyCtrl.dispose();
+    _promoTextCtrl.dispose();
+    _promoDiscountCtrl.dispose();
     super.dispose();
   }
 
@@ -159,11 +185,59 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
-                _Field(controller: _categoryCtrl, hint: 'Category'),
+                StreamBuilder<List<String>>(
+                  stream: _firebaseService.watchCategories(),
+                  builder: (context, snapshot) {
+                    final categories = snapshot.data ?? ['General'];
+                    _selectedCategory ??= categories.isNotEmpty ? categories.first : 'General';
+
+                    return DropdownButtonFormField<String>(
+                      value: categories.contains(_selectedCategory) ? _selectedCategory : categories.first,
+                      dropdownColor: const Color(0xFF11141A),
+                      style: GoogleFonts.poppins(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFF11141A),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      items: categories
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => _selectedCategory = value);
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _Field(
+                  controller: _stockQtyCtrl,
+                  hint: 'Stock quantity',
+                  keyboardType: TextInputType.number,
+                ),
                 const SizedBox(height: 12),
                 _Field(
                   controller: _variantsCtrl,
                   hint: 'Variants (comma separated)',
+                ),
+                const SizedBox(height: 12),
+                _Field(
+                  controller: _promoTextCtrl,
+                  hint: 'Promo text e.g 20% off this week',
+                ),
+                const SizedBox(height: 12),
+                _Field(
+                  controller: _promoDiscountCtrl,
+                  hint: 'Promo discount %',
+                  keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
@@ -199,8 +273,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.add_photo_alternate_outlined,
-                                  color: Colors.white70, size: 40),
+                              const Icon(
+                                Icons.add_photo_alternate_outlined,
+                                color: Colors.white70,
+                                size: 40,
+                              ),
                               const SizedBox(height: 12),
                               Text(
                                 'Tap to select product image',
@@ -208,7 +285,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Image picker with file picker fallback',
+                                'Max image size: 3MB',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white38,
                                   fontSize: 11,

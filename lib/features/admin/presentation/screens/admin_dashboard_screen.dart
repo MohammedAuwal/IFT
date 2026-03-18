@@ -1,13 +1,13 @@
-import 'dart:io';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/features/admin/presentation/screens/add_product_screen.dart';
-import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart';
 import 'package:mix/features/admin/presentation/screens/admin_orders_screen.dart';
+import 'package:mix/features/admin/presentation/screens/admin_rides_screen.dart';
+import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart';
+import 'package:mix/features/admin/presentation/screens/manage_categories_screen.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/firebase_auth_service.dart';
@@ -85,25 +85,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
-                );
-              },
-              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
-              label: Text(
-                'Manage Orders',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white24),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
             Text(
               _isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard',
               style: GoogleFonts.poppins(
@@ -112,7 +93,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
             Text(
-              'Manage products & services',
+              'Manage products, categories & orders',
               style: GoogleFonts.poppins(
                 color: Colors.white70,
                 fontSize: 12,
@@ -121,14 +102,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AddProductScreen()),
-              );
-            },
-            icon: const Icon(Icons.add_box_outlined, color: Colors.white),
-          ),
           IconButton(
             onPressed: () async => _authService.signOut(),
             icon: const Icon(Icons.logout_rounded, color: Colors.white),
@@ -147,26 +120,72 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         label: const Text('Add Product'),
       ),
       body: ListView(
-        
         padding: const EdgeInsets.all(16),
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
-                );
-              },
-              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
-              label: Text(
-                'Manage Orders',
-                style: GoogleFonts.poppins(color: Colors.white),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.add_box_outlined,
+                  title: 'Add Product',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AddProductScreen()),
+                    );
+                  },
+                ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.receipt_long_rounded,
+                  title: 'Orders',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.category_outlined,
+                  title: 'Categories',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ManageCategoriesScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.local_taxi_rounded,
+                  title: 'Rides',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => AdminRidesScreen()),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _ActionCard(
+            icon: Icons.category_outlined,
+            title: 'Manage Categories',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ManageCategoriesScreen()),
+              );
+            },
           ),
           const SizedBox(height: 18),
           if (_isSuperAdmin) ...[
@@ -175,25 +194,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
-                );
-              },
-              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
-              label: Text(
-                'Manage Orders',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white24),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
                   Text(
                     'Add Admin',
                     style: GoogleFonts.poppins(
@@ -345,31 +345,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        '₦${product.price.toStringAsFixed(2)} • ${product.category}',
+                        '₦${product.price.toStringAsFixed(2)} • ${product.category} • Stock ${product.stockQuantity}',
                         style: GoogleFonts.poppins(color: gold),
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
-                );
-              },
-              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
-              label: Text(
-                'Manage Orders',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white24),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
                           IconButton(
                             onPressed: () {
                               Navigator.of(context).push(
@@ -408,6 +389,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         border: Border.all(color: Colors.white10),
       ),
       child: child,
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF171A21),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(icon, color: const Color(0xFFC29B40)),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+      ),
     );
   }
 }

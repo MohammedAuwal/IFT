@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/product_model.dart';
+import 'package:mix/models/ride_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FirebaseService {
@@ -68,6 +69,32 @@ class FirebaseService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
+  }
+
+  Stream<List<String>> watchCategories() {
+    return firestore
+        .collection('categories')
+        .orderBy('name')
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => (doc.data()['name'] ?? '').toString()).where((e) => e.isNotEmpty).toList());
+  }
+
+  Future<void> addCategory(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+
+    await firestore.collection('categories').doc(trimmed.toLowerCase()).set({
+      'name': trimmed,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> removeCategory(String name) async {
+    final trimmed = name.trim().toLowerCase();
+    if (trimmed.isEmpty) return;
+
+    await firestore.collection('categories').doc(trimmed).delete();
   }
 
   DocumentReference<Map<String, dynamic>> _userDoc(String uid) {
@@ -383,6 +410,65 @@ class FirebaseService {
 
     await firestore.collection(AppConstants.ordersCollection).doc(id).set(order.toMap());
     await clearCart();
+  }
+
+  Stream<List<RideModel>> watchUserRides() {
+    final user = currentUser;
+    if (user == null) return Stream.value([]);
+
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+  }
+
+  Stream<List<RideModel>> watchAllRides() {
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+  }
+
+  Future<void> createRide({
+    required String pickup,
+    required String destination,
+    required String rideType,
+    required double price,
+  }) async {
+    final user = currentUser;
+    if (user == null) return;
+
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+
+    final ride = RideModel(
+      id: id,
+      type: 'ride',
+      userId: user.uid,
+      pickup: pickup,
+      destination: destination,
+      rideType: rideType,
+      status: 'searching',
+      driver: null,
+      price: price,
+      createdAt: DateTime.now(),
+    );
+
+    await firestore.collection(AppConstants.ridesCollection).doc(id).set(ride.toMap());
+  }
+
+  Future<void> updateRideStatus({
+    required String rideId,
+    required String status,
+    String? driver,
+  }) async {
+    await firestore.collection(AppConstants.ridesCollection).doc(rideId).set({
+      'status': status,
+      if (driver != null) 'driver': driver,
+    }, SetOptions(merge: true));
   }
 
   Future<void> updateProduct(ProductModel product) async {

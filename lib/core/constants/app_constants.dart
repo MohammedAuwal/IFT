@@ -6,4 +6,5 @@ class AppConstants {
   static const String adminsCollection = "admins";
   static const String ordersCollection = "orders";
   static const String usersCollection = "users";
+  static const String ridesCollection = "rides";
 }
