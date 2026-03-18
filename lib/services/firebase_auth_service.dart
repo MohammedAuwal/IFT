@@ -20,14 +20,14 @@ class FirebaseAuthService {
   }) async {
     try {
       final credential = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
       return credential.user;
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(_mapFirebaseError(e));
-    } catch (e) {
-      throw AuthFailure("Login failed. Please try again.");
+    } catch (_) {
+      throw AuthFailure('Login failed. Please try again.');
     }
   }
 
@@ -37,44 +37,47 @@ class FirebaseAuthService {
   }) async {
     try {
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
       return credential.user;
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(_mapFirebaseError(e));
-    } catch (e) {
-      throw AuthFailure("Registration failed. Please try again.");
+    } catch (_) {
+      throw AuthFailure('Registration failed. Please try again.');
     }
   }
 
   Future<User?> signInWithGoogle() async {
     try {
-      // 1. Trigger flow
+      await _googleSignIn.signOut();
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // User cancelled
+      if (googleUser == null) return null;
 
-      // 2. Get auth details
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
-      // 3. Create credential
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // 4. Sign in
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final userCredential =
+          await _firebaseAuth.signInWithCredential(credential);
+
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(e.message ?? "Google Sign-In failed");
+      throw AuthFailure(e.message ?? 'Google Sign-In failed');
     } catch (e) {
-      throw AuthFailure("Google Sign-In failed: $e");
+      throw AuthFailure('Google Sign-In failed: $e');
     }
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     await _firebaseAuth.signOut();
   }
 
@@ -88,6 +91,8 @@ class FirebaseAuthService {
         return 'Email is already registered.';
       case 'weak-password':
         return 'Password is too weak.';
+      case 'invalid-email':
+        return 'Invalid email address.';
       default:
         return e.message ?? 'Authentication error.';
     }
