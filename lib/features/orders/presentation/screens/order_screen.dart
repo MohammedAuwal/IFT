@@ -1,21 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/services/firebase_service.dart';
 
 class OrderScreen extends StatelessWidget {
   OrderScreen({super.key});
 
-  final List<Map<String, dynamic>> orders = const [
-    {
-      'id': 'ORD-1001',
-      'status': 'Processing',
-      'amount': 10500.0,
-    },
-    {
-      'id': 'ORD-1002',
-      'status': 'Delivered',
-      'amount': 5400.0,
-    },
-  ];
+  final firebaseService = FirebaseService();
 
   @override
   Widget build(BuildContext context) {
@@ -33,72 +23,81 @@ class OrderScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: orders.isEmpty
-          ? Center(
+      body: StreamBuilder(
+        stream: firebaseService.watchOrders(),
+        builder: (context, snapshot) {
+          final orders = snapshot.data ?? [];
+
+          if (orders.isEmpty) {
+            return Center(
               child: Text(
                 'No orders yet',
                 style: GoogleFonts.poppins(),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: orders.length,
-              itemBuilder: (_, i) {
-                final order = orders[i];
-                final isDelivered = order['status'] == 'Delivered';
+            );
+          }
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: isDelivered
-                            ? Colors.green.withOpacity(0.15)
-                            : Colors.orange.withOpacity(0.15),
-                        child: Icon(
-                          Icons.receipt_long_rounded,
-                          color: isDelivered ? Colors.green : Colors.orange,
-                        ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: orders.length,
+            itemBuilder: (_, i) {
+              final order = orders[i];
+              final isDelivered = order.status == 'delivered';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: isDelivered
+                          ? Colors.green.withOpacity(0.15)
+                          : Colors.orange.withOpacity(0.15),
+                      child: Icon(
+                        Icons.receipt_long_rounded,
+                        color: isDelivered ? Colors.green : Colors.orange,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              order['id'],
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w700,
-                              ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            order.id,
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w700,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              order['status'],
-                              style: GoogleFonts.poppins(
-                                color: isDelivered ? Colors.green : Colors.orange,
-                                fontSize: 12,
-                              ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            order.status,
+                            style: GoogleFonts.poppins(
+                              color: isDelivered ? Colors.green : Colors.orange,
+                              fontSize: 12,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '₦${(order['amount'] as double).toStringAsFixed(2)}',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFFC29B40),
-                        ),
+                    ),
+                    Text(
+                      '₦${order.totalAmount.toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFC29B40),
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

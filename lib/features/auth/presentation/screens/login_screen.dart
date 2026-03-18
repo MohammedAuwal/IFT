@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../services/firebase_auth_service.dart';
+import '../../../../services/firebase_service.dart';
 import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../../products/presentation/screens/product_list_screen.dart';
 
@@ -16,11 +17,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _authService = FirebaseAuthService();
+  final _firebaseService = FirebaseService();
+
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-
-  final String _adminUid = "PUT_ADMIN_UID_HERE";
 
   bool _obscure = true;
   bool _loading = false;
@@ -32,10 +33,13 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleAuthSuccess(User? user) {
+  Future<void> _handleAuthSuccess(User? user) async {
     if (user == null || !mounted) return;
 
-    if (user.uid == _adminUid) {
+    final isAdmin = await _firebaseService.isAdmin();
+    if (!mounted) return;
+
+    if (isAdmin) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => AdminDashboardScreen()),
       );
@@ -59,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final user = await action();
-      _handleAuthSuccess(user);
+      await _handleAuthSuccess(user);
     } on AuthFailure catch (e) {
       if (!mounted) return;
       _toast(e.message);

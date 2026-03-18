@@ -1,96 +1,101 @@
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
+import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
 
-class AddProductScreen extends StatefulWidget {
-  const AddProductScreen({super.key});
+class EditProductScreen extends StatefulWidget {
+  final ProductModel product;
+
+  const EditProductScreen({
+    super.key,
+    required this.product,
+  });
 
   @override
-  State<AddProductScreen> createState() => _AddProductScreenState();
+  State<EditProductScreen> createState() => _EditProductScreenState();
 }
 
-class _AddProductScreenState extends State<AddProductScreen> {
-  final _repo = ProductRepository();
+class _EditProductScreenState extends State<EditProductScreen> {
+  final _firebaseService = FirebaseService();
   final _cloudinaryService = CloudinaryService();
   final _imageService = ImagePickService();
 
-  final _nameCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
-  final _priceCtrl = TextEditingController();
-  final _categoryCtrl = TextEditingController();
-  final _variantsCtrl = TextEditingController();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _priceCtrl;
+  late final TextEditingController _categoryCtrl;
+  late final TextEditingController _variantsCtrl;
 
   File? _selectedImage;
-  bool _featured = false;
-  bool _inStock = true;
+  late bool _featured;
+  late bool _inStock;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.product.name);
+    _descCtrl = TextEditingController(text: widget.product.description);
+    _priceCtrl = TextEditingController(text: widget.product.price.toString());
+    _categoryCtrl = TextEditingController(text: widget.product.category);
+    _variantsCtrl = TextEditingController(text: widget.product.variants.join(', '));
+    _featured = widget.product.featured;
+    _inStock = widget.product.inStock;
+  }
 
   Future<void> _pickImage() async {
     final file = await _imageService.pickImageWithFallback();
-    if (file == null) return;
-
-    setState(() => _selectedImage = file);
+    if (file != null) {
+      setState(() => _selectedImage = file);
+    }
   }
 
-  Future<void> _submit() async {
-    final name = _nameCtrl.text.trim();
-    final description = _descCtrl.text.trim();
-    final category = _categoryCtrl.text.trim().isEmpty ? 'General' : _categoryCtrl.text.trim();
+  Future<void> _save() async {
     final price = double.tryParse(_priceCtrl.text.trim());
-    final variants = _variantsCtrl.text
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    if (name.isEmpty || description.isEmpty || price == null || _selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please complete all fields and select an image')),
-      );
-      return;
-    }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (price == null) return;
 
     setState(() => _loading = true);
 
     try {
-      final imageUrl = await _cloudinaryService.uploadImage(_selectedImage!);
-      final id = DateTime.now().millisecondsSinceEpoch.toString();
+      String imageUrl = widget.product.imageUrl;
 
-      final product = ProductModel(
-        id: id,
-        name: name,
-        description: description,
+      if (_selectedImage != null) {
+        imageUrl = await _cloudinaryService.uploadImage(_selectedImage!);
+      }
+
+      final updated = ProductModel(
+        id: widget.product.id,
+        name: _nameCtrl.text.trim(),
+        description: _descCtrl.text.trim(),
         price: price,
         imageUrl: imageUrl,
-        createdBy: user.uid,
-        createdAt: DateTime.now(),
-        category: category,
+        createdBy: widget.product.createdBy,
+        createdAt: widget.product.createdAt,
+        category: _categoryCtrl.text.trim().isEmpty ? 'General' : _categoryCtrl.text.trim(),
         featured: _featured,
         inStock: _inStock,
-        variants: variants,
+        variants: _variantsCtrl.text
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList(),
       );
 
-      await _repo.addProduct(product);
+      await _firebaseService.updateProduct(updated);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product created successfully')),
+        const SnackBar(content: Text('Product updated successfully')),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add product: $e')),
+        SnackBar(content: Text('Failed to update product: $e')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -120,7 +125,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'Add Product',
+          'Edit Product',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -140,104 +145,55 @@ class _AddProductScreenState extends State<AddProductScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Create a new product',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
                 _Field(controller: _nameCtrl, hint: 'Product name'),
                 const SizedBox(height: 12),
                 _Field(controller: _descCtrl, hint: 'Description', maxLines: 4),
                 const SizedBox(height: 12),
-                _Field(
-                  controller: _priceCtrl,
-                  hint: 'Price',
-                  keyboardType: TextInputType.number,
-                ),
+                _Field(controller: _priceCtrl, hint: 'Price', keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
                 _Field(controller: _categoryCtrl, hint: 'Category'),
                 const SizedBox(height: 12),
-                _Field(
-                  controller: _variantsCtrl,
-                  hint: 'Variants (comma separated)',
-                ),
+                _Field(controller: _variantsCtrl, hint: 'Variants comma separated'),
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _featured,
                   onChanged: (v) => setState(() => _featured = v),
-                  title: Text(
-                    'Featured product',
-                    style: GoogleFonts.poppins(color: Colors.white),
-                  ),
+                  title: Text('Featured', style: GoogleFonts.poppins(color: Colors.white)),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _inStock,
                   onChanged: (v) => setState(() => _inStock = v),
-                  title: Text(
-                    'In stock',
-                    style: GoogleFonts.poppins(color: Colors.white),
-                  ),
+                  title: Text('In stock', style: GoogleFonts.poppins(color: Colors.white)),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 GestureDetector(
                   onTap: _pickImage,
                   child: Container(
                     height: 200,
-                    width: double.infinity,
                     decoration: BoxDecoration(
                       color: const Color(0xFF11141A),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: Colors.white12),
                     ),
-                    child: _selectedImage == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.add_photo_alternate_outlined,
-                                  color: Colors.white70, size: 40),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Tap to select product image',
-                                style: GoogleFonts.poppins(color: Colors.white70),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Image picker with file picker fallback',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white38,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(18),
-                            child: Image.file(
-                              _selectedImage!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            ),
-                          ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: _selectedImage != null
+                          ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                          : Image.network(widget.product.imageUrl, fit: BoxFit.cover),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _submit,
+                    onPressed: _loading ? null : _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: gold,
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
                     ),
                     child: _loading
                         ? const SizedBox(
@@ -246,7 +202,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(
-                            'Save Product',
+                            'Save Changes',
                             style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                           ),
                   ),

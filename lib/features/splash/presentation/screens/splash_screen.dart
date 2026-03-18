@@ -1,14 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:mix/features/admin/presentation/screens/admin_dashboard_screen.dart';
-import 'package:mix/features/auth/presentation/screens/login_screen.dart';
-import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
-
-const String kAdminUid = 'PUT_ADMIN_UID_HERE';
+import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/services/firebase_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,6 +14,8 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
+  final _firebaseService = FirebaseService();
+
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
@@ -50,29 +47,23 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _firebaseService.currentUser;
 
-    Widget next;
     if (user == null) {
-      next = const LoginScreen();
-    } else if (user.uid == kAdminUid) {
-      next = AdminDashboardScreen();
-    } else {
-      next = ProductListScreen();
+      await AppRouter.clearAndGo(context, '/login');
+      return;
     }
 
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 700),
-        pageBuilder: (_, __, ___) => next,
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      ),
-    );
+    final admin = await _firebaseService.isAdmin();
+
+    if (!mounted) return;
+
+    if (admin) {
+      await AppRouter.clearAndGo(context, '/admin');
+      return;
+    }
+
+    await AppRouter.clearAndGo(context, '/home');
   }
 
   @override
@@ -163,18 +154,13 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       const SizedBox(height: 18),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Mix',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 30,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Mix',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 30,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Text(

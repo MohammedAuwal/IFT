@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/models/product_model.dart';
+import 'package:mix/services/firebase_service.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductModel product;
@@ -12,9 +13,9 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final variantText = product.variants.isEmpty
-        ? 'No variants'
-        : product.variants.join(', ');
+    final firebaseService = FirebaseService();
+    final variantText =
+        product.variants.isEmpty ? 'No variants' : product.variants.join(', ');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
@@ -29,6 +30,25 @@ class ProductDetailScreen extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: [
+          StreamBuilder<List<String>>(
+            stream: firebaseService.watchFavorites(),
+            builder: (context, snapshot) {
+              final favorites = snapshot.data ?? [];
+              final isFavorite = favorites.contains(product.id);
+
+              return IconButton(
+                onPressed: () async {
+                  await firebaseService.toggleFavorite(product.id);
+                },
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.redAccent : Colors.black,
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -106,7 +126,22 @@ class ProductDetailScreen extends StatelessWidget {
           SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: product.inStock
+                  ? () async {
+                      await firebaseService.addToCart(
+                        productId: product.id,
+                        name: product.name,
+                        price: product.price,
+                        imageUrl: product.imageUrl,
+                      );
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Added to cart')),
+                        );
+                      }
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF8E2121),
                 foregroundColor: Colors.white,
