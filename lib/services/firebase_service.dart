@@ -30,23 +30,12 @@ class FirebaseService {
     return doc.exists;
   }
 
-  Stream<bool> watchIsAdmin() async* {
+  Future<bool> isDriver() async {
     final user = currentUser;
-    if (user == null) {
-      yield false;
-      return;
-    }
+    if (user == null) return false;
 
-    if (user.uid == AppConstants.superAdminUid) {
-      yield true;
-      return;
-    }
-
-    yield* firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(user.uid)
-        .snapshots()
-        .map((doc) => doc.exists);
+    final doc = await firestore.collection('drivers').doc(user.uid).get();
+    return doc.exists;
   }
 
   Future<void> addAdmin({
@@ -63,9 +52,31 @@ class FirebaseService {
     });
   }
 
+  Future<void> addDriver({
+    required String uid,
+    required String name,
+    required String email,
+  }) async {
+    await firestore.collection('drivers').doc(uid).set({
+      'uid': uid,
+      'name': name,
+      'email': email,
+      'available': true,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+  }
+
   Stream<List<Map<String, dynamic>>> watchAdmins() {
     return firestore
         .collection(AppConstants.adminsCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
+  }
+
+  Stream<List<Map<String, dynamic>>> watchDrivers() {
+    return firestore
+        .collection('drivers')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
@@ -532,6 +543,15 @@ class FirebaseService {
     return firestore
         .collection(AppConstants.ridesCollection)
         .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+  }
+
+  Stream<List<RideModel>> watchDriverAssignedRides(String driverName) {
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('driver', isEqualTo: driverName)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());

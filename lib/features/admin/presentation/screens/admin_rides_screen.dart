@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/features/rider/presentation/screens/driver_mode_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
 import 'package:mix/services/firebase_service.dart';
 
@@ -115,12 +116,23 @@ class AdminRidesScreen extends StatelessWidget {
                         runSpacing: 8,
                         children: [
                           _statusButton(ride.id, 'searching'),
-                          _assignDriverButton(ride.id, 'Musa', '5 mins', 9.0765, 7.3986),
-                          _assignDriverButton(ride.id, 'Ibrahim', '8 mins', 9.0865, 7.4086),
                           _statusButton(ride.id, 'on_the_way'),
                           _statusButton(ride.id, 'ride_in_progress'),
                           _statusButton(ride.id, 'completed'),
                           _statusButton(ride.id, 'cancelled'),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => DriverModeScreen(
+                                    ride: ride,
+                                    driverName: ride.driver ?? 'Musa',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text('Driver Mode'),
+                          ),
                         ],
                       ),
                     ],
@@ -143,28 +155,6 @@ class AdminRidesScreen extends StatelessWidget {
         );
       },
       child: Text(status),
-    );
-  }
-
-  Widget _assignDriverButton(
-    String rideId,
-    String driver,
-    String eta,
-    double lat,
-    double lng,
-  ) {
-    return ElevatedButton(
-      onPressed: () async {
-        await firebaseService.updateRideStatus(
-          rideId: rideId,
-          status: 'driver_assigned',
-          driver: driver,
-          eta: eta,
-          driverLat: lat,
-          driverLng: lng,
-        );
-      },
-      child: Text('Assign $driver'),
     );
   }
 }
