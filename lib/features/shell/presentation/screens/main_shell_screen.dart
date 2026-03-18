@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mix/app.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
+import 'package:mix/services/admin_preview_scope.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,7 +25,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   bool _loadingRole = true;
 
   late final List<Widget> _screens = [
-    ProductListScreen(showBottomNav: false),
+    const ProductListScreen(showBottomNav: false),
     CartScreen(showScaffold: false),
     OrderScreen(showScaffold: false),
     const ProfileScreen(showScaffold: false),
@@ -60,14 +60,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Future<void> _backToAdmin() async {
-    _AdminPreviewScope.of(context).exitPreviewMode();
+    AdminPreviewScope.of(context).exitPreviewMode();
     if (!mounted) return;
     await AppRouter.clearAndGo(context, RouteNames.admin);
   }
 
   @override
   Widget build(BuildContext context) {
-    final previewController = _AdminPreviewScope.of(context);
+    final previewController = AdminPreviewScope.of(context);
 
     return StreamBuilder<int>(
       stream: _firebaseService.watchCartCount(),

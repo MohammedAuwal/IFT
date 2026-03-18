@@ -2,8 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:mix/app.dart';
-import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/data/product_repository.dart';
@@ -16,6 +14,7 @@ import 'package:mix/features/shared/presentation/widgets/app_shimmer_loader.dart
 import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/models/ride_model.dart';
+import 'package:mix/services/admin_preview_scope.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class ProductListScreen extends StatefulWidget {
@@ -43,9 +42,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     'General',
   ];
 
-  bool get _isSuperAdmin =>
-      FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
-
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -54,7 +50,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final previewController = _AdminPreviewScope.of(context);
+    final previewController = AdminPreviewScope.of(context);
     final user = FirebaseAuth.instance.currentUser;
     final displayName = (user?.displayName?.trim().isNotEmpty ?? false)
         ? user!.displayName!
@@ -163,10 +159,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.location_on_rounded,
-                    color: Color(0xFFC29B40),
-                  ),
+                  const Icon(Icons.location_on_rounded, color: Color(0xFFC29B40)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -192,9 +185,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     icon: Icons.local_taxi_rounded,
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const RiderHomeScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const RiderHomeScreen()),
                       );
                     },
                   ),
@@ -292,13 +283,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return GridView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: 6,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       childAspectRatio: 0.70,
                       crossAxisSpacing: 12,
@@ -316,8 +303,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           children: [
                             Expanded(
                               child: AppShimmerLoader(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(16)),
+                                borderRadius: BorderRadius.all(Radius.circular(16)),
                               ),
                             ),
                             SizedBox(height: 10),
@@ -340,8 +326,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       p.description.toLowerCase().contains(q);
 
                   final matchesCategory = _selectedCategory == 'All' ||
-                      p.category.toLowerCase() ==
-                          _selectedCategory.toLowerCase();
+                      p.category.toLowerCase() == _selectedCategory.toLowerCase();
 
                   return matchesSearch && matchesCategory;
                 }).toList();
@@ -360,13 +345,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     final favorites = favSnapshot.data ?? [];
 
                     return GridView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       itemCount: filtered.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         childAspectRatio: 0.70,
                         crossAxisSpacing: 12,
@@ -380,8 +361,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    ProductDetailScreen(product: product),
+                                builder: (_) => ProductDetailScreen(product: product),
                               ),
                             );
                           },
@@ -404,21 +384,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                   child: Stack(
                                     children: [
                                       ClipRRect(
-                                        borderRadius:
-                                            const BorderRadius.vertical(
+                                        borderRadius: const BorderRadius.vertical(
                                           top: Radius.circular(20),
                                         ),
                                         child: Image.network(
                                           product.imageUrl,
                                           width: double.infinity,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              Container(
+                                          errorBuilder: (_, __, ___) => Container(
                                             color: Colors.grey.shade200,
                                             child: const Center(
-                                              child: Icon(
-                                                Icons.image_not_supported,
-                                              ),
+                                              child: Icon(Icons.image_not_supported),
                                             ),
                                           ),
                                         ),
@@ -428,14 +404,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                           top: 8,
                                           left: 8,
                                           child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFC29B40),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
+                                              borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(
                                               'Featured',
@@ -454,16 +426,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                           backgroundColor: Colors.white,
                                           child: IconButton(
                                             onPressed: () async {
-                                              await _firebaseService
-                                                  .toggleFavorite(product.id);
+                                              await _firebaseService.toggleFavorite(product.id);
                                             },
                                             icon: Icon(
-                                              isFavorite
-                                                  ? Icons.favorite
-                                                  : Icons.favorite_border,
-                                              color: isFavorite
-                                                  ? Colors.redAccent
-                                                  : Colors.black,
+                                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                                              color: isFavorite ? Colors.redAccent : Colors.black,
                                               size: 20,
                                             ),
                                           ),
@@ -473,11 +440,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                   ),
                                 ),
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         product.name,
@@ -498,14 +463,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
-                                        product.inStock
-                                            ? 'In Stock'
-                                            : 'Out of Stock',
+                                        product.inStock ? 'In Stock' : 'Out of Stock',
                                         style: GoogleFonts.poppins(
                                           fontSize: 11,
-                                          color: product.inStock
-                                              ? Colors.green
-                                              : Colors.redAccent,
+                                          color: product.inStock ? Colors.green : Colors.redAccent,
                                         ),
                                       ),
                                     ],
@@ -542,36 +503,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
         unselectedItemColor: Colors.black45,
         onTap: (index) {
           if (index == 1) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => CartScreen()),
-            );
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => CartScreen()));
           } else if (index == 2) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => OrderScreen()),
-            );
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => OrderScreen()));
           } else if (index == 3) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
           }
         },
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_rounded),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_rounded),
-            label: 'Orders',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_rounded), label: 'Cart'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Orders'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
         ],
       ),
     );

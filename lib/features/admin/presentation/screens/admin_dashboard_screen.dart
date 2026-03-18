@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:mix/app.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/core/routing/app_router.dart';
@@ -13,6 +12,7 @@ import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart
 import 'package:mix/features/admin/presentation/screens/manage_categories_screen.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
+import 'package:mix/services/admin_preview_scope.dart';
 import 'package:mix/services/firebase_auth_service.dart';
 import 'package:mix/services/firebase_service.dart';
 
@@ -78,7 +78,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _switchToUserView() async {
-    _AdminPreviewScope.of(context).enterPreviewMode();
+    AdminPreviewScope.of(context).enterPreviewMode();
     if (!mounted) return;
     await AppRouter.clearAndGo(context, RouteNames.mainShell);
   }
@@ -88,7 +88,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     setState(() => _loggingOut = true);
 
     try {
-      _AdminPreviewScope.of(context).reset();
+      AdminPreviewScope.of(context).reset();
       await _authService.signOut();
       if (!mounted) return;
       await AppRouter.clearAndGo(context, RouteNames.login);
