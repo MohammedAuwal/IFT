@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532487766810",
+    "project_id": "maamah-s",
+    "storage_bucket": "maamah-s.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532487766810:android:176de81b2d8d97091922a3",
+        "android_client_info": {
+          "package_name": "com.maamahsmix.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRN6iGyxOFCCl2CEaprdSt16bdUCpRuik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
