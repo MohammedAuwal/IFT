@@ -3,10 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../config/routes/route_names.dart';
+import '../../../../core/routing/app_router.dart';
 import '../../../../services/firebase_auth_service.dart';
 import '../../../../services/firebase_service.dart';
 import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
-import '../../../products/presentation/screens/product_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,6 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleAuthSuccess(User? user) async {
     if (user == null || !mounted) return;
 
+    await _firebaseService.ensureUserProfile();
+    await _firebaseService.syncLocalCartToFirestore();
+
     final isAdmin = await _firebaseService.isAdmin();
     if (!mounted) return;
 
@@ -44,9 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (_) => AdminDashboardScreen()),
       );
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => ProductListScreen()),
-      );
+      await AppRouter.clearAndGo(context, RouteNames.mainShell);
     }
 
     ScaffoldMessenger.of(context).showSnackBar(

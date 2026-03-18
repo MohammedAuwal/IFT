@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    await AppRouter.clearAndGo(context, RouteNames.home);
+    await AppRouter.clearAndGo(context, RouteNames.mainShell);
   }
 
   @override

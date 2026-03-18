@@ -27,12 +27,15 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _priceCtrl;
-  late final TextEditingController _categoryCtrl;
   late final TextEditingController _variantsCtrl;
+  late final TextEditingController _stockQtyCtrl;
+  late final TextEditingController _promoTextCtrl;
+  late final TextEditingController _promoDiscountCtrl;
 
   File? _selectedImage;
   late bool _featured;
   late bool _inStock;
+  String? _selectedCategory;
   bool _loading = false;
 
   @override
@@ -41,21 +44,39 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _nameCtrl = TextEditingController(text: widget.product.name);
     _descCtrl = TextEditingController(text: widget.product.description);
     _priceCtrl = TextEditingController(text: widget.product.price.toString());
-    _categoryCtrl = TextEditingController(text: widget.product.category);
     _variantsCtrl = TextEditingController(text: widget.product.variants.join(', '));
+    _stockQtyCtrl = TextEditingController(text: widget.product.stockQuantity.toString());
+    _promoTextCtrl = TextEditingController(text: widget.product.promoText);
+    _promoDiscountCtrl =
+        TextEditingController(text: widget.product.promoDiscountPercent.toString());
     _featured = widget.product.featured;
     _inStock = widget.product.inStock;
+    _selectedCategory = widget.product.category;
   }
 
   Future<void> _pickImage() async {
     final file = await _imageService.pickImageWithFallback();
-    if (file != null) {
-      setState(() => _selectedImage = file);
+    if (file == null) return;
+
+    final sizeBytes = await file.length();
+    const maxBytes = 3 * 1024 * 1024;
+
+    if (sizeBytes > maxBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image too large. Max allowed is 3MB')),
+      );
+      return;
     }
+
+    setState(() => _selectedImage = file);
   }
 
   Future<void> _save() async {
     final price = double.tryParse(_priceCtrl.text.trim());
+    final stockQty = int.tryParse(_stockQtyCtrl.text.trim()) ?? 0;
+    final promoDiscount = double.tryParse(_promoDiscountCtrl.text.trim()) ?? 0;
+
     if (price == null) return;
 
     setState(() => _loading = true);
@@ -75,14 +96,19 @@ class _EditProductScreenState extends State<EditProductScreen> {
         imageUrl: imageUrl,
         createdBy: widget.product.createdBy,
         createdAt: widget.product.createdAt,
-        category: _categoryCtrl.text.trim().isEmpty ? 'General' : _categoryCtrl.text.trim(),
+        category: (_selectedCategory == null || _selectedCategory!.trim().isEmpty)
+            ? 'General'
+            : _selectedCategory!.trim(),
         featured: _featured,
         inStock: _inStock,
+        stockQuantity: stockQty,
         variants: _variantsCtrl.text
             .split(',')
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty)
             .toList(),
+        promoText: _promoTextCtrl.text.trim(),
+        promoDiscountPercent: promoDiscount,
       );
 
       await _firebaseService.updateProduct(updated);
@@ -107,8 +133,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _priceCtrl.dispose();
-    _categoryCtrl.dispose();
     _variantsCtrl.dispose();
+    _stockQtyCtrl.dispose();
+    _promoTextCtrl.dispose();
+    _promoDiscountCtrl.dispose();
     super.dispose();
   }
 
@@ -151,9 +179,44 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 const SizedBox(height: 12),
                 _Field(controller: _priceCtrl, hint: 'Price', keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                _Field(controller: _categoryCtrl, hint: 'Category'),
+                StreamBuilder<List<String>>(
+                  stream: _firebaseService.watchCategories(),
+                  builder: (context, snapshot) {
+                    final categories = snapshot.data ?? ['General'];
+                    _selectedCategory ??= categories.isNotEmpty ? categories.first : 'General';
+
+                    return DropdownButtonFormField<String>(
+                      value: categories.contains(_selectedCategory) ? _selectedCategory : categories.first,
+                      dropdownColor: const Color(0xFF11141A),
+                      style: GoogleFonts.poppins(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFF11141A),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      items: categories
+                          .map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(c),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => _selectedCategory = value);
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _Field(controller: _stockQtyCtrl, hint: 'Stock quantity', keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
                 _Field(controller: _variantsCtrl, hint: 'Variants comma separated'),
+                const SizedBox(height: 12),
+                _Field(controller: _promoTextCtrl, hint: 'Promo text'),
+                const SizedBox(height: 12),
+                _Field(controller: _promoDiscountCtrl, hint: 'Promo discount %', keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,

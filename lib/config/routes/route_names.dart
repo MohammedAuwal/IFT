@@ -9,4 +9,5 @@ class RouteNames {
   static const favorites = '/favorites';
   static const addProduct = '/add-product';
   static const adminOrders = '/admin-orders';
+  static const mainShell = '/main-shell';
 }

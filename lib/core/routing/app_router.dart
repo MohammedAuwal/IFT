@@ -9,6 +9,7 @@ import 'package:mix/features/favorites/presentation/screens/favorites_screen.dar
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
+import 'package:mix/features/shell/presentation/screens/main_shell_screen.dart';
 import 'package:mix/features/splash/presentation/screens/splash_screen.dart';
 
 class AppRouter {
@@ -34,6 +35,8 @@ class AppRouter {
         return _route(const AddProductScreen());
       case RouteNames.adminOrders:
         return _route(AdminOrdersScreen());
+      case RouteNames.mainShell:
+        return _route(const _NoExitScreen(child: MainShellScreen()));
       default:
         return _route(
           const Scaffold(
