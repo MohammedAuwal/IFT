@@ -48,7 +48,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (sizeBytes > maxBytes) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image too large. Max allowed is 3MB')),
+        const SnackBar(
+          content: Text('Image too large. Max allowed is 3MB'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -73,7 +76,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     if (name.isEmpty || description.isEmpty || price == null || _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please complete all fields and select an image')),
+        const SnackBar(
+          content: Text('Please complete all fields and select an image'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -108,13 +114,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product created successfully')),
+        const SnackBar(
+          content: Text('Product created successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add product: $e')),
+        SnackBar(
+          content: Text('Failed to add product: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -182,20 +194,33 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 _Field(
                   controller: _priceCtrl,
                   hint: 'Price',
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 12),
                 StreamBuilder<List<String>>(
                   stream: _firebaseService.watchCategories(),
                   builder: (context, snapshot) {
-                    final categories = snapshot.data ?? ['General'];
-                    _selectedCategory ??= categories.isNotEmpty ? categories.first : 'General';
+                    final categories = snapshot.data ?? const <String>[];
+                    final safeCategories = categories.isEmpty ? const ['General'] : categories;
+                    final selectedValue = safeCategories.contains(_selectedCategory)
+                        ? _selectedCategory
+                        : safeCategories.first;
+
+                    if (_selectedCategory != selectedValue) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        setState(() => _selectedCategory = selectedValue);
+                      });
+                    }
 
                     return DropdownButtonFormField<String>(
-                      value: categories.contains(_selectedCategory) ? _selectedCategory : categories.first,
+                      initialValue: selectedValue,
                       dropdownColor: const Color(0xFF11141A),
                       style: GoogleFonts.poppins(color: Colors.white),
+                      iconEnabledColor: Colors.white70,
                       decoration: InputDecoration(
+                        hintText: 'Category',
+                        hintStyle: GoogleFonts.poppins(color: Colors.white54),
                         filled: true,
                         fillColor: const Color(0xFF11141A),
                         border: OutlineInputBorder(
@@ -203,15 +228,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           borderSide: BorderSide.none,
                         ),
                       ),
-                      items: categories
+                      items: safeCategories
                           .map(
-                            (c) => DropdownMenuItem(
+                            (c) => DropdownMenuItem<String>(
                               value: c,
                               child: Text(c),
                             ),
                           )
                           .toList(),
                       onChanged: (value) {
+                        if (value == null) return;
                         setState(() => _selectedCategory = value);
                       },
                     );
@@ -237,11 +263,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 _Field(
                   controller: _promoDiscountCtrl,
                   hint: 'Promo discount %',
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
+                  activeColor: gold,
                   value: _featured,
                   onChanged: (v) => setState(() => _featured = v),
                   title: Text(
@@ -251,6 +278,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
+                  activeColor: gold,
                   value: _inStock,
                   onChanged: (v) => setState(() => _inStock = v),
                   title: Text(
