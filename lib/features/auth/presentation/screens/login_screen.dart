@@ -56,15 +56,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _run(Future<User?> Function() action) async {
     if (_loading) return;
     setState(() => _loading = true);
+
     try {
       final user = await action();
       _handleAuthSuccess(user);
     } on AuthFailure catch (e) {
       if (!mounted) return;
       _toast(e.message);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      _toast('Something went wrong. Please try again.');
+      _toast(e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -331,10 +332,7 @@ class _WarmGradientBackground extends StatelessWidget {
 }
 
 class _GlowBlob extends StatelessWidget {
-  const _GlowBlob({
-    required this.diameter,
-    required this.color,
-  });
+  const _GlowBlob({required this.diameter, required this.color});
 
   final double diameter;
   final Color color;
@@ -407,9 +405,7 @@ class _GlassCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.10),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.20),
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.20)),
           ),
           child: child,
         ),
@@ -497,13 +493,25 @@ class _PrimaryButton extends StatelessWidget {
       height: 50,
       child: ElevatedButton(
         onPressed: loading ? null : onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF9E2323),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
         child: loading
             ? const SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(strokeWidth: 2.4),
               )
-            : Text(text),
+            : Text(
+                text,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
       ),
     );
   }
@@ -524,6 +532,12 @@ class _GoogleButton extends StatelessWidget {
       height: 50,
       child: OutlinedButton(
         onPressed: loading ? null : onTap,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.white.withOpacity(0.25)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -531,7 +545,10 @@ class _GoogleButton extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               'Sign in with Google',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ],
         ),
