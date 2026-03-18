@@ -1,9 +1,11 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../../../../../../services/firebase_auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mix/services/firebase_auth_service.dart';
+// Import your screens
+import 'package:mix/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,10 +16,12 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _authService = FirebaseAuthService();
-
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+
+  // 🛑 ADMIN CONFIGURATION
+  final String _adminUid = "PUT_ADMIN_UID_HERE";
 
   bool _obscure = true;
   bool _loading = false;
@@ -29,11 +33,41 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _run(Future<void> Function() action) async {
+  // Handle Navigation Logic
+  void _handleAuthSuccess(User? user) {
+    if (user == null) return;
+
+    if (!mounted) return;
+
+    if (user.uid == _adminUid) {
+      // Navigate to Admin
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+      );
+    } else {
+      // Navigate to User Home
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const ProductListScreen()),
+      );
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Welcome back, ${user.displayName ?? 'User'}"),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _run(Future<User?> Function() action) async {
     if (_loading) return;
     setState(() => _loading = true);
     try {
-      await action();
+      final user = await action();
+      if (user != null) {
+        _handleAuthSuccess(user);
+      }
     } on AuthFailure catch (e) {
       if (!mounted) return;
       _toast(e.message);
@@ -50,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.redAccent,
       ),
     );
   }
@@ -59,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!ok) return;
 
     await _run(() async {
-      await _authService.signInWithEmailPassword(
+      return await _authService.signInWithEmailPassword(
         email: _emailCtrl.text,
         password: _passwordCtrl.text,
       );
@@ -71,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!ok) return;
 
     await _run(() async {
-      await _authService.signUpWithEmailPassword(
+      return await _authService.signUpWithEmailPassword(
         email: _emailCtrl.text,
         password: _passwordCtrl.text,
       );
@@ -80,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _signInGoogle() async {
     await _run(() async {
-      await _authService.signInWithGoogle();
+      return await _authService.signInWithGoogle();
     });
   }
 
@@ -91,10 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Premium warm background (deep red + warm gold)
           const _WarmGradientBackground(),
-
-          // Decorative blurred "spice lights"
           Positioned(
             top: -80,
             left: -40,
@@ -271,9 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
                       Text(
                         "By continuing, you agree to our Terms & Privacy Policy.",
                         textAlign: TextAlign.center,
@@ -296,6 +326,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// ---------------- UI COMPONENTS (Unchanged) ----------------
+
 class _WarmGradientBackground extends StatelessWidget {
   const _WarmGradientBackground();
 
@@ -307,9 +339,9 @@ class _WarmGradientBackground extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF2A0A12), // deep wine
-            Color(0xFF4B0D1F), // spicy burgundy
-            Color(0xFF12060A), // near-black warm
+            Color(0xFF2A0A12),
+            Color(0xFF4B0D1F),
+            Color(0xFF12060A),
           ],
           stops: [0.0, 0.55, 1.0],
         ),
@@ -319,11 +351,7 @@ class _WarmGradientBackground extends StatelessWidget {
 }
 
 class _GlowBlob extends StatelessWidget {
-  const _GlowBlob({
-    required this.diameter,
-    required this.color,
-  });
-
+  const _GlowBlob({required this.diameter, required this.color});
   final double diameter;
   final Color color;
 
@@ -334,21 +362,14 @@ class _GlowBlob extends StatelessWidget {
       child: Container(
         width: diameter,
         height: diameter,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-        ),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       ),
     );
   }
 }
 
 class _BrandHeader extends StatelessWidget {
-  const _BrandHeader({
-    required this.title,
-    required this.subtitle,
-  });
-
+  const _BrandHeader({required this.title, required this.subtitle});
   final String title;
   final String subtitle;
 
@@ -388,7 +409,6 @@ class _BrandHeader extends StatelessWidget {
 
 class _GlassCard extends StatelessWidget {
   const _GlassCard({required this.child});
-
   final Widget child;
 
   @override
@@ -402,10 +422,7 @@ class _GlassCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.10),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.20),
-              width: 1.0,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.20), width: 1.0),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.28),
@@ -452,48 +469,28 @@ class _PremiumTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
-      style: GoogleFonts.poppins(
-        color: Colors.white,
-        fontWeight: FontWeight.w500,
-      ),
+      style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w500),
       cursorColor: const Color(0xFFFFD166),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: GoogleFonts.poppins(
-          color: Colors.white.withOpacity(0.65),
-          fontWeight: FontWeight.w400,
-        ),
+        hintStyle: GoogleFonts.poppins(color: Colors.white.withOpacity(0.65), fontWeight: FontWeight.w400),
         prefixIcon: Icon(prefixIcon, color: Colors.white.withOpacity(0.9)),
         suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white.withOpacity(0.07),
         enabledBorder: baseBorder,
-        focusedBorder: baseBorder.copyWith(
-          borderSide: const BorderSide(color: Color(0xFFFFD166), width: 1.2),
-        ),
-        errorBorder: baseBorder.copyWith(
-          borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.9), width: 1.1),
-        ),
-        focusedErrorBorder: baseBorder.copyWith(
-          borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.9), width: 1.1),
-        ),
+        focusedBorder: baseBorder.copyWith(borderSide: const BorderSide(color: Color(0xFFFFD166), width: 1.2)),
+        errorBorder: baseBorder.copyWith(borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.9), width: 1.1)),
+        focusedErrorBorder: baseBorder.copyWith(borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.9), width: 1.1)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        errorStyle: GoogleFonts.poppins(
-          color: Colors.redAccent.withOpacity(0.95),
-          fontSize: 11.5,
-        ),
+        errorStyle: GoogleFonts.poppins(color: Colors.redAccent.withOpacity(0.95), fontSize: 11.5),
       ),
     );
   }
 }
 
 class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({
-    required this.text,
-    required this.onTap,
-    required this.loading,
-  });
-
+  const _PrimaryButton({required this.text, required this.onTap, required this.loading});
   final String text;
   final VoidCallback onTap;
   final bool loading;
@@ -505,18 +502,9 @@ class _PrimaryButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFFFD166), // warm gold
-              Color(0xFFFF7A18), // orange spice
-            ],
-          ),
+          gradient: const LinearGradient(colors: [Color(0xFFFFD166), Color(0xFFFF7A18)]),
           boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF7A18).withOpacity(0.28),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
+            BoxShadow(color: const Color(0xFFFF7A18).withOpacity(0.28), blurRadius: 18, offset: const Offset(0, 10)),
           ],
         ),
         child: ElevatedButton(
@@ -529,19 +517,8 @@ class _PrimaryButton extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: loading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.black),
-                )
-              : Text(
-                  text,
-                  style: GoogleFonts.poppins(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.2,
-                  ),
-                ),
+              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.black))
+              : Text(text, style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w800, letterSpacing: 0.2)),
         ),
       ),
     );
@@ -549,11 +526,7 @@ class _PrimaryButton extends StatelessWidget {
 }
 
 class _GoogleButton extends StatelessWidget {
-  const _GoogleButton({
-    required this.onTap,
-    required this.loading,
-  });
-
+  const _GoogleButton({required this.onTap, required this.loading});
   final VoidCallback onTap;
   final bool loading;
 
@@ -575,27 +548,11 @@ class _GoogleButton extends StatelessWidget {
             Container(
               width: 26,
               height: 26,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.92),
-              ),
-              child: Center(
-                child: Text(
-                  'G',
-                  style: GoogleFonts.poppins(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.92)),
+              child: Center(child: Text('G', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w900))),
             ),
             const SizedBox(width: 10),
-            Text(
-              'Sign in with Google',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            Text('Sign in with Google', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
           ],
         ),
       ),

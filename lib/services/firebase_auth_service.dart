@@ -1,116 +1,95 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+class AuthFailure implements Exception {
+  final String message;
+  AuthFailure(this.message);
+}
+
 class FirebaseAuthService {
-  FirebaseAuthService({
-    FirebaseAuth? firebaseAuth,
-    GoogleSignIn? googleSignIn,
-  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
+  User? get currentUser => _firebaseAuth.currentUser;
 
-  Stream<User?> authStateChanges() => _auth.authStateChanges();
+  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  User? get currentUser => _auth.currentUser;
-
-  Future<UserCredential> signInWithEmailPassword({
+  Future<User?> signInWithEmailPassword({
     required String email,
     required String password,
   }) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
         password: password,
       );
+      return credential.user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(_friendlyMessage(e));
+      throw AuthFailure(_mapFirebaseError(e));
+    } catch (e) {
+      throw AuthFailure("Login failed. Please try again.");
     }
   }
 
-  Future<UserCredential> signUpWithEmailPassword({
+  Future<User?> signUpWithEmailPassword({
     required String email,
     required String password,
   }) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
+      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
         password: password,
       );
+      return credential.user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(_friendlyMessage(e));
+      throw AuthFailure(_mapFirebaseError(e));
+    } catch (e) {
+      throw AuthFailure("Registration failed. Please try again.");
     }
   }
 
-  Future<UserCredential> signInWithGoogle() async {
+  Future<User?> signInWithGoogle() async {
     try {
-      // Ensures a clean attempt if a previous sign-in was partially completed
-      await _googleSignIn.signOut();
-
+      // 1. Trigger flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        // User cancelled the flow
-        throw const AuthFailure('Sign-in cancelled.');
-      }
+      if (googleUser == null) return null; // User cancelled
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      // 2. Get auth details
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
+      // 3. Create credential
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      return await _auth.signInWithCredential(credential);
+      // 4. Sign in
+      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(_friendlyMessage(e));
-    } on AuthFailure {
-      rethrow;
-    } catch (_) {
-      throw const AuthFailure('Google sign-in failed. Please try again.');
+      throw AuthFailure(e.message ?? "Google Sign-In failed");
+    } catch (e) {
+      throw AuthFailure("Google Sign-In failed: $e");
     }
   }
 
   Future<void> signOut() async {
-    try {
-      await _auth.signOut();
-      await _googleSignIn.signOut();
-    } catch (_) {
-      // ignore
-    }
+    await _googleSignIn.signOut();
+    await _firebaseAuth.signOut();
   }
 
-  String _friendlyMessage(FirebaseAuthException e) {
+  String _mapFirebaseError(FirebaseAuthException e) {
     switch (e.code) {
-      case 'invalid-email':
-        return 'That email address is not valid.';
-      case 'user-disabled':
-        return 'This user account has been disabled.';
       case 'user-not-found':
-        return 'No account found for that email.';
       case 'wrong-password':
-        return 'Incorrect password. Please try again.';
+      case 'invalid-credential':
+        return 'Invalid email or password.';
       case 'email-already-in-use':
-        return 'That email is already in use.';
+        return 'Email is already registered.';
       case 'weak-password':
-        return 'Your password is too weak.';
-      case 'operation-not-allowed':
-        return 'This sign-in method is not enabled.';
-      case 'account-exists-with-different-credential':
-        return 'An account already exists with a different sign-in method.';
-      case 'network-request-failed':
-        return 'Network error. Check your connection and try again.';
+        return 'Password is too weak.';
       default:
-        return e.message ?? 'Authentication failed. Please try again.';
+        return e.message ?? 'Authentication error.';
     }
   }
-}
-
-class AuthFailure implements Exception {
-  const AuthFailure(this.message);
-  final String message;
-
-  @override
-  String toString() => 'AuthFailure(message: $message)';
 }
