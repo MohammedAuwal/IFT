@@ -12,6 +12,10 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final variantText = product.variants.isEmpty
+        ? 'No variants'
+        : product.variants.join(', ');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
       appBar: AppBar(
@@ -63,22 +67,39 @@ class ProductDetailScreen extends StatelessWidget {
               color: const Color(0xFFC29B40),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+          Text(
+            product.inStock ? 'Available now' : 'Currently unavailable',
+            style: GoogleFonts.poppins(
+              color: product.inStock ? Colors.green : Colors.redAccent,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Category',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(product.category, style: GoogleFonts.poppins()),
+          const SizedBox(height: 18),
+          Text(
+            'Variants',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(variantText, style: GoogleFonts.poppins()),
+          const SizedBox(height: 18),
           Text(
             'Description',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1D1D1F),
-            ),
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
             product.description,
             style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.black87,
               height: 1.6,
+              color: Colors.black87,
             ),
           ),
           const SizedBox(height: 28),

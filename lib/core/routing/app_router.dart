@@ -1,33 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:mix/features/auth/presentation/screens/login_screen.dart';
+import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
+import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
+import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
 import 'package:mix/features/splash/presentation/screens/splash_screen.dart';
 
 class AppRouter {
-  static const String splash = '/';
-  static const String login = '/login';
-  static const String home = '/home';
-  static const String admin = '/admin';
-
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case splash:
+      case RouteNames.splash:
         return _route(const _NoExitScreen(child: SplashScreen()));
-      case login:
+      case RouteNames.login:
         return _route(const _NoExitScreen(child: LoginScreen()));
-      case home:
+      case RouteNames.home:
         return _route(_NoExitScreen(child: ProductListScreen()));
-      case admin:
+      case RouteNames.admin:
         return _route(_NoExitScreen(child: AdminDashboardScreen()));
+      case RouteNames.cart:
+        return _route(_NoExitScreen(child: CartScreen()));
+      case RouteNames.orders:
+        return _route(_NoExitScreen(child: OrderScreen()));
+      case RouteNames.profile:
+        return _route(_NoExitScreen(child: ProfileScreen()));
       default:
         return _route(
-          const _NoExitScreen(
-            child: Scaffold(
-              body: Center(
-                child: Text('Page not found'),
-              ),
-            ),
+          const Scaffold(
+            body: Center(child: Text('Page not found')),
           ),
         );
     }
@@ -37,29 +38,15 @@ class AppRouter {
     return MaterialPageRoute(builder: (_) => child);
   }
 
-  static Future<void> goToLogin(BuildContext context) async {
-    await Navigator.of(context).pushNamedAndRemoveUntil(login, (route) => false);
-  }
-
-  static Future<void> goToHome(BuildContext context) async {
-    await Navigator.of(context).pushNamedAndRemoveUntil(home, (route) => false);
-  }
-
-  static Future<void> goToAdmin(BuildContext context) async {
-    await Navigator.of(context).pushNamedAndRemoveUntil(admin, (route) => false);
-  }
-
-  static Future<void> goToSplash(BuildContext context) async {
-    await Navigator.of(context).pushNamedAndRemoveUntil(splash, (route) => false);
+  static Future<void> clearAndGo(BuildContext context, String route) async {
+    await Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
   }
 }
 
 class _NoExitScreen extends StatelessWidget {
   final Widget child;
 
-  const _NoExitScreen({
-    required this.child,
-  });
+  const _NoExitScreen({required this.child});
 
   @override
   Widget build(BuildContext context) {

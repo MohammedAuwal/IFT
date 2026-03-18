@@ -4,10 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
 import 'package:mix/services/firebase_auth_service.dart';
+import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _authService = FirebaseAuthService();
+  final _firebaseService = FirebaseService();
   final _repo = ProductRepository();
   final _cloudinaryService = CloudinaryService();
   final _imageService = ImagePickService();
@@ -26,13 +29,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
+  final _categoryCtrl = TextEditingController();
+  final _variantsCtrl = TextEditingController();
+
+  final _adminUidCtrl = TextEditingController();
+  final _adminEmailCtrl = TextEditingController();
+
+  bool _featured = false;
+  bool _inStock = true;
 
   File? _selectedImage;
   bool _loading = false;
+  bool _addingAdmin = false;
+
+  bool get _isSuperAdmin =>
+      FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
 
   Future<void> _pickImage() async {
     final file = await _imageService.pickImageWithFallback();
-
     if (file == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -40,13 +54,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
       return;
     }
-
     setState(() => _selectedImage = file);
   }
 
   Future<void> _uploadProduct() async {
     final name = _nameCtrl.text.trim();
     final description = _descCtrl.text.trim();
+    final category = _categoryCtrl.text.trim().isEmpty ? 'General' : _categoryCtrl.text.trim();
+    final variants = _variantsCtrl.text
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
     final price = double.tryParse(_priceCtrl.text.trim());
 
     if (name.isEmpty || description.isEmpty || price == null || _selectedImage == null) {
@@ -63,7 +82,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     try {
       final imageUrl = await _cloudinaryService.uploadImage(_selectedImage!);
-
       final id = DateTime.now().millisecondsSinceEpoch.toString();
 
       final product = ProductModel(
@@ -74,6 +92,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         imageUrl: imageUrl,
         createdBy: user.uid,
         createdAt: DateTime.now(),
+        category: category,
+        featured: _featured,
+        inStock: _inStock,
+        variants: variants,
       );
 
       await _repo.addProduct(product);
@@ -81,8 +103,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       _nameCtrl.clear();
       _descCtrl.clear();
       _priceCtrl.clear();
+      _categoryCtrl.clear();
+      _variantsCtrl.clear();
 
-      setState(() => _selectedImage = null);
+      setState(() {
+        _selectedImage = null;
+        _featured = false;
+        _inStock = true;
+      });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,11 +126,46 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
+  Future<void> _addAdmin() async {
+    final uid = _adminUidCtrl.text.trim();
+    final email = _adminEmailCtrl.text.trim();
+
+    if (uid.isEmpty || email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Admin UID and email are required')),
+      );
+      return;
+    }
+
+    setState(() => _addingAdmin = true);
+    try {
+      await _firebaseService.addAdmin(uid: uid, email: email);
+      _adminUidCtrl.clear();
+      _adminEmailCtrl.clear();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Admin added successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add admin: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _addingAdmin = false);
+    }
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _priceCtrl.dispose();
+    _categoryCtrl.dispose();
+    _variantsCtrl.dispose();
+    _adminUidCtrl.dispose();
+    _adminEmailCtrl.dispose();
     super.dispose();
   }
 
@@ -121,7 +184,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Admin Dashboard',
+              _isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard',
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
@@ -150,13 +213,96 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: card,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white10),
+          if (_isSuperAdmin) ...[
+            _sectionCard(
+              card,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Add Admin',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _Field(controller: _adminUidCtrl, hint: 'Admin UID'),
+                  const SizedBox(height: 12),
+                  _Field(controller: _adminEmailCtrl, hint: 'Admin Email'),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _addingAdmin ? null : _addAdmin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: gold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _addingAdmin
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              'Add Admin',
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Current Admins',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: _firebaseService.watchAdmins(),
+                    builder: (context, snapshot) {
+                      final admins = snapshot.data ?? [];
+                      if (admins.isEmpty) {
+                        return Text(
+                          'No extra admins yet',
+                          style: GoogleFonts.poppins(color: Colors.white54),
+                        );
+                      }
+
+                      return Column(
+                        children: admins.map((admin) {
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              admin['email'] ?? '',
+                              style: GoogleFonts.poppins(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              admin['uid'] ?? '',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 18),
+          ],
+          _sectionCard(
+            card,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -179,6 +325,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
+                _Field(controller: _categoryCtrl, hint: 'Category e.g Spices'),
+                const SizedBox(height: 12),
+                _Field(controller: _variantsCtrl, hint: 'Variants comma separated e.g Small, Medium'),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _featured,
+                  onChanged: (v) => setState(() => _featured = v),
+                  title: Text('Featured', style: GoogleFonts.poppins(color: Colors.white)),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _inStock,
+                  onChanged: (v) => setState(() => _inStock = v),
+                  title: Text('In stock', style: GoogleFonts.poppins(color: Colors.white)),
+                ),
                 GestureDetector(
                   onTap: _pickImage,
                   child: Container(
@@ -317,7 +479,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        '₦${product.price.toStringAsFixed(2)}',
+                        '₦${product.price.toStringAsFixed(2)} • ${product.category}',
                         style: GoogleFonts.poppins(color: gold),
                       ),
                       trailing: IconButton(
@@ -334,6 +496,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _sectionCard(Color card, {required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: child,
     );
   }
 }

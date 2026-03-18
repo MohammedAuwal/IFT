@@ -1,13 +1,30 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/services/firebase_auth_service.dart';
+import 'package:mix/services/image_pick_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   ProfileScreen({super.key});
 
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
   final _authService = FirebaseAuthService();
+  final _imageService = ImagePickService();
+
+  File? _localImage;
+
+  Future<void> _pickProfileImage() async {
+    final file = await _imageService.pickImageWithFallback();
+    if (file == null) return;
+    setState(() => _localImage = file);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,16 +71,22 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: const Color(0xFFC29B40),
-                  child: Text(
-                    initial,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 24,
-                    ),
+                GestureDetector(
+                  onTap: _pickProfileImage,
+                  child: CircleAvatar(
+                    radius: 32,
+                    backgroundColor: const Color(0xFFC29B40),
+                    backgroundImage: _localImage != null ? FileImage(_localImage!) : null,
+                    child: _localImage == null
+                        ? Text(
+                            initial,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 24,
+                            ),
+                          )
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 14),
