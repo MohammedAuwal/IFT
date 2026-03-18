@@ -58,7 +58,6 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     try {
-      // Step 1: Check internet
       final hasInternet = await ConnectivityService.hasInternet();
 
       if (!hasInternet) {
@@ -72,7 +71,6 @@ class _SplashScreenState extends State<SplashScreen>
         return;
       }
 
-      // Step 2: Initialize Firebase with timeout
       await Firebase.initializeApp().timeout(
         const Duration(seconds: 8),
         onTimeout: () {
@@ -80,12 +78,9 @@ class _SplashScreenState extends State<SplashScreen>
         },
       );
 
-      // Step 3: Minimum splash display for branding
       await Future.delayed(const Duration(milliseconds: 1500));
 
       if (!mounted) return;
-
-      // Step 4: Navigate based on auth
       await _resolveNavigation();
     } on TimeoutException {
       if (!mounted) return;
@@ -94,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
         _hasError = true;
         _errorMessage = 'Connection timed out.\nPlease try again.';
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -111,13 +106,11 @@ class _SplashScreenState extends State<SplashScreen>
     final firebaseService = FirebaseService();
     final user = firebaseService.currentUser;
 
-    // Not logged in → Login
     if (user == null) {
       await AppRouter.clearAndGo(context, RouteNames.login);
       return;
     }
 
-    // Logged in → setup profile and sync cart (non-critical)
     try {
       await firebaseService.ensureUserProfile().timeout(
             const Duration(seconds: 5),
@@ -125,13 +118,10 @@ class _SplashScreenState extends State<SplashScreen>
       await firebaseService.syncLocalCartToFirestore().timeout(
             const Duration(seconds: 5),
           );
-    } catch (_) {
-      // Non-critical — continue even if these fail
-    }
+    } catch (_) {}
 
     if (!mounted) return;
 
-    // Check admin status
     try {
       final isAdmin = await firebaseService.isAdmin().timeout(
             const Duration(seconds: 5),
@@ -145,7 +135,6 @@ class _SplashScreenState extends State<SplashScreen>
         await AppRouter.clearAndGo(context, RouteNames.mainShell);
       }
     } catch (_) {
-      // Default to main shell if admin check fails
       if (!mounted) return;
       await AppRouter.clearAndGo(context, RouteNames.mainShell);
     }
@@ -171,7 +160,6 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -185,8 +173,6 @@ class _SplashScreenState extends State<SplashScreen>
               ),
             ),
           ),
-
-          // Glow blobs
           Positioned(
             top: -90,
             left: -50,
@@ -211,8 +197,6 @@ class _SplashScreenState extends State<SplashScreen>
               color: orange.withOpacity(0.28),
             ),
           ),
-
-          // Main content
           SafeArea(
             child: Center(
               child: FadeTransition(
@@ -222,7 +206,6 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo circle with M
                       Container(
                         width: 82,
                         height: 82,
@@ -250,8 +233,6 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       const SizedBox(height: 18),
-
-                      // Mix title
                       Text(
                         'Mix',
                         style: GoogleFonts.poppins(
@@ -261,8 +242,6 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       const SizedBox(height: 10),
-
-                      // Maamah's Mix
                       Text(
                         "Maamah's Mix",
                         style: GoogleFonts.playfairDisplay(
@@ -272,8 +251,6 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      // Subtitle
                       Text(
                         'Premium African spices, flours & traditional foods',
                         textAlign: TextAlign.center,
@@ -283,8 +260,6 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       const SizedBox(height: 36),
-
-                      // Loading or Error section
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 400),
                         child: _hasError
@@ -321,7 +296,6 @@ class _SplashScreenState extends State<SplashScreen>
       key: const ValueKey('error'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Wifi off icon
         Container(
           width: 48,
           height: 48,
@@ -336,8 +310,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ),
         const SizedBox(height: 16),
-
-        // Error message
         Text(
           _errorMessage,
           textAlign: TextAlign.center,
@@ -348,8 +320,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ),
         const SizedBox(height: 24),
-
-        // Retry button
         GestureDetector(
           onTap: _retry,
           child: Container(

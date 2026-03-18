@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mix/app.dart';
+import 'package:mix/config/routes/route_names.dart';
+import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
@@ -18,18 +21,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   final _firebaseService = FirebaseService();
   int _currentIndex = 0;
+  bool _isAdmin = false;
+  bool _loadingRole = true;
 
   late final List<Widget> _screens = [
     ProductListScreen(showBottomNav: false),
     CartScreen(showScaffold: false),
     OrderScreen(showScaffold: false),
-    ProfileScreen(showScaffold: false),
+    const ProfileScreen(showScaffold: false),
   ];
 
   @override
   void initState() {
     super.initState();
     _loadTab();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    final isAdmin = await _firebaseService.isAdmin();
+    if (!mounted) return;
+    setState(() {
+      _isAdmin = isAdmin;
+      _loadingRole = false;
+    });
   }
 
   Future<void> _loadTab() async {
@@ -44,8 +59,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
     await prefs.setInt(_tabKey, index);
   }
 
+  Future<void> _backToAdmin() async {
+    _AdminPreviewScope.of(context).exitPreviewMode();
+    if (!mounted) return;
+    await AppRouter.clearAndGo(context, RouteNames.admin);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final previewController = _AdminPreviewScope.of(context);
+
     return StreamBuilder<int>(
       stream: _firebaseService.watchCartCount(),
       builder: (context, cartSnapshot) {
@@ -57,9 +80,67 @@ class _MainShellScreenState extends State<MainShellScreen> {
             final favCount = favSnapshot.data?.length ?? 0;
 
             return Scaffold(
-              body: IndexedStack(
-                index: _currentIndex,
-                children: _screens,
+              body: Column(
+                children: [
+                  if (!_loadingRole && _isAdmin && previewController.isPreviewMode)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFC29B40),
+                            Color(0xFFE0B95A),
+                          ],
+                        ),
+                      ),
+                      child: SafeArea(
+                        bottom: false,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.visibility_rounded,
+                              color: Colors.black,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Preview Mode (User View)',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _backToAdmin,
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                              child: const Text('Back to Admin'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: IndexedStack(
+                      index: _currentIndex,
+                      children: _screens,
+                    ),
+                  ),
+                ],
               ),
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: _currentIndex,

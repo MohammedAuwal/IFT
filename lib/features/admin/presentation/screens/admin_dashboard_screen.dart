@@ -2,7 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mix/app.dart';
+import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/features/admin/presentation/screens/add_product_screen.dart';
 import 'package:mix/features/admin/presentation/screens/admin_orders_screen.dart';
 import 'package:mix/features/admin/presentation/screens/admin_rides_screen.dart';
@@ -14,7 +17,7 @@ import 'package:mix/services/firebase_auth_service.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
-  AdminDashboardScreen({super.key});
+  const AdminDashboardScreen({super.key});
 
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
@@ -29,6 +32,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _adminEmailCtrl = TextEditingController();
 
   bool _addingAdmin = false;
+  bool _loggingOut = false;
 
   bool get _isSuperAdmin =>
       FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
@@ -39,7 +43,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     if (uid.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Admin UID and email are required')),
+        const SnackBar(
+          content: Text('Admin UID and email are required'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -52,15 +59,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Admin added successfully')),
+        const SnackBar(
+          content: Text('Admin added successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add admin: $e')),
+        SnackBar(
+          content: Text('Failed to add admin: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       if (mounted) setState(() => _addingAdmin = false);
+    }
+  }
+
+  Future<void> _switchToUserView() async {
+    _AdminPreviewScope.of(context).enterPreviewMode();
+    if (!mounted) return;
+    await AppRouter.clearAndGo(context, RouteNames.mainShell);
+  }
+
+  Future<void> _logout() async {
+    if (_loggingOut) return;
+    setState(() => _loggingOut = true);
+
+    try {
+      _AdminPreviewScope.of(context).reset();
+      await _authService.signOut();
+      if (!mounted) return;
+      await AppRouter.clearAndGo(context, RouteNames.login);
+    } finally {
+      if (mounted) setState(() => _loggingOut = false);
     }
   }
 
@@ -102,9 +135,37 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ],
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: TextButton.icon(
+              onPressed: _switchToUserView,
+              icon: const Icon(
+                Icons.visibility_outlined,
+                color: Color(0xFFC29B40),
+                size: 18,
+              ),
+              label: Text(
+                'User View',
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFFC29B40),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
           IconButton(
-            onPressed: () async => _authService.signOut(),
-            icon: const Icon(Icons.logout_rounded, color: Colors.white),
+            onPressed: _loggingOut ? null : _logout,
+            icon: _loggingOut
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.logout_rounded, color: Colors.white),
           ),
         ],
       ),
@@ -122,6 +183,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: gold.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: gold.withOpacity(0.25)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: gold,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'You are in admin mode. Switch to User View to preview the customer experience.',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           StreamBuilder<int>(
             stream: _firebaseService.watchProductsCount(),
             builder: (context, pSnap) {
@@ -196,7 +284,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   title: 'Add Product',
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const AddProductScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const AddProductScreen(),
+                      ),
                     );
                   },
                 ),
@@ -208,7 +298,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   title: 'Orders',
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => AdminOrdersScreen(),
+                      ),
                     );
                   },
                 ),
@@ -224,7 +316,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   title: 'Categories',
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ManageCategoriesScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ManageCategoriesScreen(),
+                      ),
                     );
                   },
                 ),
@@ -236,7 +330,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   title: 'Rides',
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AdminRidesScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => AdminRidesScreen(),
+                      ),
                     );
                   },
                 ),
@@ -283,7 +379,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             )
                           : Text(
                               'Add Admin',
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                     ),
                   ),
@@ -389,7 +487,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             width: 56,
                             height: 56,
                             color: Colors.white10,
-                            child: const Icon(Icons.image_not_supported, color: Colors.white54),
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.white54,
+                            ),
                           ),
                         ),
                       ),
@@ -411,17 +512,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => EditProductScreen(product: product),
+                                  builder: (_) =>
+                                      EditProductScreen(product: product),
                                 ),
                               );
                             },
-                            icon: const Icon(Icons.edit_rounded, color: Colors.white70),
+                            icon: const Icon(
+                              Icons.edit_rounded,
+                              color: Colors.white70,
+                            ),
                           ),
                           IconButton(
                             onPressed: () async {
                               await _repo.deleteProduct(product.id);
                             },
-                            icon: const Icon(Icons.delete_rounded, color: Colors.redAccent),
+                            icon: const Icon(
+                              Icons.delete_rounded,
+                              color: Colors.redAccent,
+                            ),
                           ),
                         ],
                       ),
@@ -522,7 +630,10 @@ class _ActionCard extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: Colors.white54,
+        ),
       ),
     );
   }

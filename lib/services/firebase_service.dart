@@ -122,7 +122,9 @@ class FirebaseService {
       final rides = snapshot.docs
           .map((doc) => RideModel.fromMap(doc.id, doc.data()))
           .where(
-              (ride) => ride.status != 'completed' && ride.status != 'cancelled')
+            (ride) =>
+                ride.status != 'completed' && ride.status != 'cancelled',
+          )
           .toList();
       return rides.length;
     });
@@ -221,7 +223,6 @@ class FirebaseService {
     final snap = await ref.get();
 
     if (!snap.exists) {
-      // New user — create full profile
       await ref.set({
         'uid': user.uid,
         'email': user.email ?? '',
@@ -233,25 +234,21 @@ class FirebaseService {
         'createdAt': DateTime.now().toIso8601String(),
       });
     } else {
-      // Existing user — update displayName and photo if changed
       final data = snap.data() ?? {};
       final updates = <String, dynamic>{};
 
-      // Update displayName if Firebase Auth has a newer one
       if (user.displayName != null &&
           user.displayName!.isNotEmpty &&
           data['displayName'] != user.displayName) {
         updates['displayName'] = user.displayName;
       }
 
-      // Update photo if Firebase Auth has a newer one
       if (user.photoURL != null &&
           user.photoURL!.isNotEmpty &&
           data['photoUrl'] != user.photoURL) {
         updates['photoUrl'] = user.photoURL;
       }
 
-      // Update email if changed
       if (user.email != null &&
           user.email!.isNotEmpty &&
           data['email'] != user.email) {
@@ -401,8 +398,6 @@ class FirebaseService {
 
     final ref = _userDoc(user.uid);
     await ref.set({'cart': localCart}, SetOptions(merge: true));
-
-    // Clear local cart after sync
     await _saveLocalCart([]);
   }
 
