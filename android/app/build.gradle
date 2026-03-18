@@ -38,8 +38,3 @@ android {
         }
     }
 }
-
-dependencies {
-    // Basic AndroidX core for Flutter compatibility
-    implementation "androidx.core:core-ktx:1.13.1"
-}
