@@ -6,6 +6,7 @@ import 'package:mix/services/firebase_auth_service.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   ProfileScreen({super.key});
@@ -261,6 +262,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         )),
                   ],
                 ),
+              ),
+              _ProfileTile(
+                icon: Icons.favorite_border_rounded,
+                title: 'Favorites',
+                subtitle: 'View all your favorite products',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => FavoritesScreen()),
+                  );
+                },
               ),
               _ProfileTile(
                 icon: Icons.support_agent_rounded,

@@ -7,6 +7,8 @@ import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
+import 'package:mix/features/shared/presentation/widgets/app_shimmer_loader.dart';
+import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/firebase_service.dart';
 
@@ -168,6 +170,42 @@ class _ProductListScreenState extends State<ProductListScreen> {
               child: StreamBuilder<List<ProductModel>>(
                 stream: _repo.watchProducts(),
                 builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return GridView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: 6,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.70,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemBuilder: (_, __) {
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: AppShimmerLoader(
+                                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              AppShimmerLoader(height: 14, width: 100),
+                              SizedBox(height: 8),
+                              AppShimmerLoader(height: 12, width: 70),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  }
+
                   final items = snapshot.data ?? [];
 
                   final filtered = items.where((p) {
@@ -182,16 +220,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     return matchesSearch && matchesCategory;
                   }).toList();
 
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
                   if (filtered.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No products found',
-                        style: GoogleFonts.poppins(color: Colors.black54),
-                      ),
+                    return const EmptyStateCard(
+                      icon: Icons.inventory_2_outlined,
+                      title: 'No products found',
+                      subtitle: 'Try another search or category.',
                     );
                   }
 

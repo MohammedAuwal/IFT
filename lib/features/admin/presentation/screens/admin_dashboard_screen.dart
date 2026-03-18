@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/features/admin/presentation/screens/add_product_screen.dart';
 import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart';
+import 'package:mix/features/admin/presentation/screens/admin_orders_screen.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/firebase_auth_service.dart';
@@ -84,6 +85,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
+                );
+              },
+              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
+              label: Text(
+                'Manage Orders',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white24),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
             Text(
               _isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard',
               style: GoogleFonts.poppins(
@@ -127,14 +147,53 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         label: const Text('Add Product'),
       ),
       body: ListView(
+        
         padding: const EdgeInsets.all(16),
         children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
+                );
+              },
+              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
+              label: Text(
+                'Manage Orders',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white24),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
           if (_isSuperAdmin) ...[
             _sectionCard(
               card,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
+                );
+              },
+              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
+              label: Text(
+                'Manage Orders',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white24),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
                   Text(
                     'Add Admin',
                     style: GoogleFonts.poppins(
@@ -292,6 +351,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => AdminOrdersScreen()),
+                );
+              },
+              icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
+              label: Text(
+                'Manage Orders',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white24),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
                           IconButton(
                             onPressed: () {
                               Navigator.of(context).push(

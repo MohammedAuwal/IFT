@@ -6,4 +6,7 @@ class RouteNames {
   static const cart = '/cart';
   static const orders = '/orders';
   static const profile = '/profile';
+  static const favorites = '/favorites';
+  static const addProduct = '/add-product';
+  static const adminOrders = '/admin-orders';
 }

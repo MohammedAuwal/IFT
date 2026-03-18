@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mix/config/routes/route_names.dart';
+import 'package:mix/features/admin/presentation/screens/add_product_screen.dart';
 import 'package:mix/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:mix/features/admin/presentation/screens/admin_orders_screen.dart';
 import 'package:mix/features/auth/presentation/screens/login_screen.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
+import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
@@ -25,6 +28,12 @@ class AppRouter {
         return _route(_NoExitScreen(child: OrderScreen()));
       case RouteNames.profile:
         return _route(_NoExitScreen(child: ProfileScreen()));
+      case RouteNames.favorites:
+        return _route(_NoExitScreen(child: FavoritesScreen()));
+      case RouteNames.addProduct:
+        return _route(const AddProductScreen());
+      case RouteNames.adminOrders:
+        return _route(AdminOrdersScreen());
       default:
         return _route(
           const Scaffold(

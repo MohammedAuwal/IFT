@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/features/orders/presentation/screens/order_detail_screen.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class OrderScreen extends StatelessWidget {
@@ -44,54 +45,63 @@ class OrderScreen extends StatelessWidget {
               final order = orders[i];
               final isDelivered = order.status == 'delivered';
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: isDelivered
-                          ? Colors.green.withOpacity(0.15)
-                          : Colors.orange.withOpacity(0.15),
-                      child: Icon(
-                        Icons.receipt_long_rounded,
-                        color: isDelivered ? Colors.green : Colors.orange,
-                      ),
+              return GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => OrderDetailScreen(order: order),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            order.id,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: isDelivered
+                            ? Colors.green.withOpacity(0.15)
+                            : Colors.orange.withOpacity(0.15),
+                        child: Icon(
+                          Icons.receipt_long_rounded,
+                          color: isDelivered ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.id,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            order.status,
-                            style: GoogleFonts.poppins(
-                              color: isDelivered ? Colors.green : Colors.orange,
-                              fontSize: 12,
+                            const SizedBox(height: 4),
+                            Text(
+                              order.status,
+                              style: GoogleFonts.poppins(
+                                color: isDelivered ? Colors.green : Colors.orange,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    Text(
-                      '₦${order.totalAmount.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFFC29B40),
+                      Text(
+                        '₦${order.totalAmount.toStringAsFixed(2)}',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFC29B40),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -50,20 +51,23 @@ class _SplashScreenState extends State<SplashScreen>
     final user = _firebaseService.currentUser;
 
     if (user == null) {
-      await AppRouter.clearAndGo(context, '/login');
+      await AppRouter.clearAndGo(context, RouteNames.login);
       return;
     }
+
+    await _firebaseService.ensureUserProfile();
+    await _firebaseService.syncLocalCartToFirestore();
 
     final admin = await _firebaseService.isAdmin();
 
     if (!mounted) return;
 
     if (admin) {
-      await AppRouter.clearAndGo(context, '/admin');
+      await AppRouter.clearAndGo(context, RouteNames.admin);
       return;
     }
 
-    await AppRouter.clearAndGo(context, '/home');
+    await AppRouter.clearAndGo(context, RouteNames.home);
   }
 
   @override

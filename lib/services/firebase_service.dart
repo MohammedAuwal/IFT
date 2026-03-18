@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/product_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FirebaseService {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -148,6 +151,26 @@ class FirebaseService {
     });
   }
 
+  Stream<List<ProductModel>> watchFavoriteProducts() {
+    final user = currentUser;
+    if (user == null) return Stream.value([]);
+
+    return _userDoc(user.uid).snapshots().asyncMap((doc) async {
+      final data = doc.data();
+      final ids = List<String>.from(data?['favorites'] ?? []);
+      if (ids.isEmpty) return <ProductModel>[];
+
+      final snapshot = await firestore
+          .collection(AppConstants.productsCollection)
+          .get();
+
+      return snapshot.docs
+          .where((doc) => ids.contains(doc.id))
+          .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
+          .toList();
+    });
+  }
+
   Future<void> toggleFavorite(String productId) async {
     final user = currentUser;
     if (user == null) return;
@@ -182,6 +205,30 @@ class FirebaseService {
     });
   }
 
+  Future<void> _saveLocalCart(List<Map<String, dynamic>> cart) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('mix_local_cart', jsonEncode(cart));
+  }
+
+  Future<List<Map<String, dynamic>>> getLocalCart() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('mix_local_cart');
+    if (raw == null || raw.isEmpty) return [];
+    final decoded = jsonDecode(raw) as List;
+    return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  Future<void> syncLocalCartToFirestore() async {
+    final user = currentUser;
+    if (user == null) return;
+
+    final localCart = await getLocalCart();
+    if (localCart.isEmpty) return;
+
+    final ref = _userDoc(user.uid);
+    await ref.set({'cart': localCart}, SetOptions(merge: true));
+  }
+
   Future<void> addToCart({
     required String productId,
     required String name,
@@ -189,7 +236,29 @@ class FirebaseService {
     required String imageUrl,
   }) async {
     final user = currentUser;
-    if (user == null) return;
+
+    if (user == null) {
+      final local = await getLocalCart();
+      final index = local.indexWhere((e) => e['productId'] == productId);
+
+      if (index >= 0) {
+        local[index] = {
+          ...local[index],
+          'qty': ((local[index]['qty'] ?? 1) as int) + 1,
+        };
+      } else {
+        local.add({
+          'productId': productId,
+          'name': name,
+          'price': price,
+          'imageUrl': imageUrl,
+          'qty': 1,
+        });
+      }
+
+      await _saveLocalCart(local);
+      return;
+    }
 
     final ref = _userDoc(user.uid);
     final snap = await ref.get();
@@ -251,7 +320,10 @@ class FirebaseService {
 
   Future<void> clearCart() async {
     final user = currentUser;
-    if (user == null) return;
+    if (user == null) {
+      await _saveLocalCart([]);
+      return;
+    }
 
     await _userDoc(user.uid).set({
       'cart': [],
@@ -269,6 +341,25 @@ class FirebaseService {
         .map((snapshot) => snapshot.docs
             .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
             .toList());
+  }
+
+  Stream<List<OrderModel>> watchAllOrders() {
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  Future<void> updateOrderStatus({
+    required String orderId,
+    required String status,
+  }) async {
+    await firestore.collection(AppConstants.ordersCollection).doc(orderId).set({
+      'status': status,
+    }, SetOptions(merge: true));
   }
 
   Future<void> placeOrder(List<Map<String, dynamic>> cart) async {
