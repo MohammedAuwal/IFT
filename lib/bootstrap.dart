@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 
-import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/admin/presentation/screens/admin_dashboard_screen.dart';
-import 'features/products/presentation/screens/product_list_screen.dart';
-import 'services/firebase_auth_service.dart';
+import 'package:mix/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:mix/features/auth/presentation/screens/login_screen.dart';
+import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
+import 'package:mix/services/firebase_auth_service.dart';
 
 const String kAdminUid = 'PUT_ADMIN_UID_HERE';
 
@@ -21,6 +21,7 @@ class MixBootstrap extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const MaterialApp(
+            debugShowCheckedModeBanner: false,
             home: Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
@@ -39,6 +40,7 @@ class MixBootstrap extends StatelessWidget {
               }
 
               final user = snap.data;
+
               if (user == null) {
                 return const LoginScreen();
               }

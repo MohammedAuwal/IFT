@@ -1,11 +1,11 @@
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../../../../services/firebase_auth_service.dart';
-import '../../../../admin/presentation/screens/admin_dashboard_screen.dart';
-import '../../../../products/presentation/screens/product_list_screen.dart';
+import '../../../../services/firebase_auth_service.dart';
+import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
+import '../../../products/presentation/screens/product_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
 
-  // Replace later with your real admin UID
   final String _adminUid = "PUT_ADMIN_UID_HERE";
 
   bool _obscure = true;
@@ -332,7 +331,11 @@ class _WarmGradientBackground extends StatelessWidget {
 }
 
 class _GlowBlob extends StatelessWidget {
-  const _GlowBlob({required this.diameter, required this.color});
+  const _GlowBlob({
+    required this.diameter,
+    required this.color,
+  });
+
   final double diameter;
   final Color color;
 
@@ -343,14 +346,21 @@ class _GlowBlob extends StatelessWidget {
       child: Container(
         width: diameter,
         height: diameter,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+        ),
       ),
     );
   }
 }
 
 class _BrandHeader extends StatelessWidget {
-  const _BrandHeader({required this.title, required this.subtitle});
+  const _BrandHeader({
+    required this.title,
+    required this.subtitle,
+  });
+
   final String title;
   final String subtitle;
 
@@ -383,6 +393,7 @@ class _BrandHeader extends StatelessWidget {
 
 class _GlassCard extends StatelessWidget {
   const _GlassCard({required this.child});
+
   final Widget child;
 
   @override
@@ -396,7 +407,9 @@ class _GlassCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.10),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withOpacity(0.20)),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.20),
+            ),
           ),
           child: child,
         ),
@@ -428,7 +441,10 @@ class _PremiumTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Colors.white.withOpacity(0.18), width: 1),
+      borderSide: BorderSide(
+        color: Colors.white.withOpacity(0.18),
+        width: 1,
+      ),
     );
 
     return TextFormField(
@@ -440,14 +456,22 @@ class _PremiumTextField extends StatelessWidget {
       cursorColor: const Color(0xFFFFD166),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: GoogleFonts.poppins(color: Colors.white.withOpacity(0.65)),
-        prefixIcon: Icon(prefixIcon, color: Colors.white.withOpacity(0.9)),
+        hintStyle: GoogleFonts.poppins(
+          color: Colors.white.withOpacity(0.65),
+        ),
+        prefixIcon: Icon(
+          prefixIcon,
+          color: Colors.white.withOpacity(0.9),
+        ),
         suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white.withOpacity(0.07),
         enabledBorder: baseBorder,
         focusedBorder: baseBorder.copyWith(
-          borderSide: const BorderSide(color: Color(0xFFFFD166), width: 1.2),
+          borderSide: const BorderSide(
+            color: Color(0xFFFFD166),
+            width: 1.2,
+          ),
         ),
         errorBorder: baseBorder,
         focusedErrorBorder: baseBorder,
@@ -486,7 +510,11 @@ class _PrimaryButton extends StatelessWidget {
 }
 
 class _GoogleButton extends StatelessWidget {
-  const _GoogleButton({required this.onTap, required this.loading});
+  const _GoogleButton({
+    required this.onTap,
+    required this.loading,
+  });
+
   final VoidCallback onTap;
   final bool loading;
 
