@@ -121,7 +121,8 @@ class FirebaseService {
         .map((snapshot) {
       final rides = snapshot.docs
           .map((doc) => RideModel.fromMap(doc.id, doc.data()))
-          .where((ride) => ride.status != 'completed' && ride.status != 'cancelled')
+          .where(
+              (ride) => ride.status != 'completed' && ride.status != 'cancelled')
           .toList();
       return rides.length;
     });
@@ -162,7 +163,8 @@ class FirebaseService {
               return {
                 'type': 'ride',
                 'title': 'Ride: ${doc.id}',
-                'subtitle': '${data['pickup'] ?? ''} → ${data['destination'] ?? ''}',
+                'subtitle':
+                    '${data['pickup'] ?? ''} → ${data['destination'] ?? ''}',
                 'createdAt': data['createdAt'] ?? '',
               };
             }).toList());
@@ -172,7 +174,9 @@ class FirebaseService {
       final rides = await rideStream.first;
 
       final merged = [...products, ...orders, ...rides];
-      merged.sort((a, b) => (b['createdAt'] ?? '').toString().compareTo((a['createdAt'] ?? '').toString()));
+      merged.sort((a, b) => (b['createdAt'] ?? '')
+          .toString()
+          .compareTo((a['createdAt'] ?? '').toString()));
       return merged.take(8).toList();
     });
   }
@@ -182,8 +186,10 @@ class FirebaseService {
         .collection('categories')
         .orderBy('name')
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => (doc.data()['name'] ?? '').toString()).where((e) => e.isNotEmpty).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => (doc.data()['name'] ?? '').toString())
+            .where((e) => e.isNotEmpty)
+            .toList());
   }
 
   Future<void> addCategory(String name) async {
@@ -215,16 +221,46 @@ class FirebaseService {
     final snap = await ref.get();
 
     if (!snap.exists) {
+      // New user — create full profile
       await ref.set({
         'uid': user.uid,
-        'email': user.email,
-        'displayName': user.displayName,
-        'photoUrl': user.photoURL,
+        'email': user.email ?? '',
+        'displayName': user.displayName ?? '',
+        'photoUrl': user.photoURL ?? '',
         'favorites': [],
         'cart': [],
         'addresses': [],
         'createdAt': DateTime.now().toIso8601String(),
       });
+    } else {
+      // Existing user — update displayName and photo if changed
+      final data = snap.data() ?? {};
+      final updates = <String, dynamic>{};
+
+      // Update displayName if Firebase Auth has a newer one
+      if (user.displayName != null &&
+          user.displayName!.isNotEmpty &&
+          data['displayName'] != user.displayName) {
+        updates['displayName'] = user.displayName;
+      }
+
+      // Update photo if Firebase Auth has a newer one
+      if (user.photoURL != null &&
+          user.photoURL!.isNotEmpty &&
+          data['photoUrl'] != user.photoURL) {
+        updates['photoUrl'] = user.photoURL;
+      }
+
+      // Update email if changed
+      if (user.email != null &&
+          user.email!.isNotEmpty &&
+          data['email'] != user.email) {
+        updates['email'] = user.email;
+      }
+
+      if (updates.isNotEmpty) {
+        await ref.set(updates, SetOptions(merge: true));
+      }
     }
   }
 
@@ -241,8 +277,8 @@ class FirebaseService {
 
     await _userDoc(user.uid).set({
       'uid': user.uid,
-      'email': user.email,
-      'displayName': user.displayName,
+      'email': user.email ?? '',
+      'displayName': user.displayName ?? '',
       'photoUrl': photoUrl,
     }, SetOptions(merge: true));
   }
@@ -293,9 +329,8 @@ class FirebaseService {
       final ids = List<String>.from(data?['favorites'] ?? []);
       if (ids.isEmpty) return <ProductModel>[];
 
-      final snapshot = await firestore
-          .collection(AppConstants.productsCollection)
-          .get();
+      final snapshot =
+          await firestore.collection(AppConstants.productsCollection).get();
 
       return snapshot.docs
           .where((doc) => ids.contains(doc.id))
@@ -320,9 +355,6 @@ class FirebaseService {
     }
 
     await ref.set({
-      'uid': user.uid,
-      'email': user.email,
-      'displayName': user.displayName,
       'favorites': favorites,
     }, SetOptions(merge: true));
   }
@@ -369,6 +401,9 @@ class FirebaseService {
 
     final ref = _userDoc(user.uid);
     await ref.set({'cart': localCart}, SetOptions(merge: true));
+
+    // Clear local cart after sync
+    await _saveLocalCart([]);
   }
 
   Future<void> addToCart({
@@ -426,9 +461,6 @@ class FirebaseService {
     }
 
     await ref.set({
-      'uid': user.uid,
-      'email': user.email,
-      'displayName': user.displayName,
       'cart': cart,
     }, SetOptions(merge: true));
   }
@@ -499,7 +531,10 @@ class FirebaseService {
     required String orderId,
     required String status,
   }) async {
-    await firestore.collection(AppConstants.ordersCollection).doc(orderId).set({
+    await firestore
+        .collection(AppConstants.ordersCollection)
+        .doc(orderId)
+        .set({
       'status': status,
     }, SetOptions(merge: true));
   }
@@ -510,7 +545,10 @@ class FirebaseService {
 
     final total = cart.fold<double>(
       0,
-      (sum, item) => sum + (((item['price'] ?? 0) as num).toDouble() * ((item['qty'] ?? 1) as int)),
+      (sum, item) =>
+          sum +
+          (((item['price'] ?? 0) as num).toDouble() *
+              ((item['qty'] ?? 1) as int)),
     );
 
     final id = DateTime.now().millisecondsSinceEpoch.toString();
@@ -523,7 +561,10 @@ class FirebaseService {
       createdAt: DateTime.now(),
     );
 
-    await firestore.collection(AppConstants.ordersCollection).doc(id).set(order.toMap());
+    await firestore
+        .collection(AppConstants.ordersCollection)
+        .doc(id)
+        .set(order.toMap());
     await clearCart();
   }
 
@@ -535,8 +576,9 @@ class FirebaseService {
         .collection(AppConstants.ridesCollection)
         .where('userId', isEqualTo: user.uid)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => RideModel.fromMap(doc.id, doc.data()))
+            .toList());
   }
 
   Stream<List<RideModel>> watchAllRides() {
@@ -544,8 +586,9 @@ class FirebaseService {
         .collection(AppConstants.ridesCollection)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => RideModel.fromMap(doc.id, doc.data()))
+            .toList());
   }
 
   Stream<List<RideModel>> watchDriverAssignedRides(String driverName) {
@@ -553,8 +596,9 @@ class FirebaseService {
         .collection(AppConstants.ridesCollection)
         .where('driver', isEqualTo: driverName)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => RideModel.fromMap(doc.id, doc.data()))
+            .toList());
   }
 
   Future<bool> hasActiveRide() async {
@@ -566,8 +610,11 @@ class FirebaseService {
         .where('userId', isEqualTo: user.uid)
         .get();
 
-    final rides = snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList();
-    return rides.any((r) => r.status != 'completed' && r.status != 'cancelled');
+    final rides = snapshot.docs
+        .map((doc) => RideModel.fromMap(doc.id, doc.data()))
+        .toList();
+    return rides
+        .any((r) => r.status != 'completed' && r.status != 'cancelled');
   }
 
   Future<void> createRide({
@@ -612,7 +659,10 @@ class FirebaseService {
       createdAt: DateTime.now(),
     );
 
-    await firestore.collection(AppConstants.ridesCollection).doc(id).set(ride.toMap());
+    await firestore
+        .collection(AppConstants.ridesCollection)
+        .doc(id)
+        .set(ride.toMap());
   }
 
   Future<void> updateRideStatus({

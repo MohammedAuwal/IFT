@@ -4,6 +4,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthFailure implements Exception {
   final String message;
   AuthFailure(this.message);
+
+  @override
+  String toString() => message;
 }
 
 class FirebaseAuthService {
@@ -25,8 +28,9 @@ class FirebaseAuthService {
       );
       return credential.user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(_mapFirebaseError(e));
-    } catch (_) {
+      throw AuthFailure(_mapFirebaseError(e.code, e.message));
+    } catch (e) {
+      if (e is AuthFailure) rethrow;
       throw AuthFailure('Login failed. Please try again.');
     }
   }
@@ -42,8 +46,9 @@ class FirebaseAuthService {
       );
       return credential.user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(_mapFirebaseError(e));
-    } catch (_) {
+      throw AuthFailure(_mapFirebaseError(e.code, e.message));
+    } catch (e) {
+      if (e is AuthFailure) rethrow;
       throw AuthFailure('Registration failed. Please try again.');
     }
   }
@@ -68,9 +73,11 @@ class FirebaseAuthService {
 
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(e.message ?? 'Google Sign-In failed');
+      throw AuthFailure(e.message ?? 'Google Sign-In failed.');
     } catch (e) {
-      throw AuthFailure('Google Sign-In failed: $e');
+      if (e is AuthFailure) rethrow;
+      // Don't expose raw error to user
+      throw AuthFailure('Google Sign-In failed. Please try again.');
     }
   }
 
@@ -81,20 +88,30 @@ class FirebaseAuthService {
     await _firebaseAuth.signOut();
   }
 
-  String _mapFirebaseError(FirebaseAuthException e) {
-    switch (e.code) {
+  String _mapFirebaseError(String code, String? message) {
+    switch (code) {
       case 'user-not-found':
+        return 'No account found with this email.';
       case 'wrong-password':
+        return 'Incorrect password. Please try again.';
       case 'invalid-credential':
         return 'Invalid email or password.';
       case 'email-already-in-use':
-        return 'Email is already registered.';
+        return 'This email is already registered. Try signing in.';
       case 'weak-password':
-        return 'Password is too weak.';
+        return 'Password is too weak. Use at least 6 characters.';
       case 'invalid-email':
-        return 'Invalid email address.';
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'operation-not-allowed':
+        return 'This sign-in method is not enabled.';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection.';
       default:
-        return e.message ?? 'Authentication error.';
+        return message ?? 'Authentication failed. Please try again.';
     }
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/config/routes/route_names.dart';
+import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:mix/services/cloudinary_service.dart';
@@ -11,7 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 class ProfileScreen extends StatefulWidget {
   final bool showScaffold;
 
-  ProfileScreen({super.key, this.showScaffold = true});
+  const ProfileScreen({super.key, this.showScaffold = true});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -25,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _addressCtrl = TextEditingController();
 
   bool _uploadingPhoto = false;
+  bool _loggingOut = false;
 
   Future<void> _pickAndUploadProfileImage() async {
     final file = await _imageService.pickImageWithFallback();
@@ -38,12 +41,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile photo updated')),
+        const SnackBar(
+          content: Text('Profile photo updated'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update photo: $e')),
+        SnackBar(
+          content: Text('Failed to update photo: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
@@ -52,25 +61,217 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _addAddress() async {
     final address = _addressCtrl.text.trim();
-    if (address.isEmpty) return;
+    if (address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter an address'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
-    await _firebaseService.addAddress(address);
-    _addressCtrl.clear();
+    try {
+      await _firebaseService.addAddress(address);
+      _addressCtrl.clear();
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Address added')),
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Address added'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to add address: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeAddress(String address) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Remove address',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Are you sure you want to remove this address?',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Remove',
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+
+    if (confirm != true) return;
+
+    try {
+      await _firebaseService.removeAddress(address);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Address removed'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to remove address: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _openWhatsAppSupport() async {
-    final uri = Uri.parse('https://wa.me/2340000000000?text=Hello%20Mix%20support');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    final uri = Uri.parse(
+        'https://wa.me/2340000000000?text=Hello%20Mix%20support');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open WhatsApp'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open WhatsApp')),
+        const SnackBar(
+          content: Text('Could not open WhatsApp'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showAboutDialog() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          "Maamah's Mix",
+          style: GoogleFonts.playfairDisplay(
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Premium African spices, flours & traditional foods delivered to your doorstep.',
+              style: GoogleFonts.poppins(fontSize: 13.5, height: 1.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Version 1.0.0',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Theme.of(ctx).textTheme.bodyMedium?.color?.withOpacity(0.5),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Close',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    if (_loggingOut) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Log out',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Log out',
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    setState(() => _loggingOut = true);
+
+    try {
+      await _authService.signOut();
+      if (!mounted) return;
+      await AppRouter.clearAndGo(context, RouteNames.login);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loggingOut = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logout failed: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -84,22 +285,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final content = StreamBuilder<Map<String, dynamic>?>(
       stream: _firebaseService.watchUserProfile(),
       builder: (context, snapshot) {
+        // Loading state
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFFC29B40),
+            ),
+          );
+        }
+
         final profile = snapshot.data ?? {};
-        final name = (profile['displayName'] ?? 'Mix User').toString();
-        final email = (profile['email'] ?? 'No email').toString();
+        final name = (profile['displayName'] ?? '').toString();
+        final displayName = name.isNotEmpty ? name : 'Mix User';
+        final email = (profile['email'] ?? '').toString();
+        final displayEmail = email.isNotEmpty ? email : 'No email';
         final photoUrl = (profile['photoUrl'] ?? '').toString();
         final favorites = List<String>.from(profile['favorites'] ?? []);
         final cart = List<Map<String, dynamic>>.from(profile['cart'] ?? []);
         final addresses = List<String>.from(profile['addresses'] ?? []);
-        final initial = name.isNotEmpty ? name[0].toUpperCase() : 'M';
+        final initial = displayName.isNotEmpty
+            ? displayName[0].toUpperCase()
+            : 'M';
 
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Profile card
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -117,20 +334,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   GestureDetector(
                     onTap: _uploadingPhoto ? null : _pickAndUploadProfileImage,
-                    child: CircleAvatar(
-                      radius: 32,
-                      backgroundColor: const Color(0xFFC29B40),
-                      backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                      child: photoUrl.isEmpty
-                          ? Text(
-                              initial,
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 24,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 32,
+                          backgroundColor: const Color(0xFFC29B40),
+                          backgroundImage: photoUrl.isNotEmpty
+                              ? NetworkImage(photoUrl)
+                              : null,
+                          child: photoUrl.isEmpty
+                              ? Text(
+                                  initial,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 24,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC29B40),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).cardTheme.color ??
+                                    Colors.white,
+                                width: 2,
                               ),
-                            )
-                          : null,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -139,16 +384,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name,
+                          displayName,
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            color:
+                                Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          email,
+                          displayEmail,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             color: Theme.of(context)
@@ -161,12 +407,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (_uploadingPhoto)
                           Padding(
                             padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              'Uploading photo...',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: Colors.orange,
-                              ),
+                            child: Row(
+                              children: [
+                                const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: Color(0xFFC29B40),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Uploading photo...',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: const Color(0xFFC29B40),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                       ],
@@ -176,14 +435,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 18),
+
+            // Stats row
             Row(
               children: [
-                Expanded(child: _StatBox(title: 'Favorites', value: '${favorites.length}')),
+                Expanded(
+                  child: _StatBox(
+                    title: 'Favorites',
+                    value: '${favorites.length}',
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _StatBox(title: 'Cart Items', value: '${cart.length}')),
+                Expanded(
+                  child: _StatBox(
+                    title: 'Cart Items',
+                    value: '${cart.length}',
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 18),
+
+            // Dark mode toggle
             _ProfileTile(
               icon: Icons.dark_mode_rounded,
               title: 'Dark mode',
@@ -191,8 +464,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               trailing: Switch(
                 value: themeController.isDarkMode,
                 onChanged: themeController.toggleDarkMode,
+                activeColor: const Color(0xFFC29B40),
               ),
             ),
+
+            // Saved addresses section
             Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
@@ -210,45 +486,148 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Saved addresses',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor:
+                            const Color(0xFFC29B40).withOpacity(0.15),
+                        child: const Icon(
+                          Icons.location_on_rounded,
+                          color: Color(0xFFC29B40),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Saved addresses',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color:
+                              Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _addressCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'Add address',
-                      filled: true,
-                      fillColor: Theme.of(context).scaffoldBackgroundColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _addressCtrl,
+                          style: GoogleFonts.poppins(fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: 'Enter new address',
+                            hintStyle: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color
+                                  ?.withOpacity(0.4),
+                            ),
+                            filled: true,
+                            fillColor:
+                                Theme.of(context).scaffoldBackgroundColor,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _addAddress,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFC29B40),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          child: const Icon(Icons.add_rounded, size: 22),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (addresses.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    ...addresses.map((address) => Container(
+                          margin: const EdgeInsets.only(top: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).scaffoldBackgroundColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.place_outlined,
+                                size: 18,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    ?.withOpacity(0.5),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  address,
+                                  style: GoogleFonts.poppins(fontSize: 13),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => _removeAddress(address),
+                                icon: Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 20,
+                                  color: Colors.red.withOpacity(0.7),
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Text(
+                        'No saved addresses yet',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.color
+                              ?.withOpacity(0.4),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _addAddress,
-                      child: const Text('Save Address'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...addresses.map((address) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(address),
-                        trailing: IconButton(
-                          onPressed: () async {
-                            await _firebaseService.removeAddress(address);
-                          },
-                          icon: const Icon(Icons.delete_outline),
-                        ),
-                      )),
+                  ],
                 ],
               ),
             ),
+
+            // Favorites tile
             _ProfileTile(
               icon: Icons.favorite_border_rounded,
               title: 'Favorites',
@@ -259,34 +638,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
             ),
+
+            // Help & support tile
             _ProfileTile(
               icon: Icons.support_agent_rounded,
               title: 'Help & support',
               subtitle: 'Chat with us on WhatsApp',
               onTap: _openWhatsAppSupport,
             ),
+
+            // About tile
             _ProfileTile(
               icon: Icons.info_outline_rounded,
               title: 'About Mix',
-              subtitle: 'Learn more about Maamah’s Mix',
-              onTap: () {},
+              subtitle: "Learn more about Maamah's Mix",
+              onTap: _showAboutDialog,
             ),
             const SizedBox(height: 18),
+
+            // Logout button
             SizedBox(
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: () async {
-                  await _authService.signOut();
-                },
-                icon: const Icon(Icons.logout_rounded),
+                onPressed: _loggingOut ? null : _handleLogout,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark
+                      ? Colors.red.withOpacity(0.15)
+                      : Colors.red.withOpacity(0.08),
+                  foregroundColor: Colors.red,
+                  disabledBackgroundColor: Colors.red.withOpacity(0.05),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: _loggingOut
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.red,
+                        ),
+                      )
+                    : const Icon(Icons.logout_rounded),
                 label: Text(
-                  'Log out',
+                  _loggingOut ? 'Logging out...' : 'Log out',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ),
+            const SizedBox(height: 24),
+
+            // App version
+            Center(
+              child: Text(
+                'Version 1.0.0',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.color
+                      ?.withOpacity(0.3),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
           ],
         );
       },
@@ -336,6 +756,13 @@ class _StatBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -350,7 +777,14 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: GoogleFonts.poppins(fontSize: 12),
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.color
+                  ?.withOpacity(0.6),
+            ),
           ),
         ],
       ),
@@ -375,8 +809,10 @@ class _ProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tileColor = Theme.of(context).cardTheme.color ?? Colors.white;
-    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final tileColor =
+        Theme.of(context).cardTheme.color ?? Colors.white;
+    final textColor =
+        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -393,6 +829,9 @@ class _ProfileTile extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFC29B40).withOpacity(0.15),
           child: Icon(icon, color: const Color(0xFFC29B40)),
@@ -412,9 +851,9 @@ class _ProfileTile extends StatelessWidget {
           ),
         ),
         trailing: trailing ??
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: Colors.black45,
+              color: textColor.withOpacity(0.3),
             ),
       ),
     );
