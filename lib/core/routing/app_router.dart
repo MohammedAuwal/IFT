@@ -51,7 +51,9 @@ class AppRouter {
   }
 
   static Future<void> clearAndGo(BuildContext context, String route) async {
-    await Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
+    if (!context.mounted) return;
+    await Navigator.of(context)
+        .pushNamedAndRemoveUntil(route, (route) => false);
   }
 }
 

@@ -1,9 +1,18 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'app.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Color(0xFF2A0A12),
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFF12060A),
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
+
   runApp(const MixApp());
 }
