@@ -261,6 +261,21 @@ class FirebaseService {
     }
   }
 
+  Future<void> updateDisplayName(String displayName) async {
+    final user = currentUser;
+    if (user == null) return;
+
+    final trimmed = displayName.trim();
+    if (trimmed.isEmpty) return;
+
+    await user.updateDisplayName(trimmed);
+    await user.reload();
+
+    await _userDoc(user.uid).set({
+      'displayName': trimmed,
+    }, SetOptions(merge: true));
+  }
+
   Stream<Map<String, dynamic>?> watchUserProfile() {
     final user = currentUser;
     if (user == null) return const Stream.empty();

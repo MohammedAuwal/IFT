@@ -28,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool _uploadingPhoto = false;
   bool _loggingOut = false;
+  bool _savingName = false;
 
   Future<void> _pickAndUploadProfileImage() async {
     final file = await _imageService.pickImageWithFallback();
@@ -56,6 +57,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  Future<void> _editDisplayName(String currentName) async {
+    final controller = TextEditingController(text: currentName);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Edit name',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
+        content: TextField(
+          controller: controller,
+          textCapitalization: TextCapitalization.words,
+          autofocus: true,
+          style: GoogleFonts.poppins(),
+          decoration: InputDecoration(
+            hintText: 'Enter your full name',
+            hintStyle: GoogleFonts.poppins(),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC29B40),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Save',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (newName == null || newName.trim().isEmpty || !mounted) return;
+
+    setState(() => _savingName = true);
+
+    try {
+      await _firebaseService.updateDisplayName(newName.trim());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Name updated successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update name: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _savingName = false);
     }
   }
 
@@ -152,7 +229,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _openWhatsAppSupport() async {
     final uri = Uri.parse(
-        'https://wa.me/2340000000000?text=Hello%20Mix%20support');
+      'https://wa.me/2340000000000?text=Hello%20Mix%20support',
+    );
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -201,7 +279,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'Version 1.0.0',
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: Theme.of(ctx).textTheme.bodyMedium?.color?.withOpacity(0.5),
+                color:
+                    Theme.of(ctx).textTheme.bodyMedium?.color?.withOpacity(0.5),
               ),
             ),
           ],
@@ -290,7 +369,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final content = StreamBuilder<Map<String, dynamic>?>(
       stream: _firebaseService.watchUserProfile(),
       builder: (context, snapshot) {
-        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
           return const Center(
@@ -316,7 +394,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Profile card
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -339,9 +416,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         CircleAvatar(
                           radius: 32,
                           backgroundColor: const Color(0xFFC29B40),
-                          backgroundImage: photoUrl.isNotEmpty
-                              ? NetworkImage(photoUrl)
-                              : null,
+                          backgroundImage:
+                              photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
                           child: photoUrl.isEmpty
                               ? Text(
                                   initial,
@@ -363,8 +439,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: const Color(0xFFC29B40),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Theme.of(context).cardTheme.color ??
-                                    Colors.white,
+                                color:
+                                    Theme.of(context).cardTheme.color ??
+                                        Colors.white,
                                 width: 2,
                               ),
                             ),
@@ -383,13 +460,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          displayName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color:
-                                Theme.of(context).textTheme.bodyLarge?.color,
+                        GestureDetector(
+                          onTap: _savingName ? null : () => _editDisplayName(displayName),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  displayName,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.color,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.edit_rounded,
+                                size: 16,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    ?.withOpacity(0.6),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -428,6 +526,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                           ),
+                        if (_savingName)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              'Saving name...',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: const Color(0xFFC29B40),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -435,8 +544,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 18),
-
-            // Stats row
             Row(
               children: [
                 Expanded(
@@ -455,8 +562,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
             const SizedBox(height: 18),
-
-            // Dark mode toggle
             _ProfileTile(
               icon: Icons.dark_mode_rounded,
               title: 'Dark mode',
@@ -467,8 +572,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 activeColor: const Color(0xFFC29B40),
               ),
             ),
-
-            // Saved addresses section
             Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
@@ -562,51 +665,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   if (addresses.isNotEmpty) ...[
                     const SizedBox(height: 10),
-                    ...addresses.map((address) => Container(
-                          margin: const EdgeInsets.only(top: 6),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.place_outlined,
-                                size: 18,
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    ?.withOpacity(0.5),
+                    ...addresses.map(
+                      (address) => Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.place_outlined,
+                              size: 18,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color
+                                  ?.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                address,
+                                style: GoogleFonts.poppins(fontSize: 13),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  address,
-                                  style: GoogleFonts.poppins(fontSize: 13),
-                                ),
+                            ),
+                            IconButton(
+                              onPressed: () => _removeAddress(address),
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 20,
+                                color: Colors.red.withOpacity(0.7),
                               ),
-                              IconButton(
-                                onPressed: () => _removeAddress(address),
-                                icon: Icon(
-                                  Icons.delete_outline_rounded,
-                                  size: 20,
-                                  color: Colors.red.withOpacity(0.7),
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32,
-                                ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
                               ),
-                            ],
-                          ),
-                        )),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ] else ...[
                     const SizedBox(height: 12),
                     Center(
@@ -626,8 +730,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-
-            // Favorites tile
             _ProfileTile(
               icon: Icons.favorite_border_rounded,
               title: 'Favorites',
@@ -638,16 +740,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
             ),
-
-            // Help & support tile
             _ProfileTile(
               icon: Icons.support_agent_rounded,
               title: 'Help & support',
               subtitle: 'Chat with us on WhatsApp',
               onTap: _openWhatsAppSupport,
             ),
-
-            // About tile
             _ProfileTile(
               icon: Icons.info_outline_rounded,
               title: 'About Mix',
@@ -655,8 +753,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: _showAboutDialog,
             ),
             const SizedBox(height: 18),
-
-            // Logout button
             SizedBox(
               height: 52,
               child: ElevatedButton.icon(
@@ -691,8 +787,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // App version
             Center(
               child: Text(
                 'Version 1.0.0',
@@ -809,8 +903,7 @@ class _ProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tileColor =
-        Theme.of(context).cardTheme.color ?? Colors.white;
+    final tileColor = Theme.of(context).cardTheme.color ?? Colors.white;
     final textColor =
         Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
 

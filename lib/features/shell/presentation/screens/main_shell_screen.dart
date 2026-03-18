@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
@@ -80,6 +81,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             final favCount = favSnapshot.data?.length ?? 0;
 
             return Scaffold(
+              backgroundColor: const Color(0xFFF8F5EF),
               body: Column(
                 children: [
                   if (!_loadingRole && _isAdmin && previewController.isPreviewMode)
@@ -110,13 +112,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             Expanded(
                               child: Text(
                                 'Preview Mode (User View)',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                style: GoogleFonts.poppins(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                             TextButton(
@@ -128,7 +128,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                   vertical: 8,
                                 ),
                               ),
-                              child: const Text('Back to Admin'),
+                              child: Text(
+                                'Back to Admin',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -142,38 +147,67 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   ),
                 ],
               ),
-              bottomNavigationBar: BottomNavigationBar(
-                currentIndex: _currentIndex,
-                selectedItemColor: const Color(0xFFC29B40),
-                unselectedItemColor: Colors.black45,
-                onTap: (index) {
-                  setState(() => _currentIndex = index);
-                  _saveTab(index);
-                },
-                items: [
-                  const BottomNavigationBarItem(
-                    icon: Icon(Icons.home_rounded),
-                    label: 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _BadgeIcon(
-                      icon: Icons.shopping_cart_rounded,
-                      count: cartCount,
+              bottomNavigationBar: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 18,
+                      offset: const Offset(0, -4),
                     ),
-                    label: 'Cart',
+                  ],
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
                   ),
-                  const BottomNavigationBarItem(
-                    icon: Icon(Icons.receipt_long_rounded),
-                    label: 'Orders',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _BadgeIcon(
-                      icon: Icons.person_rounded,
-                      count: favCount,
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: BottomNavigationBar(
+                    currentIndex: _currentIndex,
+                    type: BottomNavigationBarType.fixed,
+                    backgroundColor: Colors.white,
+                    selectedItemColor: const Color(0xFFC29B40),
+                    unselectedItemColor: Colors.black45,
+                    selectedLabelStyle: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
                     ),
-                    label: 'Profile',
+                    unselectedLabelStyle: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11,
+                    ),
+                    elevation: 0,
+                    onTap: (index) {
+                      setState(() => _currentIndex = index);
+                      _saveTab(index);
+                    },
+                    items: [
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.home_rounded),
+                        label: 'Home',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _BadgeIcon(
+                          icon: Icons.shopping_cart_rounded,
+                          count: cartCount,
+                        ),
+                        label: 'Cart',
+                      ),
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.receipt_long_rounded),
+                        label: 'Orders',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _BadgeIcon(
+                          icon: Icons.person_rounded,
+                          count: favCount,
+                        ),
+                        label: 'Profile',
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -197,7 +231,10 @@ class _BadgeIcon extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Icon(icon),
+        Container(
+          padding: const EdgeInsets.all(2),
+          child: Icon(icon),
+        ),
         if (count > 0)
           Positioned(
             right: -8,
@@ -212,9 +249,9 @@ class _BadgeIcon extends StatelessWidget {
               child: Text(
                 count > 99 ? '99+' : '$count',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: GoogleFonts.poppins(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: FontWeight.w700,
                 ),
               ),
