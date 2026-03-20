@@ -409,460 +409,548 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final cart = List<Map<String, dynamic>>.from(profile['cart'] ?? []);
         final addresses = List<String>.from(profile['addresses'] ?? []);
         final selectedAddress = (profile['selectedAddress'] ?? '').toString();
-        final initial = displayName.isNotEmpty
-            ? displayName[0].toUpperCase()
-            : 'M';
+        final initial =
+            displayName.isNotEmpty ? displayName[0].toUpperCase() : 'M';
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: _uploadingPhoto ? null : _pickAndUploadProfileImage,
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 32,
-                          backgroundColor: const Color(0xFFC29B40),
-                          backgroundImage:
-                              photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                          child: photoUrl.isEmpty
-                              ? Text(
-                                  initial,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 24,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFC29B40),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color:
-                                    Theme.of(context).cardTheme.color ??
-                                        Colors.white,
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              size: 12,
-                              color: Colors.white,
-                            ),
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate(
+                  [
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: _savingName
-                              ? null
-                              : () => _editDisplayName(displayName),
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  displayName,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Icon(
-                                Icons.edit_rounded,
-                                size: 16,
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    ?.withOpacity(0.6),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          displayEmail,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.color
-                                ?.withOpacity(0.7),
-                          ),
-                        ),
-                        if (_uploadingPhoto)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _uploadingPhoto
+                                ? null
+                                : _pickAndUploadProfileImage,
+                            child: Stack(
                               children: [
-                                const SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 1.5,
-                                    color: Color(0xFFC29B40),
-                                  ),
+                                CircleAvatar(
+                                  radius: 32,
+                                  backgroundColor:
+                                      const Color(0xFFC29B40),
+                                  backgroundImage: photoUrl.isNotEmpty
+                                      ? NetworkImage(photoUrl)
+                                      : null,
+                                  child: photoUrl.isEmpty
+                                      ? Text(
+                                          initial,
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 24,
+                                          ),
+                                        )
+                                      : null,
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Uploading photo...',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: const Color(0xFFC29B40),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFC29B40),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                                .cardTheme
+                                                .color ??
+                                            Colors.white,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt_rounded,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        if (_savingName)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              'Saving name...',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: const Color(0xFFC29B40),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatBox(
-                    title: 'Favorites',
-                    value: '${favorites.length}',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatBox(
-                    title: 'Cart Items',
-                    value: '${cart.length}',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            _ProfileTile(
-              icon: Icons.dark_mode_rounded,
-              title: 'Dark mode',
-              subtitle: 'Switch between light and dark theme',
-              trailing: Switch(
-                value: themeController.isDarkMode,
-                onChanged: themeController.toggleDarkMode,
-                activeColor: const Color(0xFFC29B40),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor:
-                            const Color(0xFFC29B40).withOpacity(0.15),
-                        child: const Icon(
-                          Icons.location_on_rounded,
-                          color: Color(0xFFC29B40),
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Saved addresses',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color:
-                              Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    selectedAddress.isEmpty
-                        ? 'No selected delivery address'
-                        : 'Selected: $selectedAddress',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: selectedAddress.isEmpty
-                          ? Colors.redAccent
-                          : const Color(0xFFC29B40),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _addressCtrl,
-                          style: GoogleFonts.poppins(fontSize: 14),
-                          decoration: InputDecoration(
-                            hintText: 'Enter new address',
-                            hintStyle: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.color
-                                  ?.withOpacity(0.4),
-                            ),
-                            filled: true,
-                            fillColor:
-                                Theme.of(context).scaffoldBackgroundColor,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _addAddress,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFC29B40),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
-                          ),
-                          child: const Icon(Icons.add_rounded, size: 22),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (addresses.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    ...addresses.map(
-                      (address) {
-                        final isSelected = selectedAddress == address;
-
-                        return Container(
-                          margin: const EdgeInsets.only(top: 6),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFFC29B40)
-                                  : Colors.transparent,
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isSelected
-                                    ? Icons.check_circle_rounded
-                                    : Icons.place_outlined,
-                                size: 18,
-                                color: isSelected
-                                    ? const Color(0xFFC29B40)
-                                    : Theme.of(context)
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: _savingName
+                                      ? null
+                                      : () => _editDisplayName(
+                                            displayName,
+                                          ),
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          displayName,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge
+                                                ?.color,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        Icons.edit_rounded,
+                                        size: 16,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.color
+                                            ?.withOpacity(0.6),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  displayEmail,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
                                         ?.color
-                                        ?.withOpacity(0.5),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  address,
-                                  style: GoogleFonts.poppins(fontSize: 13),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () => _selectAddress(address),
-                                child: Text(
-                                  isSelected ? 'Selected' : 'Use',
-                                  style: GoogleFonts.poppins(
-                                    color: const Color(0xFFC29B40),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
+                                        ?.withOpacity(0.7),
                                   ),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: () => _removeAddress(address),
-                                icon: Icon(
-                                  Icons.delete_outline_rounded,
-                                  size: 20,
-                                  color: Colors.red.withOpacity(0.7),
+                                if (_uploadingPhoto)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.only(top: 6),
+                                    child: Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child:
+                                              CircularProgressIndicator(
+                                            strokeWidth: 1.5,
+                                            color:
+                                                Color(0xFFC29B40),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Uploading photo...',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: const Color(
+                                              0xFFC29B40,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (_savingName)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      'Saving name...',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: const Color(
+                                          0xFFC29B40,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _StatBox(
+                            title: 'Favorites',
+                            value: '${favorites.length}',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _StatBox(
+                            title: 'Cart Items',
+                            value: '${cart.length}',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _ProfileTile(
+                      icon: Icons.dark_mode_rounded,
+                      title: 'Dark mode',
+                      subtitle:
+                          'Switch between light and dark theme',
+                      trailing: Switch(
+                        value: themeController.isDarkMode,
+                        onChanged: themeController.toggleDarkMode,
+                        activeColor: const Color(0xFFC29B40),
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: const Color(
+                                  0xFFC29B40,
+                                ).withOpacity(0.15),
+                                child: const Icon(
+                                  Icons.location_on_rounded,
+                                  color: Color(0xFFC29B40),
+                                  size: 18,
                                 ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Saved addresses',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.color,
                                 ),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            selectedAddress.isEmpty
+                                ? 'No selected delivery address'
+                                : 'Selected: $selectedAddress',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: selectedAddress.isEmpty
+                                  ? Colors.redAccent
+                                  : const Color(0xFFC29B40),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _addressCtrl,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter new address',
+                                    hintStyle: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.color
+                                          ?.withOpacity(0.4),
+                                    ),
+                                    filled: true,
+                                    fillColor: Theme.of(context)
+                                        .scaffoldBackgroundColor,
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(14),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed: _addAddress,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        const Color(0xFFC29B40),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(14),
+                                    ),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add_rounded,
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (addresses.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            ...addresses.map(
+                              (address) {
+                                final isSelected =
+                                    selectedAddress == address;
+
+                                return Container(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding:
+                                      const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .scaffoldBackgroundColor,
+                                    borderRadius:
+                                        BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(
+                                              0xFFC29B40,
+                                            )
+                                          : Colors.transparent,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 2),
+                                        child: Icon(
+                                          isSelected
+                                              ? Icons
+                                                  .check_circle_rounded
+                                              : Icons.place_outlined,
+                                          size: 18,
+                                          color: isSelected
+                                              ? const Color(
+                                                  0xFFC29B40,
+                                                )
+                                              : Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.color
+                                                  ?.withOpacity(
+                                                    0.5,
+                                                  ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          address,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                      Column(
+                                        mainAxisSize:
+                                            MainAxisSize.min,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                _selectAddress(
+                                              address,
+                                            ),
+                                            child: Text(
+                                              isSelected
+                                                  ? 'Selected'
+                                                  : 'Use',
+                                              style: GoogleFonts.poppins(
+                                                color:
+                                                    const Color(0xFFC29B40),
+                                                fontWeight:
+                                                    FontWeight.w700,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () =>
+                                                _removeAddress(
+                                              address,
+                                            ),
+                                            icon: Icon(
+                                              Icons
+                                                  .delete_outline_rounded,
+                                              size: 20,
+                                              color: Colors.red
+                                                  .withOpacity(0.7),
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            constraints:
+                                                const BoxConstraints(
+                                              minWidth: 32,
+                                              minHeight: 32,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 12),
+                            Center(
+                              child: Text(
+                                'No saved addresses yet',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.color
+                                      ?.withOpacity(0.4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    _ProfileTile(
+                      icon: Icons.favorite_border_rounded,
+                      title: 'Favorites',
+                      subtitle: 'View all your favorite products',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => FavoritesScreen(),
+                          ),
                         );
                       },
                     ),
-                  ] else ...[
-                    const SizedBox(height: 12),
+                    _ProfileTile(
+                      icon: Icons.support_agent_rounded,
+                      title: 'Help & support',
+                      subtitle: 'Chat with us on WhatsApp',
+                      onTap: _openWhatsAppSupport,
+                    ),
+                    _ProfileTile(
+                      icon: Icons.info_outline_rounded,
+                      title: 'About Mix',
+                      subtitle:
+                          "Learn more about Maamah's Mix",
+                      onTap: _showAboutDialog,
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            _loggingOut ? null : _handleLogout,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark
+                              ? Colors.red.withOpacity(0.15)
+                              : Colors.red.withOpacity(0.08),
+                          foregroundColor: Colors.red,
+                          disabledBackgroundColor:
+                              Colors.red.withOpacity(0.05),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: _loggingOut
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.red,
+                                ),
+                              )
+                            : const Icon(Icons.logout_rounded),
+                        label: Text(
+                          _loggingOut
+                              ? 'Logging out...'
+                              : 'Log out',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     Center(
                       child: Text(
-                        'No saved addresses yet',
+                        'Version 1.0.0',
                         style: GoogleFonts.poppins(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Theme.of(context)
                               .textTheme
                               .bodyMedium
                               ?.color
-                              ?.withOpacity(0.4),
+                              ?.withOpacity(0.3),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
                   ],
-                ],
-              ),
-            ),
-            _ProfileTile(
-              icon: Icons.favorite_border_rounded,
-              title: 'Favorites',
-              subtitle: 'View all your favorite products',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => FavoritesScreen()),
-                );
-              },
-            ),
-            _ProfileTile(
-              icon: Icons.support_agent_rounded,
-              title: 'Help & support',
-              subtitle: 'Chat with us on WhatsApp',
-              onTap: _openWhatsAppSupport,
-            ),
-            _ProfileTile(
-              icon: Icons.info_outline_rounded,
-              title: 'About Mix',
-              subtitle: "Learn more about Maamah's Mix",
-              onTap: _showAboutDialog,
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: _loggingOut ? null : _handleLogout,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark
-                      ? Colors.red.withOpacity(0.15)
-                      : Colors.red.withOpacity(0.08),
-                  foregroundColor: Colors.red,
-                  disabledBackgroundColor: Colors.red.withOpacity(0.05),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                icon: _loggingOut
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.red,
-                        ),
-                      )
-                    : const Icon(Icons.logout_rounded),
-                label: Text(
-                  _loggingOut ? 'Logging out...' : 'Log out',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            Center(
-              child: Text(
-                'Version 1.0.0',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.color
-                      ?.withOpacity(0.3),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
           ],
         );
       },

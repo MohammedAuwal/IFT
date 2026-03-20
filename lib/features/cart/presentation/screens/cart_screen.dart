@@ -94,394 +94,422 @@ class _CartScreenState extends State<CartScreen> {
           );
         }
 
-        return Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: cartItems.length,
-                itemBuilder: (_, i) {
-                  final item = cartItems[i];
-                  final qty = (item['qty'] ?? 1) as int;
-                  final imageUrl = (item['imageUrl'] ?? '').toString();
+        return StreamBuilder<String>(
+          stream: firebaseService.watchSelectedAddress(),
+          builder: (context, addressSnapshot) {
+            final selectedAddress = addressSnapshot.data ?? '';
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: SizedBox(
-                            width: 52,
-                            height: 52,
-                            child: _hasValidImage(imageUrl)
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        const CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: Color(0xFFC29B40),
-                                      child: Icon(
-                                        Icons.shopping_bag_outlined,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: Color(0xFFC29B40),
-                                    child: Icon(
-                                      Icons.shopping_bag_outlined,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+            if (_lastEstimatedAddress != selectedAddress &&
+                _deliveryEstimate != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() {
+                  _deliveryEstimate = null;
+                  _deliveryEstimateError = null;
+                });
+              });
+            }
+
+            final deliveryFee = _deliveryEstimate?.price ?? 0;
+            final grandTotal = total + deliveryFee;
+
+            return CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (_, i) {
+                        final item = cartItems[i];
+                        final qty = (item['qty'] ?? 1) as int;
+                        final imageUrl = (item['imageUrl'] ?? '').toString();
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                (item['name'] ?? '').toString(),
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w600,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  width: 52,
+                                  height: 52,
+                                  child: _hasValidImage(imageUrl)
+                                      ? Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              const CircleAvatar(
+                                            radius: 24,
+                                            backgroundColor:
+                                                Color(0xFFC29B40),
+                                            child: Icon(
+                                              Icons.shopping_bag_outlined,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                      : const CircleAvatar(
+                                          radius: 24,
+                                          backgroundColor:
+                                              Color(0xFFC29B40),
+                                          child: Icon(
+                                            Icons.shopping_bag_outlined,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
-                              Text(
-                                '₦${((item['price'] ?? 0) as num).toDouble().toStringAsFixed(2)}',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.black54,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      (item['name'] ?? '').toString(),
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₦${((item['price'] ?? 0) as num).toDouble().toStringAsFixed(2)}',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    onPressed: () async {
+                                      await firebaseService.updateCartQty(
+                                        productId:
+                                            item['productId'].toString(),
+                                        qty: qty - 1,
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$qty',
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      await firebaseService.updateCartQty(
+                                        productId:
+                                            item['productId'].toString(),
+                                        qty: qty + 1,
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.add_circle_outline,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ),
+                        );
+                      },
+                      childCount: cartItems.length,
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Column(
+                      children: [
                         Row(
                           children: [
-                            IconButton(
-                              onPressed: () async {
-                                await firebaseService.updateCartQty(
-                                  productId: item['productId'].toString(),
-                                  qty: qty - 1,
-                                );
-                              },
-                              icon: const Icon(Icons.remove_circle_outline),
-                            ),
                             Text(
-                              '$qty',
+                              'Delivery Address',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const Spacer(),
+                            Expanded(
+                              child: Text(
+                                selectedAddress.isEmpty
+                                    ? 'Not selected'
+                                    : selectedAddress,
+                                textAlign: TextAlign.right,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  color: selectedAddress.isEmpty
+                                      ? Colors.redAccent
+                                      : Colors.black54,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (_deliveryEstimateError != null)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _deliveryEstimateError!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        if (_deliveryEstimate != null)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F0E0),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color:
+                                    const Color(0xFFC29B40).withOpacity(0.25),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Delivery Estimate',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF7A5A12),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Vendor Pickup: ${_deliveryEstimate!.pickupLabel}',
+                                  style: GoogleFonts.poppins(fontSize: 12),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Destination: ${_deliveryEstimate!.destinationLabel}',
+                                  style: GoogleFonts.poppins(fontSize: 12),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Distance: ${_deliveryEstimate!.distanceKm.toStringAsFixed(1)} km',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'ETA: ${_deliveryEstimate!.eta}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Delivery Fee: ₦${_deliveryEstimate!.price.toStringAsFixed(0)}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: const Color(0xFFC29B40),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              RideEstimateMapPreviewScreen(
+                                            estimate: _deliveryEstimate!,
+                                            title:
+                                                'Delivery Route Preview',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.map_outlined),
+                                    label: const Text(
+                                      'Preview Delivery Route',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _loadingDeliveryEstimate
+                                    ? null
+                                    : () => _estimateDelivery(
+                                          selectedAddress,
+                                        ),
+                                child: _loadingDeliveryEstimate
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text('Check Delivery'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Text(
+                              'Items Total',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '₦${total.toStringAsFixed(2)}',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: const Color(0xFF1D1D1F),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Text(
+                              'Delivery Fee',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _deliveryEstimate == null
+                                  ? 'Check estimate'
+                                  : '₦${deliveryFee.toStringAsFixed(2)}',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: _deliveryEstimate == null
+                                    ? Colors.black45
+                                    : const Color(0xFFC29B40),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              'Grand Total',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '₦${grandTotal.toStringAsFixed(2)}',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                                color: const Color(0xFFC29B40),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              try {
+                                await firebaseService.placeOrder(cartItems);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Order placed successfully. Delivery created with live route.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Checkout failed: $e',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF8E2121),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'Proceed to Checkout',
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            IconButton(
-                              onPressed: () async {
-                                await firebaseService.updateCartQty(
-                                  productId: item['productId'].toString(),
-                                  qty: qty + 1,
-                                );
-                              },
-                              icon: const Icon(Icons.add_circle_outline),
-                            ),
-                          ],
+                          ),
                         ),
+                        const SizedBox(height: 12),
                       ],
                     ),
-                  );
-                },
-              ),
-            ),
-            StreamBuilder<String>(
-              stream: firebaseService.watchSelectedAddress(),
-              builder: (context, addressSnapshot) {
-                final selectedAddress = addressSnapshot.data ?? '';
-
-                if (_lastEstimatedAddress != selectedAddress &&
-                    _deliveryEstimate != null) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (!mounted) return;
-                    setState(() {
-                      _deliveryEstimate = null;
-                      _deliveryEstimateError = null;
-                    });
-                  });
-                }
-
-                final deliveryFee = _deliveryEstimate?.price ?? 0;
-                final grandTotal = total + deliveryFee;
-
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Delivery Address',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const Spacer(),
-                          Expanded(
-                            child: Text(
-                              selectedAddress.isEmpty
-                                  ? 'Not selected'
-                                  : selectedAddress,
-                              textAlign: TextAlign.right,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                color: selectedAddress.isEmpty
-                                    ? Colors.redAccent
-                                    : Colors.black54,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (_deliveryEstimateError != null)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _deliveryEstimateError!,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.redAccent,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      if (_deliveryEstimate != null)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF7F0E0),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: const Color(0xFFC29B40).withOpacity(0.25),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Delivery Estimate',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF7A5A12),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Vendor Pickup: ${_deliveryEstimate!.pickupLabel}',
-                                style: GoogleFonts.poppins(fontSize: 12),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Destination: ${_deliveryEstimate!.destinationLabel}',
-                                style: GoogleFonts.poppins(fontSize: 12),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Distance: ${_deliveryEstimate!.distanceKm.toStringAsFixed(1)} km',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                'ETA: ${_deliveryEstimate!.eta}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                'Delivery Fee: ₦${_deliveryEstimate!.price.toStringAsFixed(0)}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: const Color(0xFFC29B40),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            RideEstimateMapPreviewScreen(
-                                          estimate: _deliveryEstimate!,
-                                          title: 'Delivery Route Preview',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.map_outlined),
-                                  label: const Text('Preview Delivery Route'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _loadingDeliveryEstimate
-                                  ? null
-                                  : () => _estimateDelivery(selectedAddress),
-                              child: _loadingDeliveryEstimate
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child:
-                                          CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : const Text('Check Delivery'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Text(
-                            'Items Total',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '₦${total.toStringAsFixed(2)}',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              color: const Color(0xFF1D1D1F),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            'Delivery Fee',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            _deliveryEstimate == null
-                                ? 'Check estimate'
-                                : '₦${deliveryFee.toStringAsFixed(2)}',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              color: _deliveryEstimate == null
-                                  ? Colors.black45
-                                  : const Color(0xFFC29B40),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Text(
-                            'Grand Total',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '₦${grandTotal.toStringAsFixed(2)}',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
-                              color: const Color(0xFFC29B40),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            try {
-                              await firebaseService.placeOrder(cartItems);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Order placed successfully. Delivery created with live route.',
-                                    ),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Checkout failed: $e'),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF8E2121),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            'Proceed to Checkout',
-                            style:
-                                GoogleFonts.poppins(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         );
       },
     );
