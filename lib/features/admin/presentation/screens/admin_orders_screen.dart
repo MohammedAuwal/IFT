@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/models/order_model.dart';
+import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class AdminOrdersScreen extends StatelessWidget {
   AdminOrdersScreen({super.key});
 
   final firebaseService = FirebaseService();
+
+  RideModel? _findDeliveryRide(List<RideModel> rides, OrderModel order) {
+    try {
+      return rides.firstWhere(
+        (ride) => ride.id == order.deliveryRideId || ride.orderId == order.id,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +34,7 @@ class AdminOrdersScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: StreamBuilder(
+      body: StreamBuilder<List<OrderModel>>(
         stream: firebaseService.watchAllOrders(),
         builder: (context, snapshot) {
           final orders = snapshot.data ?? [];
@@ -36,57 +48,92 @@ class AdminOrdersScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length,
-            itemBuilder: (_, i) {
-              final order = orders[i];
+          return StreamBuilder<List<RideModel>>(
+            stream: firebaseService.watchAllRides(),
+            builder: (context, rideSnapshot) {
+              final rides = rideSnapshot.data ?? [];
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
+              return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF171A21),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white10),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      order.id,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                itemCount: orders.length,
+                itemBuilder: (_, i) {
+                  final order = orders[i];
+                  final deliveryRide = _findDeliveryRide(rides, order);
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF171A21),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white10),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'User: ${order.userId}',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Total: ₦${order.totalAmount.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFFC29B40),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _statusButton(context, order.id, 'pending'),
-                        _statusButton(context, order.id, 'processing'),
-                        _statusButton(context, order.id, 'delivered'),
+                        Text(
+                          order.id,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Total: ₦${order.totalAmount.toStringAsFixed(2)}',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFC29B40),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Order Status: ${order.status}',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                          ),
+                        ),
+                        if (order.deliveryAddress.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Delivery Address: ${order.deliveryAddress}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                        if (deliveryRide != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Delivery Status: ${deliveryRide.status}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.lightBlueAccent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            'ETA: ${deliveryRide.eta} • ${deliveryRide.distanceKm.toStringAsFixed(1)} km',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _statusButton(context, order.id, 'pending'),
+                            _statusButton(context, order.id, 'processing'),
+                            _statusButton(context, order.id, 'delivered'),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           );

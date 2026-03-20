@@ -34,9 +34,16 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   File? _selectedImage;
   late bool _featured;
+  late bool _isTrending;
   late bool _inStock;
-  String? _selectedCategory;
+  late List<String> _selectedCategories;
   bool _loading = false;
+
+  bool _hasValidImage(String url) {
+    final value = url.trim();
+    return value.isNotEmpty &&
+        (value.startsWith('http://') || value.startsWith('https://'));
+  }
 
   @override
   void initState() {
@@ -44,14 +51,18 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _nameCtrl = TextEditingController(text: widget.product.name);
     _descCtrl = TextEditingController(text: widget.product.description);
     _priceCtrl = TextEditingController(text: widget.product.price.toString());
-    _variantsCtrl = TextEditingController(text: widget.product.variants.join(', '));
-    _stockQtyCtrl = TextEditingController(text: widget.product.stockQuantity.toString());
+    _variantsCtrl =
+        TextEditingController(text: widget.product.variants.join(', '));
+    _stockQtyCtrl =
+        TextEditingController(text: widget.product.stockQuantity.toString());
     _promoTextCtrl = TextEditingController(text: widget.product.promoText);
-    _promoDiscountCtrl =
-        TextEditingController(text: widget.product.promoDiscountPercent.toString());
+    _promoDiscountCtrl = TextEditingController(
+      text: widget.product.promoDiscountPercent.toString(),
+    );
     _featured = widget.product.featured;
+    _isTrending = widget.product.isTrending;
     _inStock = widget.product.inStock;
-    _selectedCategory = widget.product.category;
+    _selectedCategories = widget.product.normalizedCategories.toList();
   }
 
   Future<void> _pickImage() async {
@@ -72,12 +83,33 @@ class _EditProductScreenState extends State<EditProductScreen> {
     setState(() => _selectedImage = file);
   }
 
+  void _toggleCategory(String category, bool selected) {
+    setState(() {
+      if (selected) {
+        if (!_selectedCategories.contains(category)) {
+          _selectedCategories.add(category);
+        }
+      } else {
+        _selectedCategories.remove(category);
+      }
+
+      if (_selectedCategories.isEmpty) {
+        _selectedCategories = ['General'];
+      }
+    });
+  }
+
   Future<void> _save() async {
     final price = double.tryParse(_priceCtrl.text.trim());
     final stockQty = int.tryParse(_stockQtyCtrl.text.trim()) ?? 0;
     final promoDiscount = double.tryParse(_promoDiscountCtrl.text.trim()) ?? 0;
 
-    if (price == null) return;
+    if (price == null || _nameCtrl.text.trim().isEmpty || _descCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill product name, description and valid price')),
+      );
+      return;
+    }
 
     setState(() => _loading = true);
 
@@ -88,6 +120,15 @@ class _EditProductScreenState extends State<EditProductScreen> {
         imageUrl = await _cloudinaryService.uploadImage(_selectedImage!);
       }
 
+      final categories = _selectedCategories.toSet().toList();
+
+      if (_featured && !categories.contains('Featured')) {
+        categories.add('Featured');
+      }
+      if (_isTrending && !categories.contains('Trending')) {
+        categories.add('Trending');
+      }
+
       final updated = ProductModel(
         id: widget.product.id,
         name: _nameCtrl.text.trim(),
@@ -96,10 +137,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
         imageUrl: imageUrl,
         createdBy: widget.product.createdBy,
         createdAt: widget.product.createdAt,
-        category: (_selectedCategory == null || _selectedCategory!.trim().isEmpty)
-            ? 'General'
-            : _selectedCategory!.trim(),
+        category: categories.isEmpty ? 'General' : categories.first,
+        categories: categories,
         featured: _featured,
+        isTrending: _isTrending,
         inStock: _inStock,
         stockQuantity: stockQty,
         variants: _variantsCtrl.text
@@ -177,58 +218,97 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 const SizedBox(height: 12),
                 _Field(controller: _descCtrl, hint: 'Description', maxLines: 4),
                 const SizedBox(height: 12),
-                _Field(controller: _priceCtrl, hint: 'Price', keyboardType: TextInputType.number),
+                _Field(
+                  controller: _priceCtrl,
+                  hint: 'Price',
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
                 const SizedBox(height: 12),
+                Text(
+                  'Categories',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 StreamBuilder<List<String>>(
                   stream: _firebaseService.watchCategories(),
                   builder: (context, snapshot) {
-                    final categories = snapshot.data ?? ['General'];
-                    _selectedCategory ??= categories.isNotEmpty ? categories.first : 'General';
+                    final categories = snapshot.data ?? const ['General'];
 
-                    return DropdownButtonFormField<String>(
-                      value: categories.contains(_selectedCategory) ? _selectedCategory : categories.first,
-                      dropdownColor: const Color(0xFF11141A),
-                      style: GoogleFonts.poppins(color: Colors.white),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFF11141A),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items: categories
-                          .map((c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(c),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedCategory = value);
-                      },
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: categories.map((category) {
+                        final selected = _selectedCategories.contains(category);
+
+                        return FilterChip(
+                          label: Text(category),
+                          selected: selected,
+                          onSelected: (value) => _toggleCategory(category, value),
+                          selectedColor: gold,
+                          backgroundColor: const Color(0xFF11141A),
+                          labelStyle: GoogleFonts.poppins(
+                            color: selected ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          side: BorderSide(
+                            color: selected ? gold : Colors.white12,
+                          ),
+                        );
+                      }).toList(),
                     );
                   },
                 ),
                 const SizedBox(height: 12),
-                _Field(controller: _stockQtyCtrl, hint: 'Stock quantity', keyboardType: TextInputType.number),
+                _Field(
+                  controller: _stockQtyCtrl,
+                  hint: 'Stock quantity',
+                  keyboardType: TextInputType.number,
+                ),
                 const SizedBox(height: 12),
                 _Field(controller: _variantsCtrl, hint: 'Variants comma separated'),
                 const SizedBox(height: 12),
                 _Field(controller: _promoTextCtrl, hint: 'Promo text'),
                 const SizedBox(height: 12),
-                _Field(controller: _promoDiscountCtrl, hint: 'Promo discount %', keyboardType: TextInputType.number),
+                _Field(
+                  controller: _promoDiscountCtrl,
+                  hint: 'Promo discount %',
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
+                  activeColor: gold,
                   value: _featured,
                   onChanged: (v) => setState(() => _featured = v),
-                  title: Text('Featured', style: GoogleFonts.poppins(color: Colors.white)),
+                  title: Text(
+                    'Featured',
+                    style: GoogleFonts.poppins(color: Colors.white),
+                  ),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
+                  activeColor: gold,
+                  value: _isTrending,
+                  onChanged: (v) => setState(() => _isTrending = v),
+                  title: Text(
+                    'Trending',
+                    style: GoogleFonts.poppins(color: Colors.white),
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: gold,
                   value: _inStock,
                   onChanged: (v) => setState(() => _inStock = v),
-                  title: Text('In stock', style: GoogleFonts.poppins(color: Colors.white)),
+                  title: Text(
+                    'In stock',
+                    style: GoogleFonts.poppins(color: Colors.white),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 GestureDetector(
@@ -244,7 +324,29 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       borderRadius: BorderRadius.circular(18),
                       child: _selectedImage != null
                           ? Image.file(_selectedImage!, fit: BoxFit.cover)
-                          : Image.network(widget.product.imageUrl, fit: BoxFit.cover),
+                          : _hasValidImage(widget.product.imageUrl)
+                              ? Image.network(
+                                  widget.product.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.grey.shade900,
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  color: Colors.grey.shade900,
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ),
                     ),
                   ),
                 ),

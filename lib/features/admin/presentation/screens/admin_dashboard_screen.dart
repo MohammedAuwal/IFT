@@ -10,7 +10,8 @@ import 'package:mix/features/admin/presentation/screens/admin_orders_screen.dart
 import 'package:mix/features/admin/presentation/screens/admin_rides_screen.dart';
 import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart';
 import 'package:mix/features/admin/presentation/screens/manage_categories_screen.dart';
-import 'package:mix/features/products/data/product_repository.dart';
+import 'package:mix/features/admin/presentation/screens/manage_products_screen.dart';
+import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/admin_preview_scope.dart';
 import 'package:mix/services/firebase_auth_service.dart';
@@ -26,16 +27,23 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _authService = FirebaseAuthService();
   final _firebaseService = FirebaseService();
-  final _repo = ProductRepository();
 
   final _adminUidCtrl = TextEditingController();
   final _adminEmailCtrl = TextEditingController();
+  final _vendorPickupCtrl = TextEditingController();
 
   bool _addingAdmin = false;
   bool _loggingOut = false;
+  bool _savingVendorAddress = false;
 
   bool get _isSuperAdmin =>
       FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+
+  bool _hasValidImage(String url) {
+    final value = url.trim();
+    return value.isNotEmpty &&
+        (value.startsWith('http://') || value.startsWith('https://'));
+  }
 
   Future<void> _addAdmin() async {
     final uid = _adminUidCtrl.text.trim();
@@ -74,6 +82,42 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     } finally {
       if (mounted) setState(() => _addingAdmin = false);
+    }
+  }
+
+  Future<void> _saveVendorPickupAddress() async {
+    final address = _vendorPickupCtrl.text.trim();
+    if (address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter vendor/shop pickup address'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _savingVendorAddress = true);
+
+    try {
+      await _firebaseService.updateVendorPickupAddress(address);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vendor pickup address updated'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update pickup address: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _savingVendorAddress = false);
     }
   }
 
@@ -153,9 +197,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _firebaseService.seedDefaultCategoriesIfMissing();
+    _firebaseService.seedDefaultAppSettings();
+  }
+
+  @override
   void dispose() {
     _adminUidCtrl.dispose();
     _adminEmailCtrl.dispose();
+    _vendorPickupCtrl.dispose();
     super.dispose();
   }
 
@@ -255,7 +307,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'You are in admin mode. Switch to User View to preview the customer experience.',
+                    'You are in admin mode. Switch to User View to preview the customer experience and your uploaded products.',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 12.5,
@@ -331,6 +383,79 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             },
           ),
           const SizedBox(height: 18),
+          _sectionCard(
+            card,
+            child: StreamBuilder<String>(
+              stream: _firebaseService.watchVendorPickupAddress(),
+              builder: (context, snapshot) {
+                final currentAddress = snapshot.data ?? AppConstants.defaultVendorLocation;
+
+                if (_vendorPickupCtrl.text.trim().isEmpty) {
+                  _vendorPickupCtrl.text = currentAddress;
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vendor / Shop Pickup Address',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'All delivery rides will start from this address.',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _Field(
+                      controller: _vendorPickupCtrl,
+                      hint: 'Enter real shop/vendor pickup address in Nigeria',
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _savingVendorAddress ? null : _saveVendorPickupAddress,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: gold,
+                          foregroundColor: Colors.black,
+                        ),
+                        child: _savingVendorAddress
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text(
+                                'Save Pickup Address',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Current: $currentAddress',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -349,12 +474,44 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _ActionCard(
+                  icon: Icons.inventory_2_outlined,
+                  title: 'Manage Products',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ManageProductsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
                   icon: Icons.receipt_long_rounded,
                   title: 'Orders',
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => AdminOrdersScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.local_taxi_rounded,
+                  title: 'Rides / Delivery',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AdminRidesScreen(),
                       ),
                     );
                   },
@@ -381,15 +538,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _ActionCard(
-                  icon: Icons.local_taxi_rounded,
-                  title: 'Rides',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => AdminRidesScreen(),
-                      ),
-                    );
-                  },
+                  icon: Icons.visibility_outlined,
+                  title: 'User Preview',
+                  onTap: _switchToUserView,
                 ),
               ),
             ],
@@ -465,11 +616,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(
-                              admin['email'] ?? '',
+                              (admin['email'] ?? '').toString(),
                               style: GoogleFonts.poppins(color: Colors.white),
                             ),
                             subtitle: Text(
-                              admin['uid'] ?? '',
+                              'Admin account',
                               style: GoogleFonts.poppins(
                                 color: Colors.white54,
                                 fontSize: 11,
@@ -486,7 +637,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(height: 18),
           ],
           Text(
-            'Live Products',
+            'My Uploaded Products',
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -495,7 +646,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           const SizedBox(height: 12),
           StreamBuilder<List<ProductModel>>(
-            stream: _repo.watchProducts(),
+            stream: _firebaseService.watchMyUploadedProducts(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Padding(
@@ -514,7 +665,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Text(
-                    'No products yet',
+                    'You have not uploaded any product yet',
                     style: GoogleFonts.poppins(color: Colors.white70),
                   ),
                 );
@@ -533,20 +684,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       contentPadding: const EdgeInsets.all(12),
                       leading: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          product.imageUrl,
+                        child: SizedBox(
                           width: 56,
                           height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 56,
-                            height: 56,
-                            color: Colors.white10,
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              color: Colors.white54,
-                            ),
-                          ),
+                          child: _hasValidImage(product.imageUrl)
+                              ? Image.network(
+                                  product.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.white10,
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.white54,
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  color: Colors.white10,
+                                  child: const Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.white54,
+                                  ),
+                                ),
                         ),
                       ),
                       title: Text(
@@ -557,33 +716,51 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        '₦${product.price.toStringAsFixed(2)} • ${product.category} • Stock ${product.stockQuantity}',
-                        style: GoogleFonts.poppins(color: gold),
+                        '₦${product.price.toStringAsFixed(2)} • ${product.normalizedCategories.join(', ')} • Stock ${product.stockQuantity}',
+                        style: GoogleFonts.poppins(color: gold, fontSize: 12),
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      EditProductScreen(product: product),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.edit_rounded,
-                              color: Colors.white70,
+                      trailing: PopupMenuButton<String>(
+                        color: const Color(0xFF11141A),
+                        iconColor: Colors.white70,
+                        onSelected: (value) async {
+                          if (value == 'preview') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ProductDetailScreen(product: product),
+                              ),
+                            );
+                          } else if (value == 'edit') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    EditProductScreen(product: product),
+                              ),
+                            );
+                          } else if (value == 'delete') {
+                            await _firebaseService.deleteProduct(product.id);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: 'preview',
+                            child: Text(
+                              'Preview',
+                              style: GoogleFonts.poppins(color: Colors.white),
                             ),
                           ),
-                          IconButton(
-                            onPressed: () async {
-                              await _repo.deleteProduct(product.id);
-                            },
-                            icon: const Icon(
-                              Icons.delete_rounded,
-                              color: Colors.redAccent,
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text(
+                              'Edit',
+                              style: GoogleFonts.poppins(color: Colors.white),
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text(
+                              'Delete',
+                              style:
+                                  GoogleFonts.poppins(color: Colors.redAccent),
                             ),
                           ),
                         ],

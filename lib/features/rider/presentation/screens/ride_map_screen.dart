@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -5,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/models/ride_model.dart';
-import 'package:mix/services/location_service.dart';
 
 class RideMapScreen extends StatefulWidget {
   final RideModel ride;
@@ -20,19 +21,45 @@ class RideMapScreen extends StatefulWidget {
 }
 
 class _RideMapScreenState extends State<RideMapScreen> {
-  final _locationService = LocationService();
-  LatLng? _currentUserLocation;
+  List<LatLng> _decodeRoute(String geometry) {
+    if (geometry.trim().isEmpty) return [];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrentLocation();
+    try {
+      final map = jsonDecode(geometry) as Map<String, dynamic>;
+      final coords = List<List<dynamic>>.from(map['coordinates'] ?? []);
+      return coords
+          .where((c) => c.length >= 2)
+          .map(
+            (c) => LatLng(
+              (c[1] as num).toDouble(),
+              (c[0] as num).toDouble(),
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
-  Future<void> _loadCurrentLocation() async {
-    final loc = await _locationService.getCurrentLatLng();
-    if (!mounted) return;
-    setState(() => _currentUserLocation = loc);
+  LatLngBounds? _boundsFor(List<LatLng> points) {
+    if (points.isEmpty) return null;
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (final point in points) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    return LatLngBounds(
+      LatLng(minLat, minLng),
+      LatLng(maxLat, maxLng),
+    );
   }
 
   @override
@@ -44,7 +71,8 @@ class _RideMapScreenState extends State<RideMapScreen> {
           .snapshots(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data();
-        final ride = data != null ? RideModel.fromMap(widget.ride.id, data) : widget.ride;
+        final ride =
+            data != null ? RideModel.fromMap(widget.ride.id, data) : widget.ride;
 
         final pickup = (ride.pickupLat != null && ride.pickupLng != null)
             ? LatLng(ride.pickupLat!, ride.pickupLng!)
@@ -59,49 +87,28 @@ class _RideMapScreenState extends State<RideMapScreen> {
             ? LatLng(ride.driverLat!, ride.driverLng!)
             : null;
 
-        final center = driver ?? pickup ?? _currentUserLocation ?? LatLng(9.0765, 7.3986);
+        final routePoints = _decodeRoute(ride.routeGeometry);
 
-        final markers = <Marker>[
-          if (pickup != null)
-            Marker(
-              point: pickup,
-              width: 44,
-              height: 44,
-              child: const Icon(Icons.my_location, color: Colors.green, size: 36),
-            ),
-          if (destination != null)
-            Marker(
-              point: destination,
-              width: 44,
-              height: 44,
-              child: const Icon(Icons.location_on, color: Colors.redAccent, size: 36),
-            ),
-          if (driver != null)
-            Marker(
-              point: driver,
-              width: 44,
-              height: 44,
-              child: const Icon(Icons.local_taxi, color: Colors.amber, size: 36),
-            ),
-          if (_currentUserLocation != null)
-            Marker(
-              point: _currentUserLocation!,
-              width: 32,
-              height: 32,
-              child: const Icon(Icons.person_pin_circle, color: Colors.blue, size: 30),
-            ),
-        ];
-
-        final polylinePoints = <LatLng>[
+        final allPoints = <LatLng>[
           if (pickup != null) pickup,
-          if (driver != null) driver,
           if (destination != null) destination,
+          if (driver != null) driver,
+          ...routePoints,
         ];
+
+        final center = pickup ??
+            destination ??
+            LatLng(
+              AppConstants.nigeriaCenterLat,
+              AppConstants.nigeriaCenterLng,
+            );
+
+        final bounds = _boundsFor(allPoints);
 
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              'Ride Map',
+              ride.type == 'delivery' ? 'Delivery Map' : 'Ride Map',
               style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
             ),
           ),
@@ -111,24 +118,67 @@ class _RideMapScreenState extends State<RideMapScreen> {
                 child: FlutterMap(
                   options: MapOptions(
                     initialCenter: center,
-                    initialZoom: 13,
+                    initialZoom: 6,
+                    initialCameraFit: bounds != null
+                        ? CameraFit.bounds(
+                            bounds: bounds,
+                            padding: const EdgeInsets.all(40),
+                          )
+                        : null,
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.maamahsmix.app',
                     ),
-                    if (polylinePoints.length >= 2)
+                    if (routePoints.length >= 2)
                       PolylineLayer(
                         polylines: [
                           Polyline(
-                            points: polylinePoints,
+                            points: routePoints,
                             color: Colors.deepOrange,
-                            strokeWidth: 4,
+                            strokeWidth: 5,
                           ),
                         ],
                       ),
-                    MarkerLayer(markers: markers),
+                    MarkerLayer(
+                      markers: [
+                        if (pickup != null)
+                          Marker(
+                            point: pickup,
+                            width: 44,
+                            height: 44,
+                            child: const Icon(
+                              Icons.my_location,
+                              color: Colors.green,
+                              size: 36,
+                            ),
+                          ),
+                        if (destination != null)
+                          Marker(
+                            point: destination,
+                            width: 44,
+                            height: 44,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: Colors.redAccent,
+                              size: 36,
+                            ),
+                          ),
+                        if (driver != null)
+                          Marker(
+                            point: driver,
+                            width: 44,
+                            height: 44,
+                            child: const Icon(
+                              Icons.local_taxi,
+                              color: Colors.amber,
+                              size: 36,
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -138,15 +188,32 @@ class _RideMapScreenState extends State<RideMapScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Status: ${ride.status}',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Status: ${ride.status}',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Pickup: ${ride.pickup}', style: GoogleFonts.poppins()),
-                    Text('Destination: ${ride.destination}', style: GoogleFonts.poppins()),
+                    Text(
+                      'Pickup: ${ride.pickup}',
+                      style: GoogleFonts.poppins(),
+                    ),
+                    Text(
+                      'Destination: ${ride.destination}',
+                      style: GoogleFonts.poppins(),
+                    ),
+                    Text(
+                      'Distance: ${ride.distanceKm.toStringAsFixed(1)} km',
+                      style: GoogleFonts.poppins(),
+                    ),
+                    Text(
+                      'ETA: ${ride.eta}',
+                      style: GoogleFonts.poppins(),
+                    ),
                     if (ride.driver != null)
-                      Text('Driver: ${ride.driver}', style: GoogleFonts.poppins()),
-                    if (ride.eta.isNotEmpty)
-                      Text('ETA: ${ride.eta}', style: GoogleFonts.poppins()),
+                      Text(
+                        'Driver: ${ride.driver}',
+                        style: GoogleFonts.poppins(),
+                      ),
                   ],
                 ),
               ),

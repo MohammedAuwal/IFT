@@ -14,6 +14,7 @@ class RideDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
+    final isDelivery = ride.type == 'delivery';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
@@ -22,7 +23,7 @@ class RideDetailScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
-          'Ride Details',
+          isDelivery ? 'Delivery Details' : 'Ride Details',
           style: GoogleFonts.poppins(
             color: const Color(0xFF1D1D1F),
             fontWeight: FontWeight.w700,
@@ -49,20 +50,27 @@ class RideDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ride #${ride.id}',
+                  '${isDelivery ? 'Delivery' : 'Ride'} #${ride.id}',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
                   ),
                 ),
                 const SizedBox(height: 14),
+                _info('Type', ride.type),
                 _info('Pickup', ride.pickup),
                 _info('Destination', ride.destination),
                 _info('Ride Type', ride.rideType),
                 _info('Status', ride.status),
                 _info('Driver', ride.driver ?? 'Not assigned yet'),
                 _info('ETA', ride.eta.isEmpty ? 'Pending' : ride.eta),
+                _info('Distance', '${ride.distanceKm.toStringAsFixed(1)} km'),
+                _info('Duration', '${ride.durationMin.ceil()} mins'),
                 _info('Fare', '₦${ride.price.toStringAsFixed(0)}'),
+                if (ride.orderId != null && ride.orderId!.isNotEmpty)
+                  _info('Order', ride.orderId!),
+                if (ride.productId != null && ride.productId!.isNotEmpty)
+                  _info('Product', ride.productId!),
                 if (ride.note.isNotEmpty) _info('Note', ride.note),
                 const SizedBox(height: 18),
                 if (ride.status != 'completed' && ride.status != 'cancelled')
@@ -73,12 +81,18 @@ class RideDetailScreen extends StatelessWidget {
                         await firebaseService.cancelRide(ride.id);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Ride cancelled')),
+                            SnackBar(
+                              content: Text(
+                                isDelivery
+                                    ? 'Delivery cancelled'
+                                    : 'Ride cancelled',
+                              ),
+                            ),
                           );
                           Navigator.of(context).pop();
                         }
                       },
-                      child: const Text('Cancel Ride'),
+                      child: Text(isDelivery ? 'Cancel Delivery' : 'Cancel Ride'),
                     ),
                   ),
               ],

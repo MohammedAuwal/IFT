@@ -155,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Address added'),
+          content: Text('Address added and selected'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -221,6 +221,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to remove address: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectAddress(String address) async {
+    try {
+      await _firebaseService.setSelectedAddress(address);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Delivery address selected'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to select address: $e'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -387,6 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final favorites = List<String>.from(profile['favorites'] ?? []);
         final cart = List<Map<String, dynamic>>.from(profile['cart'] ?? []);
         final addresses = List<String>.from(profile['addresses'] ?? []);
+        final selectedAddress = (profile['selectedAddress'] ?? '').toString();
         final initial = displayName.isNotEmpty
             ? displayName[0].toUpperCase()
             : 'M';
@@ -461,7 +483,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         GestureDetector(
-                          onTap: _savingName ? null : () => _editDisplayName(displayName),
+                          onTap: _savingName
+                              ? null
+                              : () => _editDisplayName(displayName),
                           child: Row(
                             children: [
                               Flexible(
@@ -613,6 +637,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    selectedAddress.isEmpty
+                        ? 'No selected delivery address'
+                        : 'Selected: $selectedAddress',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: selectedAddress.isEmpty
+                          ? Colors.redAccent
+                          : const Color(0xFFC29B40),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -666,50 +703,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (addresses.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     ...addresses.map(
-                      (address) => Container(
-                        margin: const EdgeInsets.only(top: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.place_outlined,
-                              size: 18,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.color
-                                  ?.withOpacity(0.5),
+                      (address) {
+                        final isSelected = selectedAddress == address;
+
+                        return Container(
+                          margin: const EdgeInsets.only(top: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFFC29B40)
+                                  : Colors.transparent,
+                              width: 1.2,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                address,
-                                style: GoogleFonts.poppins(fontSize: 13),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isSelected
+                                    ? Icons.check_circle_rounded
+                                    : Icons.place_outlined,
+                                size: 18,
+                                color: isSelected
+                                    ? const Color(0xFFC29B40)
+                                    : Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color
+                                        ?.withOpacity(0.5),
                               ),
-                            ),
-                            IconButton(
-                              onPressed: () => _removeAddress(address),
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                size: 20,
-                                color: Colors.red.withOpacity(0.7),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  address,
+                                  style: GoogleFonts.poppins(fontSize: 13),
+                                ),
                               ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
+                              TextButton(
+                                onPressed: () => _selectAddress(address),
+                                child: Text(
+                                  isSelected ? 'Selected' : 'Use',
+                                  style: GoogleFonts.poppins(
+                                    color: const Color(0xFFC29B40),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
+                              IconButton(
+                                onPressed: () => _removeAddress(address),
+                                icon: Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 20,
+                                  color: Colors.red.withOpacity(0.7),
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ] else ...[
                     const SizedBox(height: 12),

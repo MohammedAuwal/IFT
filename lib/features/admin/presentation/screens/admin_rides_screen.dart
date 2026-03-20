@@ -2,12 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/features/rider/presentation/screens/driver_mode_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
+import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class AdminRidesScreen extends StatelessWidget {
   AdminRidesScreen({super.key});
 
   final firebaseService = FirebaseService();
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.redAccent;
+      case 'ride_in_progress':
+      case 'delivery_in_progress':
+        return Colors.blueAccent;
+      case 'on_the_way':
+        return Colors.orange;
+      default:
+        return const Color(0xFFC29B40);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +34,14 @@ class AdminRidesScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF0F1115),
         elevation: 0,
         title: Text(
-          'Manage Rides',
+          'Manage Rides & Deliveries',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
           ),
         ),
       ),
-      body: StreamBuilder(
+      body: StreamBuilder<List<RideModel>>(
         stream: firebaseService.watchAllRides(),
         builder: (context, snapshot) {
           final rides = snapshot.data ?? [];
@@ -43,6 +60,7 @@ class AdminRidesScreen extends StatelessWidget {
             itemCount: rides.length,
             itemBuilder: (_, i) {
               final ride = rides[i];
+              final isDelivery = ride.type == 'delivery';
 
               return GestureDetector(
                 onTap: () {
@@ -63,22 +81,43 @@ class AdminRidesScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Ride ID: ${ride.id}',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            '${isDelivery ? 'Delivery' : 'Ride'} ID: ${ride.id}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDelivery
+                                  ? Colors.blue.withOpacity(0.15)
+                                  : const Color(0xFFC29B40).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              isDelivery ? 'Delivery' : 'Ride',
+                              style: GoogleFonts.poppins(
+                                color: isDelivery
+                                    ? Colors.lightBlueAccent
+                                    : const Color(0xFFC29B40),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'User: ${ride.userId}',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
                         'From: ${ride.pickup}',
                         style: GoogleFonts.poppins(color: Colors.white70),
@@ -94,15 +133,33 @@ class AdminRidesScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Status: ${ride.status}',
+                        'Distance: ${ride.distanceKm.toStringAsFixed(1)} km • ETA: ${ride.eta}',
+                        style: GoogleFonts.poppins(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Fare: ₦${ride.price.toStringAsFixed(0)}',
                         style: GoogleFonts.poppins(
                           color: const Color(0xFFC29B40),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Status: ${ride.status}',
+                        style: GoogleFonts.poppins(
+                          color: _statusColor(ride.status),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       if (ride.driver != null)
                         Text(
                           'Driver: ${ride.driver}',
+                          style: GoogleFonts.poppins(color: Colors.white70),
+                        ),
+                      if (ride.orderId != null && ride.orderId!.isNotEmpty)
+                        Text(
+                          'Order: ${ride.orderId}',
                           style: GoogleFonts.poppins(color: Colors.white70),
                         ),
                       if (ride.note.isNotEmpty)
@@ -117,7 +174,10 @@ class AdminRidesScreen extends StatelessWidget {
                         children: [
                           _statusButton(ride.id, 'searching'),
                           _statusButton(ride.id, 'on_the_way'),
-                          _statusButton(ride.id, 'ride_in_progress'),
+                          _statusButton(
+                            ride.id,
+                            isDelivery ? 'delivery_in_progress' : 'ride_in_progress',
+                          ),
                           _statusButton(ride.id, 'completed'),
                           _statusButton(ride.id, 'cancelled'),
                           ElevatedButton(
@@ -131,7 +191,7 @@ class AdminRidesScreen extends StatelessWidget {
                                 ),
                               );
                             },
-                            child: const Text('Driver Mode'),
+                            child: Text(isDelivery ? 'Delivery Mode' : 'Driver Mode'),
                           ),
                         ],
                       ),

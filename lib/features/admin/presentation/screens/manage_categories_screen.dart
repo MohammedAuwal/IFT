@@ -26,6 +26,36 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     );
   }
 
+  Future<void> _removeCategory(String category) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Remove Category'),
+            content: Text('Remove "$category"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Remove'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) return;
+    await _firebaseService.removeCategory(category);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _firebaseService.seedDefaultCategoriesIfMissing();
+  }
+
   @override
   void dispose() {
     _categoryCtrl.dispose();
@@ -108,6 +138,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
               return Column(
                 children: categories.map((category) {
+                  final isProtected = const [
+                    'General',
+                    'Trending',
+                    'Featured',
+                  ].contains(category);
+
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
@@ -120,11 +156,27 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                         category,
                         style: GoogleFonts.poppins(color: Colors.white),
                       ),
+                      subtitle: isProtected
+                          ? Text(
+                              'Default category',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            )
+                          : null,
                       trailing: IconButton(
-                        onPressed: () async {
-                          await _firebaseService.removeCategory(category);
-                        },
-                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        onPressed: isProtected
+                            ? null
+                            : () async {
+                                await _removeCategory(category);
+                              },
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: isProtected
+                              ? Colors.white24
+                              : Colors.redAccent,
+                        ),
                       ),
                     ),
                   );

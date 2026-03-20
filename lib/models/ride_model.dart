@@ -16,6 +16,12 @@ class RideModel {
   final double? destinationLng;
   final double? driverLat;
   final double? driverLng;
+  final double distanceKm;
+  final double durationMin;
+  final String routeGeometry;
+  final String? productId;
+  final String? orderId;
+  final String? addressLabel;
   final DateTime createdAt;
 
   RideModel({
@@ -36,8 +42,23 @@ class RideModel {
     this.destinationLng,
     this.driverLat,
     this.driverLng,
+    this.distanceKm = 0,
+    this.durationMin = 0,
+    this.routeGeometry = '',
+    this.productId,
+    this.orderId,
+    this.addressLabel,
     required this.createdAt,
   });
+
+  bool get isDelivery => type == 'delivery';
+
+  bool get isActive => status != 'completed' && status != 'cancelled';
+
+  String get readableType {
+    if (type == 'delivery') return 'Delivery';
+    return 'Ride';
+  }
 
   factory RideModel.fromMap(String id, Map<String, dynamic> map) {
     return RideModel(
@@ -58,7 +79,15 @@ class RideModel {
       destinationLng: (map['destinationLng'] as num?)?.toDouble(),
       driverLat: (map['driverLat'] as num?)?.toDouble(),
       driverLng: (map['driverLng'] as num?)?.toDouble(),
-      createdAt: DateTime.tryParse((map['createdAt'] ?? '').toString()) ?? DateTime.now(),
+      distanceKm: ((map['distanceKm'] ?? 0) as num).toDouble(),
+      durationMin: ((map['durationMin'] ?? 0) as num).toDouble(),
+      routeGeometry: (map['routeGeometry'] ?? '').toString(),
+      productId: map['productId']?.toString(),
+      orderId: map['orderId']?.toString(),
+      addressLabel: map['addressLabel']?.toString(),
+      createdAt:
+          DateTime.tryParse((map['createdAt'] ?? '').toString()) ??
+              DateTime.now(),
     );
   }
 
@@ -80,7 +109,67 @@ class RideModel {
       'destinationLng': destinationLng,
       'driverLat': driverLat,
       'driverLng': driverLng,
+      'distanceKm': distanceKm,
+      'durationMin': durationMin,
+      'routeGeometry': routeGeometry,
+      'productId': productId,
+      'orderId': orderId,
+      'addressLabel': addressLabel,
       'createdAt': createdAt.toIso8601String(),
     };
+  }
+
+  RideModel copyWith({
+    String? id,
+    String? type,
+    String? userId,
+    String? pickup,
+    String? destination,
+    String? rideType,
+    String? status,
+    String? driver,
+    double? price,
+    String? note,
+    String? eta,
+    double? pickupLat,
+    double? pickupLng,
+    double? destinationLat,
+    double? destinationLng,
+    double? driverLat,
+    double? driverLng,
+    double? distanceKm,
+    double? durationMin,
+    String? routeGeometry,
+    String? productId,
+    String? orderId,
+    String? addressLabel,
+    DateTime? createdAt,
+  }) {
+    return RideModel(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      userId: userId ?? this.userId,
+      pickup: pickup ?? this.pickup,
+      destination: destination ?? this.destination,
+      rideType: rideType ?? this.rideType,
+      status: status ?? this.status,
+      driver: driver ?? this.driver,
+      price: price ?? this.price,
+      note: note ?? this.note,
+      eta: eta ?? this.eta,
+      pickupLat: pickupLat ?? this.pickupLat,
+      pickupLng: pickupLng ?? this.pickupLng,
+      destinationLat: destinationLat ?? this.destinationLat,
+      destinationLng: destinationLng ?? this.destinationLng,
+      driverLat: driverLat ?? this.driverLat,
+      driverLng: driverLng ?? this.driverLng,
+      distanceKm: distanceKm ?? this.distanceKm,
+      durationMin: durationMin ?? this.durationMin,
+      routeGeometry: routeGeometry ?? this.routeGeometry,
+      productId: productId ?? this.productId,
+      orderId: orderId ?? this.orderId,
+      addressLabel: addressLabel ?? this.addressLabel,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }

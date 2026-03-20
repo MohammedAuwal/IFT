@@ -33,10 +33,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   File? _selectedImage;
   bool _featured = false;
+  bool _isTrending = false;
   bool _inStock = true;
   bool _loading = false;
 
-  String? _selectedCategory;
+  List<String> _selectedCategories = ['General'];
 
   Future<void> _pickImage() async {
     final file = await _imageService.pickImageWithFallback();
@@ -59,12 +60,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
     setState(() => _selectedImage = file);
   }
 
+  void _toggleCategory(String category, bool selected) {
+    setState(() {
+      if (selected) {
+        if (!_selectedCategories.contains(category)) {
+          _selectedCategories.add(category);
+        }
+      } else {
+        _selectedCategories.remove(category);
+      }
+
+      if (_selectedCategories.isEmpty) {
+        _selectedCategories = ['General'];
+      }
+    });
+  }
+
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
     final description = _descCtrl.text.trim();
-    final category = (_selectedCategory == null || _selectedCategory!.trim().isEmpty)
-        ? 'General'
-        : _selectedCategory!.trim();
     final price = double.tryParse(_priceCtrl.text.trim());
     final stockQty = int.tryParse(_stockQtyCtrl.text.trim()) ?? 0;
     final promoDiscount = double.tryParse(_promoDiscountCtrl.text.trim()) ?? 0;
@@ -87,6 +101,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final categories = _selectedCategories.toSet().toList();
+
+    if (_featured && !categories.contains('Featured')) {
+      categories.add('Featured');
+    }
+    if (_isTrending && !categories.contains('Trending')) {
+      categories.add('Trending');
+    }
+
     setState(() => _loading = true);
 
     try {
@@ -101,8 +124,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         imageUrl: imageUrl,
         createdBy: user.uid,
         createdAt: DateTime.now(),
-        category: category,
+        category: categories.isEmpty ? 'General' : categories.first,
+        categories: categories,
         featured: _featured,
+        isTrending: _isTrending,
         inStock: _inStock,
         stockQuantity: stockQty,
         variants: variants,
@@ -194,52 +219,45 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 _Field(
                   controller: _priceCtrl,
                   hint: 'Price',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 12),
+                Text(
+                  'Categories',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 StreamBuilder<List<String>>(
                   stream: _firebaseService.watchCategories(),
                   builder: (context, snapshot) {
-                    final categories = snapshot.data ?? const <String>[];
-                    final safeCategories = categories.isEmpty ? const ['General'] : categories;
-                    final selectedValue = safeCategories.contains(_selectedCategory)
-                        ? _selectedCategory
-                        : safeCategories.first;
+                    final categories = snapshot.data ?? const ['General'];
 
-                    if (_selectedCategory != selectedValue) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        setState(() => _selectedCategory = selectedValue);
-                      });
-                    }
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: categories.map((category) {
+                        final selected =
+                            _selectedCategories.contains(category);
 
-                    return DropdownButtonFormField<String>(
-                      initialValue: selectedValue,
-                      dropdownColor: const Color(0xFF11141A),
-                      style: GoogleFonts.poppins(color: Colors.white),
-                      iconEnabledColor: Colors.white70,
-                      decoration: InputDecoration(
-                        hintText: 'Category',
-                        hintStyle: GoogleFonts.poppins(color: Colors.white54),
-                        filled: true,
-                        fillColor: const Color(0xFF11141A),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items: safeCategories
-                          .map(
-                            (c) => DropdownMenuItem<String>(
-                              value: c,
-                              child: Text(c),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => _selectedCategory = value);
-                      },
+                        return FilterChip(
+                          label: Text(category),
+                          selected: selected,
+                          onSelected: (value) => _toggleCategory(category, value),
+                          selectedColor: gold,
+                          backgroundColor: const Color(0xFF11141A),
+                          labelStyle: GoogleFonts.poppins(
+                            color: selected ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          side: BorderSide(
+                            color: selected ? gold : Colors.white12,
+                          ),
+                        );
+                      }).toList(),
                     );
                   },
                 ),
@@ -263,7 +281,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 _Field(
                   controller: _promoDiscountCtrl,
                   hint: 'Promo discount %',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
@@ -273,6 +292,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   onChanged: (v) => setState(() => _featured = v),
                   title: Text(
                     'Featured product',
+                    style: GoogleFonts.poppins(color: Colors.white),
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: gold,
+                  value: _isTrending,
+                  onChanged: (v) => setState(() => _isTrending = v),
+                  title: Text(
+                    'Trending product',
                     style: GoogleFonts.poppins(color: Colors.white),
                   ),
                 ),

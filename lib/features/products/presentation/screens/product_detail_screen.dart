@@ -11,11 +11,17 @@ class ProductDetailScreen extends StatelessWidget {
     required this.product,
   });
 
+  bool get _hasValidImage =>
+      product.imageUrl.trim().isNotEmpty &&
+      (product.imageUrl.startsWith('http://') ||
+          product.imageUrl.startsWith('https://'));
+
   @override
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
     final variantText =
         product.variants.isEmpty ? 'No variants' : product.variants.join(', ');
+    final categoryText = product.normalizedCategories.join(', ');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
@@ -57,19 +63,68 @@ class ProductDetailScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             child: AspectRatio(
               aspectRatio: 1.1,
-              child: Image.network(
-                product.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: Colors.grey.shade200,
-                  child: const Center(
-                    child: Icon(Icons.image_not_supported, size: 42),
-                  ),
-                ),
-              ),
+              child: _hasValidImage
+                  ? Image.network(
+                      product.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          color: Colors.grey.shade100,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported, size: 42),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: Icon(Icons.image_not_supported, size: 42),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 20),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (product.isTrending)
+                _StatusChip(
+                  label: 'Trending',
+                  bgColor: const Color(0xFFFFE3D2),
+                  textColor: const Color(0xFFAA4A00),
+                  icon: Icons.local_fire_department_rounded,
+                ),
+              if (product.featured)
+                _StatusChip(
+                  label: 'Featured',
+                  bgColor: const Color(0xFFF8E9B0),
+                  textColor: const Color(0xFF7A5A12),
+                  icon: Icons.star_rounded,
+                ),
+              _StatusChip(
+                label: product.inStock ? 'In Stock' : 'Out of Stock',
+                bgColor: product.inStock
+                    ? const Color(0xFFDDF5E4)
+                    : const Color(0xFFFFE0E0),
+                textColor: product.inStock
+                    ? const Color(0xFF1F7A39)
+                    : const Color(0xFFB42318),
+                icon: product.inStock
+                    ? Icons.check_circle_rounded
+                    : Icons.cancel_rounded,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Text(
             product.name,
             style: GoogleFonts.poppins(
@@ -87,21 +142,13 @@ class ProductDetailScreen extends StatelessWidget {
               color: const Color(0xFFC29B40),
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            product.inStock ? 'Available now' : 'Currently unavailable',
-            style: GoogleFonts.poppins(
-              color: product.inStock ? Colors.green : Colors.redAccent,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
           const SizedBox(height: 18),
           Text(
-            'Category',
+            'Categories',
             style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
-          Text(product.category, style: GoogleFonts.poppins()),
+          Text(categoryText, style: GoogleFonts.poppins()),
           const SizedBox(height: 18),
           Text(
             'Variants',
@@ -156,6 +203,46 @@ class ProductDetailScreen extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color bgColor;
+  final Color textColor;
+  final IconData icon;
+
+  const _StatusChip({
+    required this.label,
+    required this.bgColor,
+    required this.textColor,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: textColor),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              color: textColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
             ),
           ),
         ],

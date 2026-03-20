@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
+import 'package:mix/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_map_screen.dart';
 import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
-import 'package:mix/services/location_service.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
@@ -16,15 +16,57 @@ class RiderHomeScreen extends StatefulWidget {
 
 class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final firebaseService = FirebaseService();
-  final locationService = LocationService();
 
   final _pickupCtrl = TextEditingController();
   final _destinationCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
 
   String _rideType = 'car';
+  bool _loadingEstimate = false;
+  bool _bookingRide = false;
+  String? _estimateError;
+  MovementEstimate? _estimate;
 
-  double get _estimatedPrice => _rideType == 'bike' ? 1500 : 2500;
+  Future<void> _estimateRide() async {
+    final pickup = _pickupCtrl.text.trim();
+    final destination = _destinationCtrl.text.trim();
+
+    if (pickup.isEmpty || destination.isEmpty) {
+      setState(() {
+        _estimateError = 'Pickup and destination are required';
+        _estimate = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _loadingEstimate = true;
+      _estimateError = null;
+    });
+
+    try {
+      final result = await firebaseService.estimateMovement(
+        type: 'ride',
+        pickup: pickup,
+        destination: destination,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _estimate = result;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _estimate = null;
+        _estimateError = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _loadingEstimate = false);
+      }
+    }
+  }
 
   Future<void> _bookRide() async {
     final pickup = _pickupCtrl.text.trim();
@@ -38,24 +80,25 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
       return;
     }
 
-    try {
-      final current = await locationService.getCurrentLatLng();
+    setState(() => _bookingRide = true);
 
+    try {
       await firebaseService.createRide(
         pickup: pickup,
         destination: destination,
         rideType: _rideType,
-        price: _estimatedPrice,
+        price: _estimate?.price ?? 0,
         note: note,
-        pickupLat: current?.latitude,
-        pickupLng: current?.longitude,
-        destinationLat: current != null ? current.latitude + 0.02 : null,
-        destinationLng: current != null ? current.longitude + 0.02 : null,
       );
 
       _pickupCtrl.clear();
       _destinationCtrl.clear();
       _noteCtrl.clear();
+
+      setState(() {
+        _estimateError = null;
+        _estimate = null;
+      });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,6 +109,8 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$e')),
       );
+    } finally {
+      if (mounted) setState(() => _bookingRide = false);
     }
   }
 
@@ -103,14 +148,14 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
           try {
             activeRide = rides.firstWhere(
-              (r) => r.status != 'completed' && r.status != 'cancelled',
+              (r) => r.isActive && r.type == 'ride',
             );
           } catch (_) {
             activeRide = null;
           }
 
           final history = rides
-              .where((r) => r.status == 'completed' || r.status == 'cancelled')
+              .where((r) => !r.isActive && r.type == 'ride')
               .toList();
 
           return ListView(
@@ -141,7 +186,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                 const EmptyStateCard(
                   icon: Icons.local_taxi_outlined,
                   title: 'No active ride',
-                  subtitle: 'Book a ride to get moving quickly and safely.',
+                  subtitle: 'Book a ride to get moving quickly and safely anywhere in Nigeria.',
                 ),
               const SizedBox(height: 18),
               Container(
@@ -170,8 +215,16 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                     const SizedBox(height: 14),
                     TextField(
                       controller: _pickupCtrl,
+                      onChanged: (_) {
+                        if (_estimate != null || _estimateError != null) {
+                          setState(() {
+                            _estimate = null;
+                            _estimateError = null;
+                          });
+                        }
+                      },
                       decoration: InputDecoration(
-                        hintText: 'Pickup location',
+                        hintText: 'Pickup anywhere in Nigeria',
                         prefixIcon: const Icon(Icons.my_location_rounded),
                         filled: true,
                         fillColor: const Color(0xFFF5F5F5),
@@ -184,8 +237,16 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _destinationCtrl,
+                      onChanged: (_) {
+                        if (_estimate != null || _estimateError != null) {
+                          setState(() {
+                            _estimate = null;
+                            _estimateError = null;
+                          });
+                        }
+                      },
                       decoration: InputDecoration(
-                        hintText: 'Destination',
+                        hintText: 'Destination anywhere in Nigeria',
                         prefixIcon: const Icon(Icons.location_on_outlined),
                         filled: true,
                         fillColor: const Color(0xFFF5F5F5),
@@ -240,40 +301,152 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'Estimated Price',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '₦${_estimatedPrice.toStringAsFixed(0)}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: gold,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton.icon(
-                        onPressed: activeRide == null ? _bookRide : null,
-                        icon: const Icon(Icons.local_taxi_rounded),
-                        label: Text(
-                          activeRide == null ? 'Confirm Ride' : 'Active Ride Exists',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                    if (_estimateError != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8E2121),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                        child: Text(
+                          _estimateError!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
+                    if (_estimate != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F0E0),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFC29B40).withOpacity(0.25),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Live Estimate',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF7A5A12),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Pickup: ${_estimate!.pickupLabel}',
+                              style: GoogleFonts.poppins(fontSize: 12),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Destination: ${_estimate!.destinationLabel}',
+                              style: GoogleFonts.poppins(fontSize: 12),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Distance: ${_estimate!.distanceKm.toStringAsFixed(1)} km',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'ETA: ${_estimate!.eta}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Fare: ₦${_estimate!.price.toStringAsFixed(0)}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: const Color(0xFFC29B40),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => RideEstimateMapPreviewScreen(
+                                        estimate: _estimate!,
+                                        title: 'Ride Route Preview',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.map_outlined),
+                                label: const Text('Preview Route on Map'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _loadingEstimate ? null : _estimateRide,
+                            child: _loadingEstimate
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Text('Check Route'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              onPressed: activeRide == null && !_bookingRide
+                                  ? _bookRide
+                                  : null,
+                              icon: _bookingRide
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.local_taxi_rounded),
+                              label: Text(
+                                activeRide == null
+                                    ? 'Confirm Ride'
+                                    : 'Active Ride Exists',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8E2121),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -324,7 +497,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                         style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(
-                        ride.status,
+                        '${ride.status} • ${ride.distanceKm.toStringAsFixed(1)} km • ${ride.eta}',
                         style: GoogleFonts.poppins(
                           color: ride.status == 'completed'
                               ? Colors.green
@@ -364,6 +537,8 @@ class _RideStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDelivery = ride.type == 'delivery';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -383,7 +558,7 @@ class _RideStatusCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '🚗 Ride in Progress',
+              isDelivery ? '📦 Delivery in Progress' : '🚗 Ride in Progress',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
@@ -400,13 +575,18 @@ class _RideStatusCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              'Distance: ${ride.distanceKm.toStringAsFixed(1)} km',
+              style: GoogleFonts.poppins(),
+            ),
+            Text(
+              'ETA: ${ride.eta}',
+              style: GoogleFonts.poppins(),
+            ),
             if (ride.driver != null) ...[
               const SizedBox(height: 6),
               Text('Driver: ${ride.driver}', style: GoogleFonts.poppins()),
-            ],
-            if (ride.eta.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text('ETA: ${ride.eta}', style: GoogleFonts.poppins()),
             ],
             if (ride.note.isNotEmpty) ...[
               const SizedBox(height: 6),

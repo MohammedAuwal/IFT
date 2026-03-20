@@ -5,6 +5,8 @@ class OrderModel {
   final double totalAmount;
   final String status;
   final DateTime createdAt;
+  final String deliveryRideId;
+  final String deliveryAddress;
 
   OrderModel({
     required this.id,
@@ -13,6 +15,8 @@ class OrderModel {
     required this.totalAmount,
     required this.status,
     required this.createdAt,
+    this.deliveryRideId = '',
+    this.deliveryAddress = '',
   });
 
   factory OrderModel.fromMap(String id, Map<String, dynamic> map) {
@@ -22,7 +26,11 @@ class OrderModel {
       items: List<Map<String, dynamic>>.from(map['items'] ?? []),
       totalAmount: ((map['totalAmount'] ?? 0) as num).toDouble(),
       status: (map['status'] ?? 'pending').toString(),
-      createdAt: DateTime.tryParse((map['createdAt'] ?? '').toString()) ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse((map['createdAt'] ?? '').toString()) ??
+              DateTime.now(),
+      deliveryRideId: (map['deliveryRideId'] ?? '').toString(),
+      deliveryAddress: (map['deliveryAddress'] ?? '').toString(),
     );
   }
 
@@ -33,6 +41,30 @@ class OrderModel {
       'totalAmount': totalAmount,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
+      'deliveryRideId': deliveryRideId,
+      'deliveryAddress': deliveryAddress,
     };
+  }
+
+  OrderModel copyWith({
+    String? id,
+    String? userId,
+    List<Map<String, dynamic>>? items,
+    double? totalAmount,
+    String? status,
+    DateTime? createdAt,
+    String? deliveryRideId,
+    String? deliveryAddress,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      items: items ?? this.items,
+      totalAmount: totalAmount ?? this.totalAmount,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      deliveryRideId: deliveryRideId ?? this.deliveryRideId,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+    );
   }
 }
