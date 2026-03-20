@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/data/product_repository.dart';
@@ -266,7 +267,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     return StreamBuilder<String>(
                       stream: _firebaseService.watchVendorPickupAddress(),
                       builder: (context, vendorSnapshot) {
-                        final vendorAddress = vendorSnapshot.data ?? AppConstants.defaultVendorLocation;
+                        final vendorAddress =
+                            vendorSnapshot.data ?? AppConstants.defaultVendorLocation;
 
                         return Container(
                           width: double.infinity,
