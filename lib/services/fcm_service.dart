@@ -15,23 +15,38 @@ class FcmService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   static Future<void> backgroundHandler(RemoteMessage message) async {
-    // Background messages are handled by Firebase.
-    // We intentionally keep this lightweight.
+    // Keep lightweight for stability.
   }
 
   Future<void> initialize() async {
-    await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    try {
+      await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+    } catch (_) {}
 
-    await _saveCurrentToken();
-    _listenTokenRefresh();
-    _listenForegroundMessages();
-    _listenNotificationTapEvents();
-    await _handleInitialMessage();
+    try {
+      await _saveCurrentToken();
+    } catch (_) {}
+
+    try {
+      _listenTokenRefresh();
+    } catch (_) {}
+
+    try {
+      _listenForegroundMessages();
+    } catch (_) {}
+
+    try {
+      _listenNotificationTapEvents();
+    } catch (_) {}
+
+    try {
+      await _handleInitialMessage();
+    } catch (_) {}
   }
 
   Future<void> _saveCurrentToken() async {
@@ -90,16 +105,20 @@ class FcmService {
       final body =
           message.notification?.body ?? (message.data['body'] ?? 'You have a new update');
 
-      await LocalNotificationService.instance.show(
-        title: title.toString(),
-        body: body.toString(),
-      );
+      try {
+        await LocalNotificationService.instance.show(
+          title: title.toString(),
+          body: body.toString(),
+        );
+      } catch (_) {}
     });
   }
 
   void _listenNotificationTapEvents() {
     FirebaseMessaging.onMessageOpenedApp.listen((message) async {
-      await NotificationNavigationService.instance.handlePayload(message.data);
+      try {
+        await NotificationNavigationService.instance.handlePayload(message.data);
+      } catch (_) {}
     });
   }
 

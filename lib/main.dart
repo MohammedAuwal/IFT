@@ -9,12 +9,29 @@ import 'app.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // Prevent hard crash at startup if Firebase init has an issue.
+  }
 
-  FirebaseMessaging.onBackgroundMessage(FcmService.backgroundHandler);
+  try {
+    FirebaseMessaging.onBackgroundMessage(FcmService.backgroundHandler);
+  } catch (_) {
+    // Prevent startup crash from background handler registration issue.
+  }
 
-  await LocalNotificationService.instance.initialize();
-  await FcmService.instance.initialize();
+  try {
+    await LocalNotificationService.instance.initialize();
+  } catch (_) {
+    // Keep app opening even if local notification init fails.
+  }
+
+  try {
+    await FcmService.instance.initialize();
+  } catch (_) {
+    // Keep app opening even if FCM init fails.
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
