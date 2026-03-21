@@ -472,30 +472,45 @@ class _GlassField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.16)),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontSize: 15,
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        height: 74,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withOpacity(0.16)),
         ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.poppins(
-            color: Colors.white.withOpacity(0.65),
+        child: TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          cursorColor: Colors.white,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
             fontSize: 15,
           ),
-          prefixIcon: Icon(icon, color: Colors.white, size: 26),
-          suffixIcon: suffix,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: InputDecoration(
+            filled: false,
+            fillColor: Colors.transparent,
+            hintText: hint,
+            hintStyle: GoogleFonts.poppins(
+              color: Colors.white.withOpacity(0.65),
+              fontSize: 15,
+            ),
+            prefixIcon: Icon(icon, color: Colors.white, size: 26),
+            suffixIcon: suffix,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 24,
+            ),
+          ),
         ),
       ),
     );
