@@ -288,6 +288,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F1115),
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: [
             Container(
@@ -324,7 +325,8 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
         actions: [
           IconButton(
             tooltip: 'Toggle theme',
-            onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+            onPressed: () =>
+                themeController.toggleDarkMode(!themeController.isDarkMode),
             icon: Icon(
               themeController.isDarkMode
                   ? Icons.light_mode_rounded

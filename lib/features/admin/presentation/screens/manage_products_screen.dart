@@ -97,7 +97,8 @@ class ManageProductsScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Toggle theme',
-            onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+            onPressed: () =>
+                themeController.toggleDarkMode(!themeController.isDarkMode),
             icon: Icon(
               themeController.isDarkMode
                   ? Icons.light_mode_rounded

@@ -7,7 +7,6 @@ import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
 import 'package:mix/features/rider/presentation/screens/rider_home_screen.dart';
-import 'package:mix/features/shell/presentation/screens/main_shell_screen.dart';
 import 'package:mix/services/firebase_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -80,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      await _authService.signInWithEmailAndPassword(
+      await _authService.signInWithEmailPassword(
         email: email,
         password: password,
       );
@@ -127,7 +126,8 @@ class _LoginScreenState extends State<LoginScreen> {
         actions: [
           IconButton(
             tooltip: 'Toggle theme',
-            onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+            onPressed: () =>
+                themeController.toggleDarkMode(!themeController.isDarkMode),
             icon: Icon(
               themeController.isDarkMode
                   ? Icons.light_mode_rounded
