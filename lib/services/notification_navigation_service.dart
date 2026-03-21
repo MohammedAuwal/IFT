@@ -23,12 +23,10 @@ class NotificationNavigationService {
 
     _isNavigating = true;
 
-    try {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
+    Future.microtask(() async {
+      try {
         final safeNavigator = navigatorKey.currentState;
-        final safeContext = navigatorKey.currentContext;
-
-        if (safeNavigator == null || safeContext == null) {
+        if (safeNavigator == null) {
           _isNavigating = false;
           return;
         }
@@ -55,11 +53,11 @@ class NotificationNavigationService {
             MaterialPageRoute(builder: (_) => const MainShellScreen()),
           );
         }
-
+      } catch (_) {
+        // ignore navigation exception
+      } finally {
         _isNavigating = false;
-      });
-    } catch (_) {
-      _isNavigating = false;
-    }
+      }
+    });
   }
 }

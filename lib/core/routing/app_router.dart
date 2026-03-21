@@ -16,27 +16,27 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case RouteNames.splash:
-        return _route(const _NoExitScreen(child: SplashScreen()));
+        return _route(const SplashScreen());
       case RouteNames.login:
-        return _route(const _NoExitScreen(child: LoginScreen()));
+        return _route(const LoginScreen());
       case RouteNames.home:
-        return _route(_NoExitScreen(child: ProductListScreen()));
+        return _route(const ProductListScreen());
       case RouteNames.admin:
-        return _route(_NoExitScreen(child: AdminDashboardScreen()));
+        return _route(const AdminDashboardScreen());
       case RouteNames.cart:
-        return _route(_NoExitScreen(child: CartScreen()));
+        return _route(const CartScreen());
       case RouteNames.orders:
-        return _route(_NoExitScreen(child: OrderScreen()));
+        return _route(OrderScreen());
       case RouteNames.profile:
-        return _route(_NoExitScreen(child: ProfileScreen()));
+        return _route(const ProfileScreen());
       case RouteNames.favorites:
-        return _route(_NoExitScreen(child: FavoritesScreen()));
+        return _route(FavoritesScreen());
       case RouteNames.addProduct:
         return _route(const AddProductScreen());
       case RouteNames.adminOrders:
         return _route(AdminOrdersScreen());
       case RouteNames.mainShell:
-        return _route(const _NoExitScreen(child: MainShellScreen()));
+        return _route(const MainShellScreen());
       default:
         return _route(
           const Scaffold(
@@ -52,21 +52,10 @@ class AppRouter {
 
   static Future<void> clearAndGo(BuildContext context, String route) async {
     if (!context.mounted) return;
-    await Navigator.of(context)
-        .pushNamedAndRemoveUntil(route, (route) => false);
-  }
-}
 
-class _NoExitScreen extends StatelessWidget {
-  final Widget child;
-
-  const _NoExitScreen({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      child: child,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
+    });
   }
 }

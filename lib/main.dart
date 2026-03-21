@@ -9,6 +9,10 @@ import 'app.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+  };
+
   try {
     await Firebase.initializeApp();
   } catch (_) {
@@ -17,21 +21,15 @@ Future<void> main() async {
 
   try {
     FirebaseMessaging.onBackgroundMessage(FcmService.backgroundHandler);
-  } catch (_) {
-    // Prevent startup crash from background handler registration issue.
-  }
+  } catch (_) {}
 
   try {
     await LocalNotificationService.instance.initialize();
-  } catch (_) {
-    // Keep app opening even if local notification init fails.
-  }
+  } catch (_) {}
 
   try {
     await FcmService.instance.initialize();
-  } catch (_) {
-    // Keep app opening even if FCM init fails.
-  }
+  } catch (_) {}
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
