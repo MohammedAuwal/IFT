@@ -128,7 +128,6 @@ class _SplashScreenState extends State<SplashScreen>
       }
     }
 
-    // Guest users and normal signed-in users both enter main shell
     await _safeNavigate(RouteNames.mainShell);
   }
 
@@ -152,6 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
     const top = Color(0xFF2A0A12);
     const bottom = Color(0xFF12060A);
     const gold = Color(0xFFC29B40);
+    const wine = Color(0xFF7C1820);
 
     return Scaffold(
       backgroundColor: top,
@@ -180,8 +180,8 @@ class _SplashScreenState extends State<SplashScreen>
                             ScaleTransition(
                               scale: _pulseAnimation,
                               child: Container(
-                                width: 110,
-                                height: 110,
+                                width: 118,
+                                height: 118,
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.08),
                                   shape: BoxShape.circle,
@@ -194,11 +194,40 @@ class _SplashScreenState extends State<SplashScreen>
                                     ),
                                   ],
                                 ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.auto_awesome_mosaic_rounded,
-                                    color: gold,
-                                    size: 50,
+                                child: Center(
+                                  child: Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: const BoxDecoration(
+                                      color: gold,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Text(
+                                          'M',
+                                          style: GoogleFonts.cinzel(
+                                            color: wine,
+                                            fontSize: 34,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 12,
+                                          right: 16,
+                                          child: Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.85),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -252,17 +281,19 @@ class _SplashScreenState extends State<SplashScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              width: 110,
-                              height: 110,
+                              width: 118,
+                              height: 118,
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.08),
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white12),
                               ),
-                              child: const Icon(
-                                Icons.wifi_off_rounded,
-                                color: Colors.white,
-                                size: 42,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.wifi_off_rounded,
+                                  color: Colors.white,
+                                  size: 42,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 20),

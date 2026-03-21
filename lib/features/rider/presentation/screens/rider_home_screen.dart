@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
-import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/features/auth/presentation/screens/login_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_map_screen.dart';
@@ -43,7 +43,14 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   bool get _isGuest => FirebaseAuth.instance.currentUser == null;
 
   Future<void> _goToLogin() async {
-    await AppRouter.clearAndGo(context, RouteNames.login);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(
+          redirectTo: RouteNames.redirectRider,
+        ),
+      ),
+    );
   }
 
   Future<void> _showGuestRidePrompt() async {

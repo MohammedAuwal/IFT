@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/shared/presentation/widgets/premium_location_picker_bottom_sheet.dart';
 import 'package:mix/models/place_suggestion_model.dart';
 import 'package:mix/services/firebase_service.dart';
@@ -156,9 +157,12 @@ class _ManageAdminLocationsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final themeController = ThemeScope.of(context);
     const bg = Color(0xFF0F1115);
     const card = Color(0xFF171A21);
     const gold = Color(0xFFC29B40);
+    const wine = Color(0xFF7C1820);
+
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
@@ -167,13 +171,51 @@ class _ManageAdminLocationsScreenState
         backgroundColor: bg,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          'Admin Locations',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+        title: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: gold,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  'M',
+                  style: GoogleFonts.cinzel(
+                    color: wine,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Admin Locations',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Toggle theme',
+            onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+            icon: Icon(
+              themeController.isDarkMode
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

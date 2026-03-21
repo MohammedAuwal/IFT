@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/screens/admin_reassignment_screen.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/ride_model.dart';
@@ -24,6 +25,7 @@ class AdminOrdersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = ThemeScope.of(context);
     final isSuperAdmin =
         FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
 
@@ -39,6 +41,18 @@ class AdminOrdersScreen extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Toggle theme',
+            onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+            icon: Icon(
+              themeController.isDarkMode
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
       body: FutureBuilder<bool>(
         future: firebaseService.isAdmin(),

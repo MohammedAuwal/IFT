@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/core/theme/theme_scope.dart';
+import 'package:mix/features/auth/presentation/screens/login_screen.dart';
 import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:mix/features/profile/presentation/widgets/address_autocomplete_field.dart';
 import 'package:mix/models/place_suggestion_model.dart';
@@ -37,7 +38,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool get _isGuest => FirebaseAuth.instance.currentUser == null;
 
   Future<void> _goToLogin() async {
-    await AppRouter.clearAndGo(context, RouteNames.login);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(
+          redirectTo: RouteNames.redirectProfile,
+        ),
+      ),
+    );
   }
 
   Future<void> _pickAndUploadProfileImage() async {
@@ -407,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await _authService.signOut();
       if (!mounted) return;
-      await AppRouter.clearAndGo(context, RouteNames.login);
+      await AppRouter.clearAndGo(context, RouteNames.mainShell);
     } catch (e) {
       if (!mounted) return;
       setState(() => _loggingOut = false);
@@ -430,6 +438,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    const gold = Color(0xFFC29B40);
+    const wine = Color(0xFF7C1820);
 
     if (_isGuest) {
       final guestContent = CustomScrollView(
@@ -454,15 +464,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 34,
-                          backgroundColor: const Color(0xFFC29B40),
-                          child: Text(
-                            'G',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 24,
+                        Container(
+                          width: 92,
+                          height: 92,
+                          decoration: BoxDecoration(
+                            color: gold.withOpacity(0.14),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: gold.withOpacity(0.25)),
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 58,
+                              height: 58,
+                              decoration: const BoxDecoration(
+                                color: gold,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'M',
+                                  style: GoogleFonts.cinzel(
+                                    color: wine,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -496,7 +524,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: ElevatedButton.icon(
                             onPressed: _goToLogin,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFC29B40),
+                              backgroundColor: gold,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -522,7 +550,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     trailing: Switch(
                       value: themeController.isDarkMode,
                       onChanged: themeController.toggleDarkMode,
-                      activeColor: const Color(0xFFC29B40),
+                      activeColor: gold,
                     ),
                   ),
                   _ProfileTile(
@@ -589,12 +617,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         appBar: AppBar(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
-          title: Text(
-            'Profile',
-            style: GoogleFonts.poppins(
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-              fontWeight: FontWeight.w700,
-            ),
+          title: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: const BoxDecoration(
+                  color: gold,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    'M',
+                    style: GoogleFonts.cinzel(
+                      color: wine,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Profile',
+                style: GoogleFonts.poppins(
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
           iconTheme: IconThemeData(
             color: Theme.of(context).textTheme.bodyLarge?.color,
@@ -830,7 +882,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       trailing: Switch(
                         value: themeController.isDarkMode,
                         onChanged: themeController.toggleDarkMode,
-                        activeColor: const Color(0xFFC29B40),
+                        activeColor: gold,
                       ),
                     ),
                     Container(
@@ -855,12 +907,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 16,
-                                backgroundColor: const Color(
-                                  0xFFC29B40,
-                                ).withOpacity(0.15),
+                                backgroundColor: gold.withOpacity(0.15),
                                 child: const Icon(
                                   Icons.location_on_rounded,
-                                  color: Color(0xFFC29B40),
+                                  color: gold,
                                   size: 18,
                                 ),
                               ),
@@ -887,7 +937,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               fontSize: 12,
                               color: selectedAddress.isEmpty
                                   ? Colors.redAccent
-                                  : const Color(0xFFC29B40),
+                                  : gold,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -911,8 +961,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 child: ElevatedButton(
                                   onPressed: _addAddress,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFFC29B40),
+                                    backgroundColor: gold,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius:
@@ -952,9 +1001,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isSelected
-                                          ? const Color(
-                                              0xFFC29B40,
-                                            )
+                                          ? gold
                                           : Colors.transparent,
                                       width: 1.2,
                                     ),
@@ -973,9 +1020,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               : Icons.place_outlined,
                                           size: 18,
                                           color: isSelected
-                                              ? const Color(
-                                                  0xFFC29B40,
-                                                )
+                                              ? gold
                                               : Theme.of(context)
                                                   .textTheme
                                                   .bodyMedium
@@ -1008,8 +1053,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   ? 'Selected'
                                                   : 'Use',
                                               style: GoogleFonts.poppins(
-                                                color:
-                                                    const Color(0xFFC29B40),
+                                                color: gold,
                                                 fontWeight:
                                                     FontWeight.w700,
                                                 fontSize: 12,
@@ -1161,12 +1205,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        title: Text(
-          'Profile',
-          style: GoogleFonts.poppins(
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-            fontWeight: FontWeight.w700,
-          ),
+        title: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: const BoxDecoration(
+                color: gold,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  'M',
+                  style: GoogleFonts.cinzel(
+                    color: wine,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Profile',
+              style: GoogleFonts.poppins(
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
         iconTheme: IconThemeData(
           color: Theme.of(context).textTheme.bodyLarge?.color,

@@ -99,7 +99,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           return StreamBuilder<List<RideModel>>(
             stream: _firebaseService.watchUserRides(),
             builder: (context, rideSnapshot) {
-              final rides = snapshotSafe(rideSnapshot.data);
+              final rides = rideSnapshot.data ?? [];
 
               final activeServices = rides
                   .where((r) => r.isActive)
@@ -151,7 +151,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     );
                   }
 
-                  final items = snapshotSafe(productSnapshot.data);
+                  final items = productSnapshot.data ?? [];
                   final query = _searchCtrl.text.trim().toLowerCase();
 
                   final filtered = items.where((p) {
@@ -210,16 +210,30 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
-                                          Icons.auto_awesome_mosaic_rounded,
-                                          color: Color(0xFFC29B40),
-                                          size: 18,
+                                        Container(
+                                          width: 34,
+                                          height: 34,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFC29B40),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'M',
+                                              style: GoogleFonts.cinzel(
+                                                color: const Color(0xFF7C1820),
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 1.0,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                        const SizedBox(width: 6),
+                                        const SizedBox(width: 8),
                                         Text(
                                           'Mix',
-                                          style: GoogleFonts.poppins(
-                                            fontWeight: FontWeight.w700,
+                                          style: GoogleFonts.playfairDisplay(
+                                            fontWeight: FontWeight.w800,
                                             fontSize: 24,
                                             color: const Color(0xFF1D1D1F),
                                           ),
@@ -1186,8 +1200,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
     );
   }
-
-  List<T> snapshotSafe<T>(List<T>? data) => data ?? <T>[];
 }
 
 class _TrendingProductCard extends StatelessWidget {

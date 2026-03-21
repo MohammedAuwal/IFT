@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/screens/admin_reassignment_screen.dart';
 import 'package:mix/features/rider/presentation/screens/driver_mode_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
@@ -31,6 +32,8 @@ class AdminRidesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = ThemeScope.of(context);
+
     return FutureBuilder<bool>(
       future: firebaseService.isAdmin(),
       builder: (context, adminSnapshot) {
@@ -53,6 +56,18 @@ class AdminRidesScreen extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            actions: [
+              IconButton(
+                tooltip: 'Toggle theme',
+                onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+                icon: Icon(
+                  themeController.isDarkMode
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
           body: StreamBuilder<List<RideModel>>(
             stream: stream,

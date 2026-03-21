@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/widgets/analytics_bar_chart_card.dart';
 import 'package:mix/features/admin/presentation/widgets/comparison_duel_card.dart';
 import 'package:mix/features/admin/presentation/widgets/performance_status_card.dart';
@@ -276,22 +277,62 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = ThemeScope.of(context);
     final isSuperAdmin =
         _firebaseService.currentUser?.uid == AppConstants.superAdminUid;
+    const gold = Color(0xFFC29B40);
+    const wine = Color(0xFF7C1820);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1115),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F1115),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          'Super Admin Analytics',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+        title: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: gold,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  'M',
+                  style: GoogleFonts.cinzel(
+                    color: wine,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Super Admin Analytics',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Toggle theme',
+            onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+            icon: Icon(
+              themeController.isDarkMode
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
       body: !isSuperAdmin
           ? Center(

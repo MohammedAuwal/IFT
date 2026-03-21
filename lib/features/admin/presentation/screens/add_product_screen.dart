@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
@@ -172,9 +173,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = ThemeScope.of(context);
     const bg = Color(0xFF0F1115);
     const card = Color(0xFF171A21);
     const gold = Color(0xFFC29B40);
+    const wine = Color(0xFF7C1820);
 
     return Scaffold(
       backgroundColor: bg,
@@ -182,13 +185,51 @@ class _AddProductScreenState extends State<AddProductScreen> {
         backgroundColor: bg,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          'Add Product',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+        title: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: gold,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  'M',
+                  style: GoogleFonts.cinzel(
+                    color: wine,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Add Product',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Toggle theme',
+            onPressed: (_) => themeController.toggleDarkMode(!themeController.isDarkMode),
+            icon: Icon(
+              themeController.isDarkMode
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

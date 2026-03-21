@@ -211,15 +211,95 @@ class FirebaseService {
     );
   }
 
+  Future<bool> isAdmin() async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    if (user.uid == AppConstants.superAdminUid) return true;
+
+    final uidDoc = await firestore
+        .collection(AppConstants.adminsCollection)
+        .doc(user.uid)
+        .get();
+
+    if (uidDoc.exists) {
+      return true;
+    }
+
+    final email = user.email?.trim().toLowerCase();
+    if (email == null || email.isEmpty) return false;
+
+    final emailSnapshot = await firestore
+        .collection(AppConstants.adminsCollection)
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (emailSnapshot.docs.isEmpty) return false;
+
+    final oldDoc = emailSnapshot.docs.first;
+    final oldData = oldDoc.data();
+
+    await firestore
+        .collection(AppConstants.adminsCollection)
+        .doc(user.uid)
+        .set({
+      ...oldData,
+      'uid': user.uid,
+      'email': email,
+      'updatedAt': DateTime.now().toIso8601String(),
+    }, SetOptions(merge: true));
+
+    if (oldDoc.id != user.uid) {
+      try {
+        await firestore
+            .collection(AppConstants.adminsCollection)
+            .doc(oldDoc.id)
+            .delete();
+      } catch (_) {}
+    }
+
+    return true;
+  }
+
+  Future<bool> isDriver() async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    final doc = await firestore.collection('drivers').doc(user.uid).get();
+    return doc.exists;
+  }
+
+  Future<void> addAdmin({
+    required String uid,
+    required String email,
+  }) async {
+    final addedBy = currentUser?.uid ?? '';
+    await firestore.collection(AppConstants.adminsCollection).doc(uid).set({
+      'uid': uid,
+      'email': email.trim().toLowerCase(),
+      'displayName': email.split('@').first,
+      'role': 'admin',
+      'addedBy': addedBy,
+      'baseAddress': '',
+      'baseLat': null,
+      'baseLng': null,
+      'serviceRadiusKm': 30.0,
+      'coverageStates': [],
+      'coverageAreas': [],
+      'isActive': true,
+      'maxActiveAssignments': 20,
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    }, SetOptions(merge: true));
+  }
+
   Future<String> getVendorPickupAddress() async {
     final doc = await _settingsDoc.get();
     final data = doc.data() ?? {};
     final value = (data['vendorPickupAddress'] ?? '').toString().trim();
 
-    if (value.isNotEmpty) {
-      return value;
-    }
-
+    if (value.isNotEmpty) return value;
     return AppConstants.defaultVendorLocation;
   }
 
@@ -227,11 +307,7 @@ class FirebaseService {
     return _settingsDoc.snapshots().map((doc) {
       final data = doc.data() ?? {};
       final value = (data['vendorPickupAddress'] ?? '').toString().trim();
-
-      if (value.isNotEmpty) {
-        return value;
-      }
-
+      if (value.isNotEmpty) return value;
       return AppConstants.defaultVendorLocation;
     });
   }
@@ -342,9 +418,13 @@ class FirebaseService {
   Stream<List<Map<String, dynamic>>> watchAdmins() {
     return firestore
         .collection(AppConstants.adminsCollection)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
+        .map((snapshot) => snapshot.docs
+            .map((e) => e.data())
+            .toList()
+          ..sort((a, b) => (b['createdAt'] ?? '')
+              .toString()
+              .compareTo((a['createdAt'] ?? '').toString())));
   }
 
   Stream<List<Map<String, dynamic>>> watchDrivers() {
@@ -353,95 +433,6 @@ class FirebaseService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
-  }
-
-  Future<bool> isAdmin() async {
-    final user = currentUser;
-    if (user == null) return false;
-
-    if (user.uid == AppConstants.superAdminUid) return true;
-
-    final directDoc = await firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(user.uid)
-        .get();
-
-    if (directDoc.exists) {
-      return true;
-    }
-
-    final email = user.email?.trim().toLowerCase();
-    if (email == null || email.isEmpty) return false;
-
-    final emailSnapshot = await firestore
-        .collection(AppConstants.adminsCollection)
-        .where('email', isEqualTo: email)
-        .limit(1)
-        .get();
-
-    if (emailSnapshot.docs.isNotEmpty) {
-      final adminData = emailSnapshot.docs.first.data();
-
-      await firestore
-          .collection(AppConstants.adminsCollection)
-          .doc(user.uid)
-          .set({
-        ...adminData,
-        'uid': user.uid,
-        'email': email,
-        'updatedAt': DateTime.now().toIso8601String(),
-      }, SetOptions(merge: true));
-
-      return true;
-    }
-
-    return false;
-  }
-
-  Future<bool> isDriver() async {
-    final user = currentUser;
-    if (user == null) return false;
-
-    final doc = await firestore.collection('drivers').doc(user.uid).get();
-    return doc.exists;
-  }
-
-  Future<void> addAdmin({
-    required String uid,
-    required String email,
-  }) async {
-    final addedBy = currentUser?.uid ?? '';
-    await firestore.collection(AppConstants.adminsCollection).doc(uid).set({
-      'uid': uid,
-      'email': email.trim().toLowerCase(),
-      'displayName': email.split('@').first,
-      'role': 'admin',
-      'addedBy': addedBy,
-      'baseAddress': '',
-      'baseLat': null,
-      'baseLng': null,
-      'serviceRadiusKm': 30.0,
-      'coverageStates': [],
-      'coverageAreas': [],
-      'isActive': true,
-      'maxActiveAssignments': 20,
-      'createdAt': DateTime.now().toIso8601String(),
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, SetOptions(merge: true));
-  }
-
-  Future<void> addDriver({
-    required String uid,
-    required String name,
-    required String email,
-  }) async {
-    await firestore.collection('drivers').doc(uid).set({
-      'uid': uid,
-      'name': name,
-      'email': email,
-      'available': true,
-      'createdAt': DateTime.now().toIso8601String(),
-    });
   }
 
   Stream<int> watchProductsCount() {
@@ -652,7 +643,7 @@ class FirebaseService {
 
   Stream<Map<String, dynamic>?> watchUserProfile() {
     final user = currentUser;
-    if (user == null) return const Stream.empty();
+    if (user == null) return Stream.value(null);
 
     return _userDoc(user.uid).snapshots().map((doc) => doc.data());
   }
@@ -777,7 +768,9 @@ class FirebaseService {
 
   Stream<List<Map<String, dynamic>>> watchCart() {
     final user = currentUser;
-    if (user == null) return Stream.value([]);
+    if (user == null) {
+      return Stream.fromFuture(getLocalCart());
+    }
 
     return _userDoc(user.uid).snapshots().map((doc) {
       final data = doc.data();
@@ -884,7 +877,24 @@ class FirebaseService {
     required int qty,
   }) async {
     final user = currentUser;
-    if (user == null) return;
+
+    if (user == null) {
+      final local = await getLocalCart();
+      final index = local.indexWhere((e) => e['productId'] == productId);
+      if (index < 0) return;
+
+      if (qty <= 0) {
+        local.removeAt(index);
+      } else {
+        local[index] = {
+          ...local[index],
+          'qty': qty,
+        };
+      }
+
+      await _saveLocalCart(local);
+      return;
+    }
 
     final ref = _userDoc(user.uid);
     final snap = await ref.get();
