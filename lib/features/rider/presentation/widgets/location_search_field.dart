@@ -12,6 +12,7 @@ class LocationSearchField extends StatefulWidget {
   final ValueChanged<PlaceSuggestionModel>? onSuggestionSelected;
   final VoidCallback? onUseCurrentLocation;
   final bool showCurrentLocationAction;
+  final ValueChanged<bool>? onSelectionValidityChanged;
 
   const LocationSearchField({
     super.key,
@@ -21,6 +22,7 @@ class LocationSearchField extends StatefulWidget {
     this.onSuggestionSelected,
     this.onUseCurrentLocation,
     this.showCurrentLocationAction = false,
+    this.onSelectionValidityChanged,
   });
 
   @override
@@ -35,13 +37,19 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
   OverlayEntry? _overlayEntry;
   Timer? _debounce;
   bool _loading = false;
+  bool _hasSelectedSuggestion = false;
   List<PlaceSuggestionModel> _suggestions = [];
+  String _lastConfirmedValue = '';
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onChanged);
     _focusNode.addListener(_handleFocusChange);
+  }
+
+  void _notifyValidity() {
+    widget.onSelectionValidityChanged?.call(_hasSelectedSuggestion);
   }
 
   void _handleFocusChange() {
@@ -57,6 +65,15 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
   }
 
   void _onChanged() {
+    final current = widget.controller.text.trim();
+
+    if (current != _lastConfirmedValue) {
+      if (_hasSelectedSuggestion) {
+        _hasSelectedSuggestion = false;
+        _notifyValidity();
+      }
+    }
+
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () async {
       final query = widget.controller.text.trim();
@@ -107,6 +124,9 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
     widget.controller.selection = TextSelection.fromPosition(
       TextPosition(offset: widget.controller.text.length),
     );
+    _lastConfirmedValue = suggestion.displayName;
+    _hasSelectedSuggestion = true;
+    _notifyValidity();
     widget.onSuggestionSelected?.call(suggestion);
     _suggestions = [];
     _removeOverlay();
@@ -212,28 +232,53 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
 
   @override
   Widget build(BuildContext context) {
+    final showInvalid =
+        widget.controller.text.trim().isNotEmpty && !_hasSelectedSuggestion;
+
     return CompositedTransformTarget(
       link: _layerLink,
-      child: TextField(
-        controller: widget.controller,
-        focusNode: _focusNode,
-        decoration: InputDecoration(
-          hintText: widget.hintText,
-          prefixIcon: Icon(widget.prefixIcon),
-          suffixIcon: widget.showCurrentLocationAction
-              ? IconButton(
-                  onPressed: widget.onUseCurrentLocation,
-                  icon: const Icon(Icons.gps_fixed_rounded),
-                  tooltip: 'Use current location',
-                )
-              : null,
-          filled: true,
-          fillColor: const Color(0xFFF5F5F5),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: widget.controller,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              prefixIcon: Icon(widget.prefixIcon),
+              suffixIcon: widget.showCurrentLocationAction
+                  ? IconButton(
+                      onPressed: widget.onUseCurrentLocation,
+                      icon: const Icon(Icons.gps_fixed_rounded),
+                      tooltip: 'Use current location',
+                    )
+                  : (_hasSelectedSuggestion
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.green,
+                        )
+                      : null),
+              filled: true,
+              fillColor: const Color(0xFFF5F5F5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+            ),
           ),
-        ),
+          if (showInvalid)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 6),
+              child: Text(
+                'Please choose a location from the suggestion list',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
