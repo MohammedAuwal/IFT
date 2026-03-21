@@ -14,6 +14,7 @@ import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart
 import 'package:mix/features/admin/presentation/screens/manage_admin_locations_screen.dart';
 import 'package:mix/features/admin/presentation/screens/manage_categories_screen.dart';
 import 'package:mix/features/admin/presentation/screens/manage_products_screen.dart';
+import 'package:mix/features/admin/presentation/screens/super_admin_analytics_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/admin_preview_scope.dart';
@@ -495,6 +496,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         const Expanded(child: SizedBox()),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  if (_isSuperAdmin)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ActionCard(
+                            icon: Icons.analytics_rounded,
+                            title: 'Analytics',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      SuperAdminAnalyticsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(child: SizedBox()),
+                      ],
+                    ),
                   const SizedBox(height: 18),
                   if (_isSuperAdmin) ...[
                     _sectionCard(

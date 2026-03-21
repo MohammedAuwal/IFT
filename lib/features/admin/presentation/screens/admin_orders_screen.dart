@@ -43,11 +43,21 @@ class AdminOrdersScreen extends StatelessWidget {
       body: FutureBuilder<bool>(
         future: firebaseService.isAdmin(),
         builder: (context, adminSnapshot) {
+          if (adminSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final isAdmin = adminSnapshot.data ?? false;
 
-          final ordersStream = isAdmin
-              ? firebaseService.watchAssignedOrdersForAdmin()
-              : firebaseService.watchAllOrders();
+          final ordersStream = isSuperAdmin
+              ? firebaseService.watchAllOrders()
+              : (isAdmin
+                  ? firebaseService.watchAssignedOrdersForAdmin()
+                  : firebaseService.watchAllOrders());
+
+          final ridesStream = isSuperAdmin
+              ? firebaseService.watchAllRides()
+              : firebaseService.watchAssignedRidesForAdmin();
 
           return StreamBuilder<List<OrderModel>>(
             stream: ordersStream,
@@ -57,14 +67,16 @@ class AdminOrdersScreen extends StatelessWidget {
               if (orders.isEmpty) {
                 return Center(
                   child: Text(
-                    'No assigned orders yet',
+                    isSuperAdmin
+                        ? 'No orders yet'
+                        : 'No assigned orders yet',
                     style: GoogleFonts.poppins(color: Colors.white70),
                   ),
                 );
               }
 
               return StreamBuilder<List<RideModel>>(
-                stream: firebaseService.watchAllRides(),
+                stream: ridesStream,
                 builder: (context, rideSnapshot) {
                   final rides = rideSnapshot.data ?? [];
 

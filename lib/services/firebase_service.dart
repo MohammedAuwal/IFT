@@ -361,12 +361,41 @@ class FirebaseService {
 
     if (user.uid == AppConstants.superAdminUid) return true;
 
-    final doc = await firestore
+    final directDoc = await firestore
         .collection(AppConstants.adminsCollection)
         .doc(user.uid)
         .get();
 
-    return doc.exists;
+    if (directDoc.exists) {
+      return true;
+    }
+
+    final email = user.email?.trim().toLowerCase();
+    if (email == null || email.isEmpty) return false;
+
+    final emailSnapshot = await firestore
+        .collection(AppConstants.adminsCollection)
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (emailSnapshot.docs.isNotEmpty) {
+      final adminData = emailSnapshot.docs.first.data();
+
+      await firestore
+          .collection(AppConstants.adminsCollection)
+          .doc(user.uid)
+          .set({
+        ...adminData,
+        'uid': user.uid,
+        'email': email,
+        'updatedAt': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
+
+      return true;
+    }
+
+    return false;
   }
 
   Future<bool> isDriver() async {
@@ -384,7 +413,7 @@ class FirebaseService {
     final addedBy = currentUser?.uid ?? '';
     await firestore.collection(AppConstants.adminsCollection).doc(uid).set({
       'uid': uid,
-      'email': email,
+      'email': email.trim().toLowerCase(),
       'displayName': email.split('@').first,
       'role': 'admin',
       'addedBy': addedBy,

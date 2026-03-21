@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'dart:ui';
-import 'package:firebase_core/firebase_core.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
-import 'package:mix/services/connectivity_service.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,376 +14,168 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _fade;
-  late final Animation<double> _scale;
+class _SplashScreenState extends State<SplashScreen> {
+  final FirebaseService _firebaseService = FirebaseService();
 
-  bool _isLoading = true;
-  bool _hasError = false;
-  String _errorMessage = '';
   bool _navigated = false;
+  String? _errorText;
 
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    );
-
-    _fade = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
-
-    _scale = Tween<double>(begin: 0.92, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-
-    _controller.forward();
-    _initialize();
+    _start();
   }
 
-  Future<void> _initialize() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-      _errorMessage = '';
-    });
-
+  Future<void> _start() async {
     try {
-      final hasInternet = await ConnectivityService.hasInternet();
-
-      if (!hasInternet) {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-          _errorMessage =
-              'Poor network connection.\nPlease check your internet.';
-        });
-        return;
-      }
-
-      await Firebase.initializeApp().timeout(
-        const Duration(seconds: 8),
-        onTimeout: () {
-          throw TimeoutException('Firebase initialization timed out');
-        },
-      );
-
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      if (!mounted) return;
-      await _resolveNavigation();
-    } on TimeoutException {
+      await Future.any([
+        _bootstrap(),
+        Future.delayed(const Duration(seconds: 12), () {
+          throw Exception('App startup timed out. Please try again.');
+        }),
+      ]);
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _isLoading = false;
-        _hasError = true;
-        _errorMessage = 'Connection timed out.\nPlease try again.';
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-        _errorMessage = 'Something went wrong.\nPlease try again.';
+        _errorText = e.toString();
       });
     }
   }
 
-  Future<void> _resolveNavigation() async {
-    if (_navigated || !mounted) return;
-    _navigated = true;
+  Future<void> _bootstrap() async {
+    final user = FirebaseAuth.instance.currentUser;
 
-    final firebaseService = FirebaseService();
-    final user = firebaseService.currentUser;
+    if (user != null) {
+      await _firebaseService.ensureUserProfile();
+    }
+
+    final isAdmin = user != null ? await _firebaseService.isAdmin() : false;
+
+    if (!mounted || _navigated) return;
+    _navigated = true;
 
     if (user == null) {
       await AppRouter.clearAndGo(context, RouteNames.login);
       return;
     }
 
-    try {
-      await firebaseService.ensureUserProfile().timeout(
-            const Duration(seconds: 5),
-          );
-      await firebaseService.syncLocalCartToFirestore().timeout(
-            const Duration(seconds: 5),
-          );
-    } catch (_) {}
-
-    if (!mounted) return;
-
-    try {
-      final isAdmin = await firebaseService.isAdmin().timeout(
-            const Duration(seconds: 5),
-          );
-
-      if (!mounted) return;
-
-      if (isAdmin) {
-        await AppRouter.clearAndGo(context, RouteNames.admin);
-      } else {
-        await AppRouter.clearAndGo(context, RouteNames.mainShell);
-      }
-    } catch (_) {
-      if (!mounted) return;
-      await AppRouter.clearAndGo(context, RouteNames.mainShell);
+    if (isAdmin) {
+      await AppRouter.clearAndGo(context, RouteNames.admin);
+      return;
     }
+
+    await AppRouter.clearAndGo(context, RouteNames.mainShell);
   }
 
-  void _retry() {
-    _navigated = false;
-    _initialize();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  Future<void> _retry() async {
+    setState(() {
+      _errorText = null;
+      _navigated = false;
+    });
+    await _start();
   }
 
   @override
   Widget build(BuildContext context) {
+    const bg = Color(0xFF2A0A12);
     const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF2A0A12);
-    const orange = Color(0xFFFF7A18);
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  wine,
-                  Color(0xFF4B0D1F),
-                  Color(0xFF12060A),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: -90,
-            left: -50,
-            child: _GlowBlob(
-              diameter: 260,
-              color: const Color(0xFFFFD166).withOpacity(0.45),
-            ),
-          ),
-          Positioned(
-            bottom: -120,
-            right: -70,
-            child: _GlowBlob(
-              diameter: 280,
-              color: const Color(0xFFB80F2B).withOpacity(0.42),
-            ),
-          ),
-          Positioned(
-            top: 180,
-            right: -40,
-            child: _GlowBlob(
-              diameter: 200,
-              color: orange.withOpacity(0.28),
-            ),
-          ),
-          SafeArea(
-            child: Center(
-              child: FadeTransition(
-                opacity: _fade,
-                child: ScaleTransition(
-                  scale: _scale,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: _errorText == null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 82,
-                        height: 82,
+                        width: 86,
+                        height: 86,
                         decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.10),
-                          border: Border.all(color: Colors.white24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: gold.withOpacity(0.25),
-                              blurRadius: 24,
-                              spreadRadius: 1,
-                            ),
-                          ],
+                          border: Border.all(color: Colors.white12),
                         ),
-                        child: Center(
-                          child: Text(
-                            'M',
-                            style: GoogleFonts.playfairDisplay(
-                              color: gold,
-                              fontSize: 42,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                        child: const Icon(
+                          Icons.auto_awesome_mosaic_rounded,
+                          color: gold,
+                          size: 42,
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Mix',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 30,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 22),
                       Text(
                         "Maamah's Mix",
                         style: GoogleFonts.playfairDisplay(
                           color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Premium African spices, flours & traditional foods',
+                        'Food, products, rides & delivery in one app',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          color: Colors.white.withOpacity(0.78),
+                          color: Colors.white70,
                           fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 36),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        child: _hasError
-                            ? _buildErrorWidget(gold)
-                            : _isLoading
-                                ? _buildLoadingWidget(gold)
-                                : const SizedBox.shrink(),
+                      const SizedBox(height: 28),
+                      const CircularProgressIndicator(
+                        color: gold,
+                        strokeWidth: 2.6,
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.wifi_off_rounded,
+                        color: Colors.white,
+                        size: 42,
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Unable to load app',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _errorText!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontSize: 12.5,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      ElevatedButton(
+                        onPressed: _retry,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: gold,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          'Retry',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingWidget(Color gold) {
-    return SizedBox(
-      key: const ValueKey('loading'),
-      width: 42,
-      height: 42,
-      child: CircularProgressIndicator(
-        strokeWidth: 2.4,
-        valueColor: AlwaysStoppedAnimation<Color>(gold),
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget(Color gold) {
-    return Column(
-      key: const ValueKey('error'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.08),
-          ),
-          child: Icon(
-            Icons.wifi_off_rounded,
-            color: Colors.white.withOpacity(0.7),
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _errorMessage,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
-            color: Colors.white.withOpacity(0.85),
-            fontSize: 13.5,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 24),
-        GestureDetector(
-          onTap: _retry,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                colors: [
-                  gold,
-                  gold.withOpacity(0.8),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: gold.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.refresh_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Retry',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlowBlob extends StatelessWidget {
-  const _GlowBlob({
-    required this.diameter,
-    required this.color,
-  });
-
-  final double diameter;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-      child: Container(
-        width: diameter,
-        height: diameter,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
         ),
       ),
     );
