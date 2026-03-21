@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 1. The Background Gradient (Matches App Theme) -->
     <item>
         <shape android:shape="rectangle">
             <gradient
@@ -10,6 +11,7 @@
         </shape>
     </item>
 
+    <!-- 2. The Circle Decoration -->
     <item
         android:width="110dp"
         android:height="110dp"
@@ -22,6 +24,7 @@
         </shape>
     </item>
 
+    <!-- 3. The App Icon -->
     <item
         android:width="54dp"
         android:height="54dp"
