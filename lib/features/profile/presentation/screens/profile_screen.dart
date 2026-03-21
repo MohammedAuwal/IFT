@@ -4,6 +4,8 @@ import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
+import 'package:mix/features/profile/presentation/widgets/address_autocomplete_field.dart';
+import 'package:mix/models/place_suggestion_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
 import 'package:mix/services/firebase_auth_service.dart';
 import 'package:mix/services/firebase_service.dart';
@@ -29,6 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _uploadingPhoto = false;
   bool _loggingOut = false;
   bool _savingName = false;
+  PlaceSuggestionModel? _selectedAddressSuggestion;
 
   Future<void> _pickAndUploadProfileImage() async {
     final file = await _imageService.pickImageWithFallback();
@@ -151,6 +154,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await _firebaseService.addAddress(address);
       _addressCtrl.clear();
+
+      setState(() {
+        _selectedAddressSuggestion = null;
+      });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -680,36 +687,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: TextField(
+                                child: AddressAutocompleteField(
                                   controller: _addressCtrl,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 2,
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter new address',
-                                    hintStyle: GoogleFonts.poppins(
-                                      fontSize: 13,
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.color
-                                          ?.withOpacity(0.4),
-                                    ),
-                                    filled: true,
-                                    fillColor: Theme.of(context)
-                                        .scaffoldBackgroundColor,
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(14),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
+                                  onSuggestionSelected: (suggestion) {
+                                    _selectedAddressSuggestion =
+                                        suggestion;
+                                  },
                                 ),
                               ),
                               const SizedBox(width: 8),

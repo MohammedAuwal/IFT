@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:mix/models/place_suggestion_model.dart';
 
 class GeocodingResult {
   final String displayName;
@@ -15,13 +16,17 @@ class GeocodingResult {
 }
 
 class GeocodingService {
-  static const _baseUrl = 'https://nominatim.openstreetmap.org/search';
+  static const _searchBaseUrl = 'https://nominatim.openstreetmap.org/search';
+  static const _reverseBaseUrl = 'https://nominatim.openstreetmap.org/reverse';
 
-  Future<GeocodingResult> searchLocation(String query) async {
+  Map<String, String> get _headers => const {
+        'User-Agent': 'MixApp/1.0 (OpenStreetMap Nominatim Usage)',
+        'Accept': 'application/json',
+      };
+
+  Future<List<PlaceSuggestionModel>> searchSuggestions(String query) async {
     final trimmed = query.trim();
-    if (trimmed.isEmpty) {
-      throw Exception('Location cannot be empty');
-    }
+    if (trimmed.length < 2) return [];
 
     final tries = <String>[
       '$trimmed, Nigeria',
@@ -30,16 +35,10 @@ class GeocodingService {
 
     for (final candidate in tries) {
       final uri = Uri.parse(
-        '$_baseUrl?q=${Uri.encodeQueryComponent(candidate)}&format=jsonv2&limit=5&countrycodes=ng&addressdetails=1',
+        '$_searchBaseUrl?q=${Uri.encodeQueryComponent(candidate)}&format=jsonv2&limit=6&countrycodes=ng&addressdetails=1',
       );
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'User-Agent': 'MixApp/1.0 (OpenStreetMap Nominatim Usage)',
-          'Accept': 'application/json',
-        },
-      );
+      final response = await http.get(uri, headers: _headers);
 
       if (response.statusCode != 200) {
         continue;
@@ -50,7 +49,7 @@ class GeocodingService {
         continue;
       }
 
-      final ngResults = decoded
+      final suggestions = decoded
           .map((e) => Map<String, dynamic>.from(e))
           .where((item) {
             final address = Map<String, dynamic>.from(item['address'] ?? {});
@@ -61,25 +60,61 @@ class GeocodingService {
 
             return countryCode == 'ng' || displayName.contains('nigeria');
           })
+          .map((e) => PlaceSuggestionModel.fromMap(e))
+          .where((e) => e.isValid)
           .toList();
 
-      final picked = ngResults.isNotEmpty ? ngResults.first : Map<String, dynamic>.from(decoded.first);
-      final lat = double.tryParse((picked['lat'] ?? '').toString());
-      final lon = double.tryParse((picked['lon'] ?? '').toString());
-
-      if (lat == null || lon == null) {
-        continue;
+      if (suggestions.isNotEmpty) {
+        return suggestions;
       }
+    }
 
-      return GeocodingResult(
-        displayName: (picked['display_name'] ?? trimmed).toString(),
-        latitude: lat,
-        longitude: lon,
+    return [];
+  }
+
+  Future<GeocodingResult> searchLocation(String query) async {
+    final suggestions = await searchSuggestions(query);
+
+    if (suggestions.isEmpty) {
+      throw Exception(
+        'Location not found in Nigeria. Please enter a clearer Nigerian address, area, town, or landmark.',
       );
     }
 
-    throw Exception(
-      'Location not found in Nigeria. Please enter a clearer Nigerian address, area, town, or landmark.',
+    final best = suggestions.first;
+
+    return GeocodingResult(
+      displayName: best.displayName,
+      latitude: best.latitude,
+      longitude: best.longitude,
+    );
+  }
+
+  Future<GeocodingResult> reverseGeocode({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final uri = Uri.parse(
+      '$_reverseBaseUrl?lat=$latitude&lon=$longitude&format=jsonv2&addressdetails=1',
+    );
+
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to resolve current location');
+    }
+
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final displayName = (decoded['display_name'] ?? '').toString().trim();
+
+    if (displayName.isEmpty) {
+      throw Exception('Could not identify current location');
+    }
+
+    return GeocodingResult(
+      displayName: displayName,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }

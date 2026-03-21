@@ -6,6 +6,7 @@ import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/splash/presentation/screens/splash_screen.dart';
 import 'package:mix/services/admin_preview_controller.dart';
 import 'package:mix/services/admin_preview_scope.dart';
+import 'package:mix/services/notification_navigation_service.dart';
 
 class MixApp extends StatefulWidget {
   const MixApp({super.key});
@@ -41,6 +42,7 @@ class _MixAppState extends State<MixApp> {
             child: MaterialApp(
               title: "Maamah's Mix",
               debugShowCheckedModeBanner: false,
+              navigatorKey: NotificationNavigationService.instance.navigatorKey,
               theme: AppTheme.light(),
               darkTheme: AppTheme.dark(),
               themeMode: _themeController.themeMode,

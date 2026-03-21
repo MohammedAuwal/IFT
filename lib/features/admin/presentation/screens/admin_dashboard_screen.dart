@@ -6,9 +6,11 @@ import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/features/admin/presentation/screens/add_product_screen.dart';
+import 'package:mix/features/admin/presentation/screens/admin_escalation_dashboard_screen.dart';
 import 'package:mix/features/admin/presentation/screens/admin_orders_screen.dart';
 import 'package:mix/features/admin/presentation/screens/admin_rides_screen.dart';
 import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart';
+import 'package:mix/features/admin/presentation/screens/manage_admin_locations_screen.dart';
 import 'package:mix/features/admin/presentation/screens/manage_categories_screen.dart';
 import 'package:mix/features/admin/presentation/screens/manage_products_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
@@ -28,13 +30,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final _authService = FirebaseAuthService();
   final _firebaseService = FirebaseService();
 
-  final _adminUidCtrl = TextEditingController();
+  final _adminNameCtrl = TextEditingController();
   final _adminEmailCtrl = TextEditingController();
-  final _vendorPickupCtrl = TextEditingController();
 
   bool _addingAdmin = false;
   bool _loggingOut = false;
-  bool _savingVendorAddress = false;
 
   bool get _isSuperAdmin =>
       FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
@@ -46,13 +46,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _addAdmin() async {
-    final uid = _adminUidCtrl.text.trim();
+    final name = _adminNameCtrl.text.trim();
     final email = _adminEmailCtrl.text.trim();
 
-    if (uid.isEmpty || email.isEmpty) {
+    if (name.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Admin UID and email are required'),
+          content: Text('Admin name and email are required'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -61,14 +61,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     setState(() => _addingAdmin = true);
     try {
-      await _firebaseService.addAdmin(uid: uid, email: email);
-      _adminUidCtrl.clear();
+      final generatedDocId =
+          email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+
+      await _firebaseService.addAdmin(
+        uid: generatedDocId,
+        email: email,
+      );
+
+      await _firebaseService.firestore
+          .collection(AppConstants.adminsCollection)
+          .doc(generatedDocId)
+          .set({
+        'displayName': name,
+      }, SetOptions(merge: true));
+
+      _adminNameCtrl.clear();
       _adminEmailCtrl.clear();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Admin added successfully'),
+          content: Text('Admin record added successfully'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -82,42 +96,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     } finally {
       if (mounted) setState(() => _addingAdmin = false);
-    }
-  }
-
-  Future<void> _saveVendorPickupAddress() async {
-    final address = _vendorPickupCtrl.text.trim();
-    if (address.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter vendor/shop pickup address'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _savingVendorAddress = true);
-
-    try {
-      await _firebaseService.updateVendorPickupAddress(address);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vendor pickup address updated'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update pickup address: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _savingVendorAddress = false);
     }
   }
 
@@ -205,9 +183,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   void dispose() {
-    _adminUidCtrl.dispose();
+    _adminNameCtrl.dispose();
     _adminEmailCtrl.dispose();
-    _vendorPickupCtrl.dispose();
     super.dispose();
   }
 
@@ -390,85 +367,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     },
                   ),
                   const SizedBox(height: 18),
-                  _sectionCard(
-                    card,
-                    child: StreamBuilder<String>(
-                      stream: _firebaseService.watchVendorPickupAddress(),
-                      builder: (context, snapshot) {
-                        final currentAddress =
-                            snapshot.data ?? AppConstants.defaultVendorLocation;
-
-                        if (_vendorPickupCtrl.text.trim().isEmpty) {
-                          _vendorPickupCtrl.text = currentAddress;
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Vendor / Shop Pickup Address',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'All delivery rides will start from this address.',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _Field(
-                              controller: _vendorPickupCtrl,
-                              hint:
-                                  'Enter real shop/vendor pickup address in Nigeria',
-                              maxLines: 2,
-                            ),
-                            const SizedBox(height: 10),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _savingVendorAddress
-                                    ? null
-                                    : _saveVendorPickupAddress,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: gold,
-                                  foregroundColor: Colors.black,
-                                ),
-                                child: _savingVendorAddress
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Text(
-                                        'Save Pickup Address',
-                                        style: GoogleFonts.poppins(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Current: $currentAddress',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(
@@ -552,11 +450,48 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _ActionCard(
+                          icon: Icons.location_city_rounded,
+                          title: 'Locations',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const ManageAdminLocationsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionCard(
                           icon: Icons.visibility_outlined,
                           title: 'User Preview',
                           onTap: _switchToUserView,
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      if (_isSuperAdmin)
+                        Expanded(
+                          child: _ActionCard(
+                            icon: Icons.warning_amber_rounded,
+                            title: 'Escalations',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AdminEscalationDashboardScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      else
+                        const Expanded(child: SizedBox()),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -576,8 +511,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           const SizedBox(height: 12),
                           _Field(
-                            controller: _adminUidCtrl,
-                            hint: 'Admin UID',
+                            controller: _adminNameCtrl,
+                            hint: 'Admin Name',
                           ),
                           const SizedBox(height: 12),
                           _Field(
@@ -641,13 +576,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   return ListTile(
                                     contentPadding: EdgeInsets.zero,
                                     title: Text(
-                                      (admin['email'] ?? '').toString(),
+                                      (admin['displayName'] ??
+                                              admin['email'] ??
+                                              '')
+                                          .toString(),
                                       style: GoogleFonts.poppins(
                                         color: Colors.white,
                                       ),
                                     ),
                                     subtitle: Text(
-                                      'Admin account',
+                                      (admin['email'] ?? '').toString(),
                                       style: GoogleFonts.poppins(
                                         color: Colors.white54,
                                         fontSize: 11,

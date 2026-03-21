@@ -1,7 +1,22 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mix/services/geocoding_service.dart';
+
+class CurrentLocationResult {
+  final String displayName;
+  final double latitude;
+  final double longitude;
+
+  const CurrentLocationResult({
+    required this.displayName,
+    required this.latitude,
+    required this.longitude,
+  });
+}
 
 class LocationService {
+  final GeocodingService _geocodingService = GeocodingService();
+
   Future<bool> ensureLocationPermission() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -35,6 +50,24 @@ class LocationService {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<CurrentLocationResult> getCurrentResolvedLocation() async {
+    await ensureLocationPermission();
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    final resolved = await _geocodingService.reverseGeocode(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+
+    return CurrentLocationResult(
+      displayName: resolved.displayName,
+      latitude: resolved.latitude,
+      longitude: resolved.longitude,
+    );
   }
 
   Stream<LatLng> watchCurrentLatLng() async* {

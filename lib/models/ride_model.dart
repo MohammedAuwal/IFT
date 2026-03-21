@@ -22,6 +22,15 @@ class RideModel {
   final String? productId;
   final String? orderId;
   final String? addressLabel;
+  final String? assignedAdminUid;
+  final String? assignedAdminEmail;
+  final String? assignedAdminName;
+  final double? assignedAdminDistanceKm;
+  final String? assignedAdminState;
+  final String? assignedAdminArea;
+  final String? assignmentMethod;
+  final int? activeAdminLoad;
+  final bool escalatedToSuperAdmin;
   final DateTime createdAt;
 
   RideModel({
@@ -48,6 +57,15 @@ class RideModel {
     this.productId,
     this.orderId,
     this.addressLabel,
+    this.assignedAdminUid,
+    this.assignedAdminEmail,
+    this.assignedAdminName,
+    this.assignedAdminDistanceKm,
+    this.assignedAdminState,
+    this.assignedAdminArea,
+    this.assignmentMethod,
+    this.activeAdminLoad,
+    this.escalatedToSuperAdmin = false,
     required this.createdAt,
   });
 
@@ -85,6 +103,16 @@ class RideModel {
       productId: map['productId']?.toString(),
       orderId: map['orderId']?.toString(),
       addressLabel: map['addressLabel']?.toString(),
+      assignedAdminUid: map['assignedAdminUid']?.toString(),
+      assignedAdminEmail: map['assignedAdminEmail']?.toString(),
+      assignedAdminName: map['assignedAdminName']?.toString(),
+      assignedAdminDistanceKm:
+          (map['assignedAdminDistanceKm'] as num?)?.toDouble(),
+      assignedAdminState: map['assignedAdminState']?.toString(),
+      assignedAdminArea: map['assignedAdminArea']?.toString(),
+      assignmentMethod: map['assignmentMethod']?.toString(),
+      activeAdminLoad: (map['activeAdminLoad'] as num?)?.toInt(),
+      escalatedToSuperAdmin: (map['escalatedToSuperAdmin'] ?? false) == true,
       createdAt:
           DateTime.tryParse((map['createdAt'] ?? '').toString()) ??
               DateTime.now(),
@@ -115,6 +143,15 @@ class RideModel {
       'productId': productId,
       'orderId': orderId,
       'addressLabel': addressLabel,
+      'assignedAdminUid': assignedAdminUid,
+      'assignedAdminEmail': assignedAdminEmail,
+      'assignedAdminName': assignedAdminName,
+      'assignedAdminDistanceKm': assignedAdminDistanceKm,
+      'assignedAdminState': assignedAdminState,
+      'assignedAdminArea': assignedAdminArea,
+      'assignmentMethod': assignmentMethod,
+      'activeAdminLoad': activeAdminLoad,
+      'escalatedToSuperAdmin': escalatedToSuperAdmin,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -143,6 +180,15 @@ class RideModel {
     String? productId,
     String? orderId,
     String? addressLabel,
+    String? assignedAdminUid,
+    String? assignedAdminEmail,
+    String? assignedAdminName,
+    double? assignedAdminDistanceKm,
+    String? assignedAdminState,
+    String? assignedAdminArea,
+    String? assignmentMethod,
+    int? activeAdminLoad,
+    bool? escalatedToSuperAdmin,
     DateTime? createdAt,
   }) {
     return RideModel(
@@ -169,6 +215,17 @@ class RideModel {
       productId: productId ?? this.productId,
       orderId: orderId ?? this.orderId,
       addressLabel: addressLabel ?? this.addressLabel,
+      assignedAdminUid: assignedAdminUid ?? this.assignedAdminUid,
+      assignedAdminEmail: assignedAdminEmail ?? this.assignedAdminEmail,
+      assignedAdminName: assignedAdminName ?? this.assignedAdminName,
+      assignedAdminDistanceKm:
+          assignedAdminDistanceKm ?? this.assignedAdminDistanceKm,
+      assignedAdminState: assignedAdminState ?? this.assignedAdminState,
+      assignedAdminArea: assignedAdminArea ?? this.assignedAdminArea,
+      assignmentMethod: assignmentMethod ?? this.assignmentMethod,
+      activeAdminLoad: activeAdminLoad ?? this.activeAdminLoad,
+      escalatedToSuperAdmin:
+          escalatedToSuperAdmin ?? this.escalatedToSuperAdmin,
       createdAt: createdAt ?? this.createdAt,
     );
   }
