@@ -24,48 +24,89 @@ class GeocodingService {
         'Accept': 'application/json',
       };
 
+  bool _looksNigerian(Map<String, dynamic> item) {
+    final address = Map<String, dynamic>.from(item['address'] ?? {});
+    final countryCode = (address['country_code'] ?? '').toString().toLowerCase();
+    final displayName = (item['display_name'] ?? '').toString().toLowerCase();
+
+    return countryCode == 'ng' ||
+        displayName.contains('nigeria') ||
+        displayName.contains('abuja') ||
+        displayName.contains('lagos') ||
+        displayName.contains('kano') ||
+        displayName.contains('port harcourt') ||
+        displayName.contains('enugu') ||
+        displayName.contains('ibadan') ||
+        displayName.contains('kaduna') ||
+        displayName.contains('jos') ||
+        displayName.contains('maiduguri') ||
+        displayName.contains('ilorin') ||
+        displayName.contains('benin') ||
+        displayName.contains('owerri') ||
+        displayName.contains('uyo') ||
+        displayName.contains('calabar') ||
+        displayName.contains('onitsha') ||
+        displayName.contains('aba');
+  }
+
+  Future<List<PlaceSuggestionModel>> _runSuggestionQuery(
+    String query, {
+    String? countryCodes,
+    int limit = 6,
+  }) async {
+    final params = <String, String>{
+      'q': query,
+      'format': 'jsonv2',
+      'limit': '$limit',
+      'addressdetails': '1',
+    };
+
+    if (countryCodes != null && countryCodes.trim().isNotEmpty) {
+      params['countrycodes'] = countryCodes;
+    }
+
+    final uri = Uri.parse(_searchBaseUrl).replace(queryParameters: params);
+
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode != 200) {
+      return [];
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List || decoded.isEmpty) {
+      return [];
+    }
+
+    final mapped = decoded
+        .map((e) => Map<String, dynamic>.from(e))
+        .where(_looksNigerian)
+        .map((e) => PlaceSuggestionModel.fromMap(e))
+        .where((e) => e.isValid)
+        .toList();
+
+    return mapped;
+  }
+
   Future<List<PlaceSuggestionModel>> searchSuggestions(String query) async {
     final trimmed = query.trim();
     if (trimmed.length < 2) return [];
 
-    final tries = <String>[
-      '$trimmed, Nigeria',
-      trimmed,
+    final attempts = <Future<List<PlaceSuggestionModel>>>[
+      _runSuggestionQuery('$trimmed, Nigeria', countryCodes: 'ng', limit: 8),
+      _runSuggestionQuery(trimmed, countryCodes: 'ng', limit: 8),
+      _runSuggestionQuery('$trimmed, Nigeria', limit: 8),
+      _runSuggestionQuery(trimmed, limit: 8),
     ];
 
-    for (final candidate in tries) {
-      final uri = Uri.parse(
-        '$_searchBaseUrl?q=${Uri.encodeQueryComponent(candidate)}&format=jsonv2&limit=6&countrycodes=ng&addressdetails=1',
-      );
-
-      final response = await http.get(uri, headers: _headers);
-
-      if (response.statusCode != 200) {
-        continue;
-      }
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is! List || decoded.isEmpty) {
-        continue;
-      }
-
-      final suggestions = decoded
-          .map((e) => Map<String, dynamic>.from(e))
-          .where((item) {
-            final address = Map<String, dynamic>.from(item['address'] ?? {});
-            final countryCode =
-                (address['country_code'] ?? '').toString().toLowerCase();
-            final displayName =
-                (item['display_name'] ?? '').toString().toLowerCase();
-
-            return countryCode == 'ng' || displayName.contains('nigeria');
-          })
-          .map((e) => PlaceSuggestionModel.fromMap(e))
-          .where((e) => e.isValid)
-          .toList();
-
-      if (suggestions.isNotEmpty) {
-        return suggestions;
+    for (final attempt in attempts) {
+      final results = await attempt;
+      if (results.isNotEmpty) {
+        final unique = <String, PlaceSuggestionModel>{};
+        for (final item in results) {
+          unique[item.displayName] = item;
+        }
+        return unique.values.toList();
       }
     }
 
@@ -73,20 +114,39 @@ class GeocodingService {
   }
 
   Future<GeocodingResult> searchLocation(String query) async {
-    final suggestions = await searchSuggestions(query);
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      throw Exception('Location cannot be empty');
+    }
 
-    if (suggestions.isEmpty) {
-      throw Exception(
-        'Location not found in Nigeria. Please enter a clearer Nigerian address, area, town, or landmark.',
+    final suggestions = await searchSuggestions(trimmed);
+
+    if (suggestions.isNotEmpty) {
+      final best = suggestions.first;
+      return GeocodingResult(
+        displayName: best.displayName,
+        latitude: best.latitude,
+        longitude: best.longitude,
       );
     }
 
-    final best = suggestions.first;
+    // Final broad fallback attempt:
+    final broadFallback = await _runSuggestionQuery(
+      '$trimmed Nigeria',
+      limit: 10,
+    );
 
-    return GeocodingResult(
-      displayName: best.displayName,
-      latitude: best.latitude,
-      longitude: best.longitude,
+    if (broadFallback.isNotEmpty) {
+      final best = broadFallback.first;
+      return GeocodingResult(
+        displayName: best.displayName,
+        latitude: best.latitude,
+        longitude: best.longitude,
+      );
+    }
+
+    throw Exception(
+      'Location not found. Try adding a nearby town, state, bus stop, landmark, or full Nigerian address.',
     );
   }
 

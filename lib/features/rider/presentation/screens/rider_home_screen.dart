@@ -34,6 +34,8 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
   PlaceSuggestionModel? _selectedPickup;
   PlaceSuggestionModel? _selectedDestination;
+  bool _pickupValid = false;
+  bool _destinationValid = false;
 
   Future<void> _useCurrentLocationForPickup() async {
     if (_loadingCurrentLocation) return;
@@ -56,6 +58,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
       setState(() {
         _selectedPickup = suggestion;
+        _pickupValid = true;
         _estimate = null;
         _estimateError = null;
       });
@@ -71,17 +74,39 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     }
   }
 
-  Future<void> _estimateRide() async {
-    final pickup = _pickupCtrl.text.trim();
-    final destination = _destinationCtrl.text.trim();
-
-    if (pickup.isEmpty || destination.isEmpty) {
+  bool _canProceedLocationCheck() {
+    if (_pickupCtrl.text.trim().isEmpty || _destinationCtrl.text.trim().isEmpty) {
       setState(() {
         _estimateError = 'Pickup and destination are required';
-        _estimate = null;
       });
-      return;
+      return false;
     }
+
+    if (!_pickupValid || !_selectedPickupValid()) {
+      setState(() {
+        _estimateError = 'Please select pickup from suggestion list';
+      });
+      return false;
+    }
+
+    if (!_destinationValid || !_selectedDestinationValid()) {
+      setState(() {
+        _estimateError = 'Please select destination from suggestion list';
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  bool _selectedPickupValid() => _selectedPickup != null;
+  bool _selectedDestinationValid() => _selectedDestination != null;
+
+  Future<void> _estimateRide() async {
+    if (!_canProceedLocationCheck()) return;
+
+    final pickup = _pickupCtrl.text.trim();
+    final destination = _destinationCtrl.text.trim();
 
     setState(() {
       _loadingEstimate = true;
@@ -113,16 +138,11 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   }
 
   Future<void> _bookRide() async {
+    if (!_canProceedLocationCheck()) return;
+
     final pickup = _pickupCtrl.text.trim();
     final destination = _destinationCtrl.text.trim();
     final note = _noteCtrl.text.trim();
-
-    if (pickup.isEmpty || destination.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pickup and destination are required')),
-      );
-      return;
-    }
 
     setState(() => _bookingRide = true);
 
@@ -144,6 +164,8 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
         _estimate = null;
         _selectedPickup = null;
         _selectedDestination = null;
+        _pickupValid = false;
+        _destinationValid = false;
       });
 
       if (!mounted) return;
@@ -274,9 +296,13 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                   showCurrentLocationAction: true,
                                   onUseCurrentLocation:
                                       _useCurrentLocationForPickup,
+                                  onSelectionValidityChanged: (isValid) {
+                                    setState(() => _pickupValid = isValid);
+                                  },
                                   onSuggestionSelected: (suggestion) {
                                     setState(() {
                                       _selectedPickup = suggestion;
+                                      _pickupValid = true;
                                       _estimate = null;
                                       _estimateError = null;
                                     });
@@ -302,9 +328,13 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                               controller: _destinationCtrl,
                               hintText: 'Destination anywhere in Nigeria',
                               prefixIcon: Icons.location_on_outlined,
+                              onSelectionValidityChanged: (isValid) {
+                                setState(() => _destinationValid = isValid);
+                              },
                               onSuggestionSelected: (suggestion) {
                                 setState(() {
                                   _selectedDestination = suggestion;
+                                  _destinationValid = true;
                                   _estimate = null;
                                   _estimateError = null;
                                 });
