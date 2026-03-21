@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
@@ -33,7 +34,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _savingName = false;
   PlaceSuggestionModel? _selectedAddressSuggestion;
 
+  bool get _isGuest => FirebaseAuth.instance.currentUser == null;
+
+  Future<void> _goToLogin() async {
+    await AppRouter.clearAndGo(context, RouteNames.login);
+  }
+
   Future<void> _pickAndUploadProfileImage() async {
+    if (_isGuest) {
+      await _goToLogin();
+      return;
+    }
+
     final file = await _imageService.pickImageWithFallback();
     if (file == null) return;
 
@@ -64,6 +76,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _editDisplayName(String currentName) async {
+    if (_isGuest) {
+      await _goToLogin();
+      return;
+    }
+
     final controller = TextEditingController(text: currentName);
 
     final newName = await showDialog<String>(
@@ -140,6 +157,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _addAddress() async {
+    if (_isGuest) {
+      await _goToLogin();
+      return;
+    }
+
     final address = _addressCtrl.text.trim();
     if (address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,6 +200,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _removeAddress(String address) async {
+    if (_isGuest) {
+      await _goToLogin();
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -235,6 +262,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _selectAddress(String address) async {
+    if (_isGuest) {
+      await _goToLogin();
+      return;
+    }
+
     try {
       await _firebaseService.setSelectedAddress(address);
       if (!mounted) return;
@@ -327,6 +359,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleLogout() async {
+    if (_isGuest) {
+      await _goToLogin();
+      return;
+    }
+
     if (_loggingOut) return;
 
     final confirm = await showDialog<bool>(
@@ -393,6 +430,179 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (_isGuest) {
+      final guestContent = CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardTheme.color,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 34,
+                          backgroundColor: const Color(0xFFC29B40),
+                          child: Text(
+                            'G',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 24,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Continue as Guest',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Browse products freely. Sign in to save favorites, track orders, manage addresses, and enjoy the full Mix experience.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.5,
+                            height: 1.5,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.color
+                                ?.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: _goToLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFC29B40),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            icon: const Icon(Icons.login_rounded),
+                            label: Text(
+                              'Sign In / Create Account',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _ProfileTile(
+                    icon: Icons.dark_mode_rounded,
+                    title: 'Dark mode',
+                    subtitle: 'Switch between light and dark theme',
+                    trailing: Switch(
+                      value: themeController.isDarkMode,
+                      onChanged: themeController.toggleDarkMode,
+                      activeColor: const Color(0xFFC29B40),
+                    ),
+                  ),
+                  _ProfileTile(
+                    icon: Icons.favorite_border_rounded,
+                    title: 'Favorites',
+                    subtitle: 'Sign in to save your favorite products',
+                    onTap: _goToLogin,
+                  ),
+                  _ProfileTile(
+                    icon: Icons.location_on_outlined,
+                    title: 'Saved addresses',
+                    subtitle: 'Sign in to save delivery addresses',
+                    onTap: _goToLogin,
+                  ),
+                  _ProfileTile(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'Orders',
+                    subtitle: 'Sign in to track your order history',
+                    onTap: _goToLogin,
+                  ),
+                  _ProfileTile(
+                    icon: Icons.support_agent_rounded,
+                    title: 'Help & support',
+                    subtitle: 'Chat with us on WhatsApp',
+                    onTap: _openWhatsAppSupport,
+                  ),
+                  _ProfileTile(
+                    icon: Icons.info_outline_rounded,
+                    title: 'About Mix',
+                    subtitle: "Learn more about Maamah's Mix",
+                    onTap: _showAboutDialog,
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Text(
+                      'Version 1.0.0',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.color
+                            ?.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+
+      if (!widget.showScaffold) {
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: SafeArea(child: guestContent),
+        );
+      }
+
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          title: Text(
+            'Profile',
+            style: GoogleFonts.poppins(
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          iconTheme: IconThemeData(
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
+        ),
+        body: guestContent,
+      );
+    }
 
     final content = StreamBuilder<Map<String, dynamic>?>(
       stream: _firebaseService.watchUserProfile(),

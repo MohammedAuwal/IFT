@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/data/product_repository.dart';
@@ -56,6 +58,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
         (value.startsWith('http://') || value.startsWith('https://'));
   }
 
+  bool get _isGuest => FirebaseAuth.instance.currentUser == null;
+
+  Future<void> _goToLogin() async {
+    await AppRouter.clearAndGo(context, RouteNames.login);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,7 +83,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final displayName = (user?.displayName?.trim().isNotEmpty ?? false)
         ? user!.displayName!
-        : (user?.email ?? 'User');
+        : (_isGuest ? 'Guest' : (user?.email ?? 'User'));
 
     final body = SafeArea(
       child: StreamBuilder<List<String>>(
@@ -91,7 +99,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           return StreamBuilder<List<RideModel>>(
             stream: _firebaseService.watchUserRides(),
             builder: (context, rideSnapshot) {
-              final rides = rideSnapshot.data ?? [];
+              final rides = snapshotSafe(rideSnapshot.data);
 
               final activeServices = rides
                   .where((r) => r.isActive)
@@ -143,7 +151,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     );
                   }
 
-                  final items = productSnapshot.data ?? [];
+                  final items = snapshotSafe(productSnapshot.data);
                   final query = _searchCtrl.text.trim().toLowerCase();
 
                   final filtered = items.where((p) {
@@ -220,7 +228,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Hi, $displayName 👋',
+                                      _isGuest
+                                          ? 'Welcome, Guest 👋'
+                                          : 'Hi, $displayName 👋',
                                       style: GoogleFonts.poppins(
                                         color: Colors.black87,
                                         fontSize: 15,
@@ -271,6 +281,55 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           ),
                         ),
                       ),
+
+                      if (_isGuest)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFC29B40).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color:
+                                      const Color(0xFFC29B40).withOpacity(0.25),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.person_outline_rounded,
+                                    color: Color(0xFF7A5A12),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'You are browsing as a guest. Sign in to save favorites, confirm rides, save addresses, and checkout orders.',
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF7A5A12),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  TextButton(
+                                    onPressed: _goToLogin,
+                                    child: Text(
+                                      'Sign In',
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF7A5A12),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
 
                       if (previewController.isPreviewMode)
                         SliverToBoxAdapter(
@@ -405,11 +464,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
-                                          selectedAddress.isEmpty
-                                              ? 'No saved address selected yet'
-                                              : selectedAddress,
+                                          _isGuest
+                                              ? 'Sign in to save and use delivery addresses'
+                                              : (selectedAddress.isEmpty
+                                                  ? 'No saved address selected yet'
+                                                  : selectedAddress),
                                           style: GoogleFonts.poppins(
-                                            color: selectedAddress.isEmpty
+                                            color: (_isGuest ||
+                                                    selectedAddress.isEmpty)
                                                 ? Colors.black45
                                                 : Colors.black87,
                                             fontSize: 11,
@@ -486,33 +548,37 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 child: _QuickActionItem(
                                   icon: Icons.payments_outlined,
                                   label: 'Pay',
-                                  onTap: () {},
+                                  onTap: _isGuest ? _goToLogin : () {},
                                 ),
                               ),
                               Expanded(
                                 child: _QuickActionItem(
                                   icon: Icons.receipt_long_rounded,
                                   label: 'My Orders',
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => OrderScreen(),
-                                      ),
-                                    );
-                                  },
+                                  onTap: _isGuest
+                                      ? _goToLogin
+                                      : () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => OrderScreen(),
+                                            ),
+                                          );
+                                        },
                                 ),
                               ),
                               Expanded(
                                 child: _QuickActionItem(
                                   icon: Icons.history_rounded,
                                   label: 'History',
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => OrderScreen(),
-                                      ),
-                                    );
-                                  },
+                                  onTap: _isGuest
+                                      ? _goToLogin
+                                      : () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => OrderScreen(),
+                                            ),
+                                          );
+                                        },
                                 ),
                               ),
                               Expanded(
@@ -871,6 +937,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                     right: 8,
                                                     child: GestureDetector(
                                                       onTap: () async {
+                                                        if (_isGuest) {
+                                                          await _goToLogin();
+                                                          return;
+                                                        }
                                                         await _firebaseService
                                                             .toggleFavorite(
                                                           product.id,
@@ -1035,7 +1105,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Live route pricing now powers rides and deliveries across Nigeria!',
+                                    _isGuest
+                                        ? 'Sign in to unlock favorites, delivery checkout, ride booking, and personal tracking.'
+                                        : 'Live route pricing now powers rides and deliveries across Nigeria!',
                                     style: GoogleFonts.poppins(
                                       color: const Color(0xFF3D2A00),
                                       fontWeight: FontWeight.w700,
@@ -1078,6 +1150,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
               MaterialPageRoute(builder: (_) => const CartScreen()),
             );
           } else if (index == 2) {
+            if (_isGuest) {
+              _goToLogin();
+              return;
+            }
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => OrderScreen()),
             );
@@ -1110,6 +1186,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
     );
   }
+
+  List<T> snapshotSafe<T>(List<T>? data) => data ?? <T>[];
 }
 
 class _TrendingProductCard extends StatelessWidget {

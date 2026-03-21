@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/config/routes/route_names.dart';
+import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/firebase_service.dart';
 
@@ -16,12 +19,57 @@ class ProductDetailScreen extends StatelessWidget {
       (product.imageUrl.startsWith('http://') ||
           product.imageUrl.startsWith('https://'));
 
+  Future<void> _promptLogin(BuildContext context, String actionText) async {
+    final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            title: Text(
+              'Sign in required',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Please sign in or create an account to $actionText.',
+              style: GoogleFonts.poppins(fontSize: 13.5, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(
+                  'Later',
+                  style: GoogleFonts.poppins(),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC29B40),
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  'Sign In',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!go) return;
+    if (!context.mounted) return;
+    await AppRouter.clearAndGo(context, RouteNames.login);
+  }
+
   @override
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
     final variantText =
         product.variants.isEmpty ? 'No variants' : product.variants.join(', ');
     final categoryText = product.normalizedCategories.join(', ');
+    final isGuest = FirebaseAuth.instance.currentUser == null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
@@ -37,23 +85,32 @@ class ProductDetailScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          StreamBuilder<List<String>>(
-            stream: firebaseService.watchFavorites(),
-            builder: (context, snapshot) {
-              final favorites = snapshot.data ?? [];
-              final isFavorite = favorites.contains(product.id);
+          if (!isGuest)
+            StreamBuilder<List<String>>(
+              stream: firebaseService.watchFavorites(),
+              builder: (context, snapshot) {
+                final favorites = snapshot.data ?? [];
+                final isFavorite = favorites.contains(product.id);
 
-              return IconButton(
-                onPressed: () async {
-                  await firebaseService.toggleFavorite(product.id);
-                },
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? Colors.redAccent : Colors.black,
-                ),
-              );
-            },
-          ),
+                return IconButton(
+                  onPressed: () async {
+                    await firebaseService.toggleFavorite(product.id);
+                  },
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? Colors.redAccent : Colors.black,
+                  ),
+                );
+              },
+            )
+          else
+            IconButton(
+              onPressed: () => _promptLogin(context, 'save favorites'),
+              icon: const Icon(
+                Icons.favorite_border,
+                color: Colors.black,
+              ),
+            ),
         ],
       ),
       body: ListView(
@@ -169,6 +226,26 @@ class ProductDetailScreen extends StatelessWidget {
               color: Colors.black87,
             ),
           ),
+          if (isGuest)
+            Container(
+              margin: const EdgeInsets.only(top: 20),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC29B40).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFC29B40).withOpacity(0.2),
+                ),
+              ),
+              child: Text(
+                'You are browsing as a guest. Sign in to save favorites and track your activity across devices.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: const Color(0xFF7A5A12),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           const SizedBox(height: 28),
           SizedBox(
             height: 52,
@@ -184,7 +261,13 @@ class ProductDetailScreen extends StatelessWidget {
 
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Added to cart')),
+                          SnackBar(
+                            content: Text(
+                              isGuest
+                                  ? 'Added to guest cart'
+                                  : 'Added to cart',
+                            ),
+                          ),
                         );
                       }
                     }

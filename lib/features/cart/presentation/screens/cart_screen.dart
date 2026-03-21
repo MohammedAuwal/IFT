@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/config/routes/route_names.dart';
+import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
 import 'package:mix/services/firebase_service.dart';
 
@@ -21,13 +24,67 @@ class _CartScreenState extends State<CartScreen> {
   String _lastEstimatedAddress = '';
   String _vendorPickupAddress = '';
 
+  bool get _isGuest => FirebaseAuth.instance.currentUser == null;
+
   bool _hasValidImage(String url) {
     final value = url.trim();
     return value.isNotEmpty &&
         (value.startsWith('http://') || value.startsWith('https://'));
   }
 
+  Future<void> _goToLogin() async {
+    await AppRouter.clearAndGo(context, RouteNames.login);
+  }
+
+  Future<void> _showGuestCheckoutPrompt() async {
+    final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            title: Text(
+              'Sign in required',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Please sign in or create an account to continue with checkout and delivery tracking.',
+              style: GoogleFonts.poppins(fontSize: 13.5, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(
+                  'Later',
+                  style: GoogleFonts.poppins(),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC29B40),
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  'Sign In',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!go) return;
+    await _goToLogin();
+  }
+
   Future<void> _estimateDelivery(String selectedAddress) async {
+    if (_isGuest) {
+      await _showGuestCheckoutPrompt();
+      return;
+    }
+
     if (selectedAddress.trim().isEmpty) {
       setState(() {
         _deliveryEstimate = null;
@@ -115,6 +172,41 @@ class _CartScreenState extends State<CartScreen> {
 
             return CustomScrollView(
               slivers: [
+                if (_isGuest)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC29B40).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: const Color(0xFFC29B40).withOpacity(0.25),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.person_outline_rounded,
+                              color: Color(0xFF7A5A12),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'You are shopping as a guest. Sign in to complete checkout, save addresses, and track your orders.',
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFF7A5A12),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 SliverPadding(
                   padding: const EdgeInsets.all(16),
                   sliver: SliverList(
@@ -249,14 +341,16 @@ class _CartScreenState extends State<CartScreen> {
                             const Spacer(),
                             Expanded(
                               child: Text(
-                                selectedAddress.isEmpty
-                                    ? 'Not selected'
-                                    : selectedAddress,
+                                _isGuest
+                                    ? 'Sign in required'
+                                    : (selectedAddress.isEmpty
+                                        ? 'Not selected'
+                                        : selectedAddress),
                                 textAlign: TextAlign.right,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.poppins(
-                                  color: selectedAddress.isEmpty
+                                  color: _isGuest || selectedAddress.isEmpty
                                       ? Colors.redAccent
                                       : Colors.black54,
                                   fontSize: 12,
@@ -384,7 +478,9 @@ class _CartScreenState extends State<CartScreen> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Text('Check Delivery'),
+                                    : Text(_isGuest
+                                        ? 'Sign In to Estimate'
+                                        : 'Check Delivery'),
                               ),
                             ),
                           ],
@@ -423,7 +519,7 @@ class _CartScreenState extends State<CartScreen> {
                             const Spacer(),
                             Text(
                               _deliveryEstimate == null
-                                  ? 'Check estimate'
+                                  ? (_isGuest ? 'Sign in first' : 'Check estimate')
                                   : '₦${deliveryFee.toStringAsFixed(2)}',
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700,
@@ -462,6 +558,11 @@ class _CartScreenState extends State<CartScreen> {
                           height: 50,
                           child: ElevatedButton(
                             onPressed: () async {
+                              if (_isGuest) {
+                                await _showGuestCheckoutPrompt();
+                                return;
+                              }
+
                               try {
                                 await firebaseService.placeOrder(cartItems);
                                 if (context.mounted) {
@@ -495,7 +596,9 @@ class _CartScreenState extends State<CartScreen> {
                               ),
                             ),
                             child: Text(
-                              'Proceed to Checkout',
+                              _isGuest
+                                  ? 'Sign In to Checkout'
+                                  : 'Proceed to Checkout',
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -514,7 +617,7 @@ class _CartScreenState extends State<CartScreen> {
       },
     );
 
-    if (!widget.showScaffold) {
+    if (!showScaffold) {
       return Scaffold(
         backgroundColor: const Color(0xFFF8F5EF),
         body: SafeArea(child: content),
@@ -538,4 +641,6 @@ class _CartScreenState extends State<CartScreen> {
       body: content,
     );
   }
+
+  bool get showScaffold => widget.showScaffold;
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
@@ -14,16 +13,74 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   final FirebaseService _firebaseService = FirebaseService();
 
   bool _navigated = false;
   bool _booting = false;
   String? _errorText;
 
+  late final AnimationController _introController;
+  late final AnimationController _pulseController;
+
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<Offset> _textSlideAnimation;
+  late final Animation<double> _pulseAnimation;
+
   @override
   void initState() {
     super.initState();
+
+    _introController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    );
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _introController,
+      curve: Curves.easeOut,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.92,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: _introController,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _textSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _introController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _pulseAnimation = Tween<double>(
+      begin: 1,
+      end: 1.04,
+    ).animate(
+      CurvedAnimation(
+        parent: _pulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _introController.forward();
+    _pulseController.repeat(reverse: true);
+
     _start();
   }
 
@@ -59,24 +116,19 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _bootstrap() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _firebaseService.currentUser;
 
     if (user != null) {
       await _firebaseService.ensureUserProfile();
+      final isAdmin = await _firebaseService.isAdmin();
+
+      if (isAdmin) {
+        await _safeNavigate(RouteNames.admin);
+        return;
+      }
     }
 
-    final isAdmin = user != null ? await _firebaseService.isAdmin() : false;
-
-    if (user == null) {
-      await _safeNavigate(RouteNames.login);
-      return;
-    }
-
-    if (isAdmin) {
-      await _safeNavigate(RouteNames.admin);
-      return;
-    }
-
+    // Guest users and normal signed-in users both enter main shell
     await _safeNavigate(RouteNames.mainShell);
   }
 
@@ -89,105 +141,171 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   @override
+  void dispose() {
+    _introController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF2A0A12);
+    const top = Color(0xFF2A0A12);
+    const bottom = Color(0xFF12060A);
     const gold = Color(0xFFC29B40);
 
     return Scaffold(
-      backgroundColor: bg,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: _errorText == null
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 86,
-                        height: 86,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white12),
+      backgroundColor: top,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [top, bottom],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: _errorText == null
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ScaleTransition(
+                              scale: _pulseAnimation,
+                              child: Container(
+                                width: 110,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.08),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: gold.withOpacity(0.15),
+                                      blurRadius: 26,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.auto_awesome_mosaic_rounded,
+                                    color: gold,
+                                    size: 50,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            SlideTransition(
+                              position: _textSlideAnimation,
+                              child: Text(
+                                "Maamah's Mix",
+                                style: GoogleFonts.playfairDisplay(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SlideTransition(
+                              position: _textSlideAnimation,
+                              child: Text(
+                                'Food, products, rides & delivery in one app',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0.7, end: 1),
+                              duration: const Duration(milliseconds: 900),
+                              curve: Curves.easeInOut,
+                              builder: (context, value, child) {
+                                return Opacity(
+                                  opacity: value,
+                                  child: Transform.scale(
+                                    scale: value,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: const CircularProgressIndicator(
+                                color: gold,
+                                strokeWidth: 2.6,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 110,
+                              height: 110,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.08),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white12),
+                              ),
+                              child: const Icon(
+                                Icons.wifi_off_rounded,
+                                color: Colors.white,
+                                size: 42,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Unable to load app',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 20,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _errorText!,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white70,
+                                fontSize: 12.5,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            ElevatedButton(
+                              onPressed: _retry,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: gold,
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: Text(
+                                'Retry',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Icon(
-                          Icons.auto_awesome_mosaic_rounded,
-                          color: gold,
-                          size: 42,
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      Text(
-                        "Maamah's Mix",
-                        style: GoogleFonts.playfairDisplay(
-                          color: Colors.white,
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Food, products, rides & delivery in one app',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      const CircularProgressIndicator(
-                        color: gold,
-                        strokeWidth: 2.6,
-                      ),
-                    ],
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.wifi_off_rounded,
-                        color: Colors.white,
-                        size: 42,
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Unable to load app',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 20,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        _errorText!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white70,
-                          fontSize: 12.5,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      ElevatedButton(
-                        onPressed: _retry,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: gold,
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          'Retry',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),

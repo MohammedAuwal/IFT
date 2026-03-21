@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/config/routes/route_names.dart';
+import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_map_screen.dart';
@@ -36,6 +39,55 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   PlaceSuggestionModel? _selectedDestination;
   bool _pickupValid = false;
   bool _destinationValid = false;
+
+  bool get _isGuest => FirebaseAuth.instance.currentUser == null;
+
+  Future<void> _goToLogin() async {
+    await AppRouter.clearAndGo(context, RouteNames.login);
+  }
+
+  Future<void> _showGuestRidePrompt() async {
+    final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            title: Text(
+              'Sign in required',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Please sign in or create an account to confirm a ride and track it properly.',
+              style: GoogleFonts.poppins(fontSize: 13.5, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(
+                  'Later',
+                  style: GoogleFonts.poppins(),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC29B40),
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  'Sign In',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!go) return;
+    await _goToLogin();
+  }
 
   Future<void> _useCurrentLocationForPickup() async {
     if (_loadingCurrentLocation) return;
@@ -82,14 +134,14 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
       return false;
     }
 
-    if (!_pickupValid || !_selectedPickupValid()) {
+    if (!_pickupValid || _selectedPickup == null) {
       setState(() {
         _estimateError = 'Please select pickup from suggestion list';
       });
       return false;
     }
 
-    if (!_destinationValid || !_selectedDestinationValid()) {
+    if (!_destinationValid || _selectedDestination == null) {
       setState(() {
         _estimateError = 'Please select destination from suggestion list';
       });
@@ -98,9 +150,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
     return true;
   }
-
-  bool _selectedPickupValid() => _selectedPickup != null;
-  bool _selectedDestinationValid() => _selectedDestination != null;
 
   Future<void> _estimateRide() async {
     if (!_canProceedLocationCheck()) return;
@@ -138,6 +187,11 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   }
 
   Future<void> _bookRide() async {
+    if (_isGuest) {
+      await _showGuestRidePrompt();
+      return;
+    }
+
     if (!_canProceedLocationCheck()) return;
 
     final pickup = _pickupCtrl.text.trim();
@@ -233,6 +287,38 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate(
                     [
+                      if (_isGuest)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC29B40).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color:
+                                  const Color(0xFFC29B40).withOpacity(0.25),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.person_outline_rounded,
+                                color: Color(0xFF7A5A12),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'You can check route estimates as a guest. Sign in to confirm and track rides.',
+                                  style: GoogleFonts.poppins(
+                                    color: const Color(0xFF7A5A12),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       if (activeRide != null)
                         _RideStatusCard(
                           ride: activeRide,
@@ -529,9 +615,11 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                               Icons.local_taxi_rounded,
                                             ),
                                       label: Text(
-                                        activeRide == null
-                                            ? 'Confirm Ride'
-                                            : 'Active Ride Exists',
+                                        _isGuest
+                                            ? 'Sign In to Ride'
+                                            : (activeRide == null
+                                                ? 'Confirm Ride'
+                                                : 'Active Ride Exists'),
                                         style: GoogleFonts.poppins(
                                           fontWeight: FontWeight.w700,
                                         ),
