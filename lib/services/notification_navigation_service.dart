@@ -12,37 +12,54 @@ class NotificationNavigationService {
 
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+  bool _isNavigating = false;
+
   Future<void> handlePayload(Map<String, dynamic> data) async {
+    final navigator = navigatorKey.currentState;
     final context = navigatorKey.currentContext;
-    if (context == null) return;
 
-    final type = (data['type'] ?? '').toString();
+    if (navigator == null || context == null) return;
+    if (_isNavigating) return;
 
-    if (type.contains('ride') || type.contains('delivery')) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const RiderHomeScreen()),
-      );
-      return;
+    _isNavigating = true;
+
+    try {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final safeNavigator = navigatorKey.currentState;
+        final safeContext = navigatorKey.currentContext;
+
+        if (safeNavigator == null || safeContext == null) {
+          _isNavigating = false;
+          return;
+        }
+
+        final type = (data['type'] ?? '').toString();
+
+        if (type.contains('ride') || type.contains('delivery')) {
+          await safeNavigator.push(
+            MaterialPageRoute(builder: (_) => const RiderHomeScreen()),
+          );
+        } else if (type.contains('order')) {
+          await safeNavigator.push(
+            MaterialPageRoute(builder: (_) => OrderScreen()),
+          );
+        } else if (type.contains('escalation') ||
+            type.contains('admin_assignment')) {
+          await safeNavigator.push(
+            MaterialPageRoute(
+              builder: (_) => AdminEscalationDashboardScreen(),
+            ),
+          );
+        } else {
+          await safeNavigator.push(
+            MaterialPageRoute(builder: (_) => const MainShellScreen()),
+          );
+        }
+
+        _isNavigating = false;
+      });
+    } catch (_) {
+      _isNavigating = false;
     }
-
-    if (type.contains('order')) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => OrderScreen()),
-      );
-      return;
-    }
-
-    if (type.contains('escalation') || type.contains('admin_assignment')) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => AdminEscalationDashboardScreen(),
-        ),
-      );
-      return;
-    }
-
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const MainShellScreen()),
-    );
   }
 }

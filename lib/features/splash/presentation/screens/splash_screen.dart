@@ -18,6 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
   final FirebaseService _firebaseService = FirebaseService();
 
   bool _navigated = false;
+  bool _booting = false;
   String? _errorText;
 
   @override
@@ -27,6 +28,9 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _start() async {
+    if (_booting) return;
+    _booting = true;
+
     try {
       await Future.any([
         _bootstrap(),
@@ -39,7 +43,19 @@ class _SplashScreenState extends State<SplashScreen> {
       setState(() {
         _errorText = e.toString();
       });
+    } finally {
+      _booting = false;
     }
+  }
+
+  Future<void> _safeNavigate(String routeName) async {
+    if (!mounted || _navigated) return;
+    _navigated = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await AppRouter.clearAndGo(context, routeName);
+    });
   }
 
   Future<void> _bootstrap() async {
@@ -51,20 +67,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final isAdmin = user != null ? await _firebaseService.isAdmin() : false;
 
-    if (!mounted || _navigated) return;
-    _navigated = true;
-
     if (user == null) {
-      await AppRouter.clearAndGo(context, RouteNames.login);
+      await _safeNavigate(RouteNames.login);
       return;
     }
 
     if (isAdmin) {
-      await AppRouter.clearAndGo(context, RouteNames.admin);
+      await _safeNavigate(RouteNames.admin);
       return;
     }
 
-    await AppRouter.clearAndGo(context, RouteNames.mainShell);
+    await _safeNavigate(RouteNames.mainShell);
   }
 
   Future<void> _retry() async {
