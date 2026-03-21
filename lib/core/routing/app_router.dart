@@ -4,6 +4,7 @@ import 'package:mix/features/admin/presentation/screens/add_product_screen.dart'
 import 'package:mix/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:mix/features/admin/presentation/screens/admin_orders_screen.dart';
 import 'package:mix/features/auth/presentation/screens/login_screen.dart';
+import 'package:mix/features/auth/presentation/screens/signup_screen.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
@@ -18,7 +19,15 @@ class AppRouter {
       case RouteNames.splash:
         return _route(const SplashScreen());
       case RouteNames.login:
-        return _route(const LoginScreen());
+        return _route(
+          LoginScreen(
+            redirectTo: settings.arguments is String
+                ? settings.arguments as String
+                : null,
+          ),
+        );
+      case RouteNames.signup:
+        return _route(const SignupScreen());
       case RouteNames.home:
         return _route(const ProductListScreen());
       case RouteNames.admin:
@@ -50,12 +59,20 @@ class AppRouter {
     return MaterialPageRoute(builder: (_) => child);
   }
 
-  static Future<void> clearAndGo(BuildContext context, String route) async {
+  static Future<void> clearAndGo(
+    BuildContext context,
+    String route, {
+    Object? arguments,
+  }) async {
     if (!context.mounted) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        route,
+        (route) => false,
+        arguments: arguments,
+      );
     });
   }
 }

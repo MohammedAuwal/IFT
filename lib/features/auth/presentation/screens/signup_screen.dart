@@ -2,74 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
-import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
-import 'package:mix/features/orders/presentation/screens/order_screen.dart';
-import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
-import 'package:mix/features/rider/presentation/screens/rider_home_screen.dart';
 import 'package:mix/services/firebase_auth_service.dart';
 
-class LoginScreen extends StatefulWidget {
-  final String? redirectTo;
-
-  const LoginScreen({super.key, this.redirectTo});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final FirebaseAuthService _authService = FirebaseAuthService();
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
 
   bool _loading = false;
   bool _googleLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
-  Future<void> _goAfterLogin() async {
-    if (!mounted) return;
-
-    switch (widget.redirectTo) {
-      case RouteNames.redirectCart:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const CartScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectOrders:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => OrderScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectProfile:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectRider:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const RiderHomeScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectMainShell:
-      default:
-        await AppRouter.clearAndGo(context, RouteNames.mainShell);
-        return;
-    }
-  }
-
-  Future<void> _login() async {
+  Future<void> _signup() async {
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text.trim();
+    final confirmPassword = _confirmPasswordCtrl.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Email and password are required'),
+          content: Text('All fields are required'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passwords do not match'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -79,13 +51,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      await _authService.signInWithEmailPassword(
+      await _authService.signUpWithEmailPassword(
         email: email,
         password: password,
       );
 
       if (!mounted) return;
-      await _goAfterLogin();
+      await AppRouter.clearAndGo(context, RouteNames.mainShell);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -99,13 +71,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _loginWithGoogle() async {
+  Future<void> _signupWithGoogle() async {
     setState(() => _googleLoading = true);
 
     try {
       await _authService.signInWithGoogle();
       if (!mounted) return;
-      await _goAfterLogin();
+      await AppRouter.clearAndGo(context, RouteNames.mainShell);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -119,18 +91,15 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _continueAsGuest() async {
-    await AppRouter.clearAndGo(context, RouteNames.mainShell);
-  }
-
-  Future<void> _goToSignup() async {
-    await AppRouter.clearAndGo(context, RouteNames.signup);
+  Future<void> _goToLogin() async {
+    await AppRouter.clearAndGo(context, RouteNames.login);
   }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -226,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Column(
                         children: [
-                          const SizedBox(height: 110),
+                          const SizedBox(height: 70),
                           Text(
                             "Maamah's Mix",
                             textAlign: TextAlign.center,
@@ -260,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Welcome back',
+                                  'Create account',
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
                                     fontSize: 22,
@@ -269,9 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  widget.redirectTo == null
-                                      ? 'Sign in to continue your premium shopping experience.'
-                                      : 'Sign in to continue where you stopped.',
+                                  'Join Mix and enjoy seamless shopping, rides and deliveries.',
                                   style: GoogleFonts.poppins(
                                     color: Colors.white.withOpacity(0.78),
                                     fontSize: 13,
@@ -304,12 +271,33 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                 ),
+                                const SizedBox(height: 16),
+                                _GlassField(
+                                  controller: _confirmPasswordCtrl,
+                                  hint: 'Confirm password',
+                                  icon: Icons.lock_person_outlined,
+                                  obscureText: _obscureConfirmPassword,
+                                  suffix: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscureConfirmPassword =
+                                            !_obscureConfirmPassword;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      _obscureConfirmPassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
                                 const SizedBox(height: 18),
                                 SizedBox(
                                   width: double.infinity,
                                   height: 58,
                                   child: ElevatedButton(
-                                    onPressed: _loading ? null : _login,
+                                    onPressed: _loading ? null : _signup,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: buttonRed,
                                       foregroundColor: Colors.white,
@@ -329,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                           )
                                         : Text(
-                                            'Sign in',
+                                            'Create account',
                                             style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.w700,
                                               fontSize: 16,
@@ -369,7 +357,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: double.infinity,
                                   height: 58,
                                   child: OutlinedButton(
-                                    onPressed: _googleLoading ? null : _loginWithGoogle,
+                                    onPressed: _googleLoading ? null : _signupWithGoogle,
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.white,
                                       side: BorderSide(
@@ -418,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Column(
                                     children: [
                                       Text(
-                                        'New here?',
+                                        'Already have an account?',
                                         style: GoogleFonts.poppins(
                                           color: Colors.white.withOpacity(0.72),
                                           fontSize: 13,
@@ -426,9 +414,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       GestureDetector(
-                                        onTap: _goToSignup,
+                                        onTap: _goToLogin,
                                         child: Text(
-                                          'Create an account',
+                                          'Sign in',
                                           style: GoogleFonts.poppins(
                                             color: accentGold,
                                             fontSize: 16,
@@ -449,18 +437,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.poppins(
                               color: Colors.white.withOpacity(0.68),
                               fontSize: 12.5,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextButton(
-                            onPressed: _continueAsGuest,
-                            child: Text(
-                              'Continue as Guest',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white.withOpacity(0.85),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13.5,
-                              ),
                             ),
                           ),
                         ],
@@ -493,8 +469,6 @@ class _GlassField extends StatelessWidget {
     this.suffix,
     this.keyboardType,
   });
-
-  final bool _dummy = false;
 
   @override
   Widget build(BuildContext context) {
