@@ -15,6 +15,7 @@ import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart
 import 'package:mix/features/admin/presentation/screens/manage_admin_locations_screen.dart';
 import 'package:mix/features/admin/presentation/screens/manage_categories_screen.dart';
 import 'package:mix/features/admin/presentation/screens/manage_products_screen.dart';
+import 'package:mix/features/admin/presentation/screens/payment_settings_screen.dart';
 import 'package:mix/features/admin/presentation/screens/super_admin_analytics_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
 import 'package:mix/models/product_model.dart';
@@ -514,13 +515,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     children: [
                       Expanded(
                         child: _ActionCard(
+                          icon: Icons.payments_rounded,
+                          title: 'Payment Settings',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PaymentSettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionCard(
                           icon: Icons.visibility_outlined,
                           title: 'User Preview',
                           onTap: _switchToUserView,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      if (_isSuperAdmin)
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_isSuperAdmin)
+                    Row(
+                      children: [
                         Expanded(
                           child: _ActionCard(
                             icon: Icons.warning_amber_rounded,
@@ -534,15 +554,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               );
                             },
                           ),
-                        )
-                      else
-                        const Expanded(child: SizedBox()),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (_isSuperAdmin)
-                    Row(
-                      children: [
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: _ActionCard(
                             icon: Icons.analytics_rounded,
@@ -557,8 +570,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(child: SizedBox()),
                       ],
                     ),
                   const SizedBox(height: 18),

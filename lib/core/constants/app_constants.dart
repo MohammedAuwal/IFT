@@ -8,6 +8,9 @@ class AppConstants {
   static const String usersCollection = "users";
   static const String ridesCollection = "rides";
   static const String categoriesCollection = "categories";
+  static const String paymentsCollection = "payments";
+  static const String paymentAttemptsCollection = "payment_attempts";
+  static const String appSettingsCollection = "app_settings";
 
   static const double rideBaseFare = 500;
   static const double ridePricePerKm = 100;
@@ -25,8 +28,9 @@ class AppConstants {
   static const String supabaseFcmFunctionUrl =
       'https://twrinntnsfqxslbauotw.supabase.co/functions/v1/send-fcm-notification';
 
-  // IMPORTANT:
-  // Replace this with your real Edge Function secret after creating it in Supabase Vault.
+  static const String supabasePaystackInitializeFunctionUrl =
+      'https://twrinntnsfqxslbauotw.supabase.co/functions/v1/init-paystack-transaction';
+
   static const String supabaseFunctionSecret =
       'REPLACE_WITH_EDGE_FUNCTION_SECRET';
 
@@ -35,4 +39,7 @@ class AppConstants {
 
   static const String supabasePublishableKey =
       'sb_publishable_oDEycW7NtKZG37rR2PtJjg_L3TkIw7T';
+
+  static const String paystackPublicKey =
+      'pk_test_5ca62bad3a4e7a85aed9adcf6846d50cb6292a9a';
 }

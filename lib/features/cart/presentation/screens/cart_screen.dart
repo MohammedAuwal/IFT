@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/features/auth/presentation/screens/login_screen.dart';
+import 'package:mix/features/cart/presentation/screens/paystack_verification_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
+import 'package:mix/models/payment_session_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/services/payment_service.dart';
 
 class CartScreen extends StatefulWidget {
   final bool showScaffold;
@@ -17,8 +20,10 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final FirebaseService firebaseService = FirebaseService();
+  final PaymentService paymentService = PaymentService();
 
   bool _loadingDeliveryEstimate = false;
+  bool _processingCheckout = false;
   String? _deliveryEstimateError;
   MovementEstimate? _deliveryEstimate;
   String _lastEstimatedAddress = '';
@@ -131,6 +136,120 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         setState(() => _loadingDeliveryEstimate = false);
       }
+    }
+  }
+
+  Future<void> _checkout(
+    List<Map<String, dynamic>> cartItems,
+    double grandTotal,
+    double itemsTotal,
+  ) async {
+    if (_isGuest) {
+      await _showGuestCheckoutPrompt();
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || (user.email ?? '').trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('A valid signed-in email is required for payment'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_deliveryEstimate == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please check delivery estimate before checkout'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _processingCheckout = true);
+
+    try {
+      final result = await paymentService.initializeCheckout(
+        userUid: user.uid,
+        email: user.email!,
+        amountNaira: grandTotal,
+        items: cartItems,
+        metadata: {
+          'type': 'cart_checkout',
+          'userId': user.uid,
+          'itemsCount': cartItems.length,
+          'itemsTotal': itemsTotal,
+          'deliveryFee': _deliveryEstimate!.price,
+          'distanceKm': _deliveryEstimate!.distanceKm,
+          'eta': _deliveryEstimate!.eta,
+        },
+      );
+
+      if (!result.success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      final opened = await paymentService.openCheckoutUrl(result.authorizationUrl);
+
+      if (!opened) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open Paystack checkout'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      final session = PaymentSessionModel(
+        reference: result.reference,
+        userUid: user.uid,
+        email: user.email!,
+        amountNaira: grandTotal,
+        currency: 'NGN',
+        items: cartItems,
+        metadata: {
+          'type': 'cart_checkout',
+          'userId': user.uid,
+          'itemsCount': cartItems.length,
+          'itemsTotal': itemsTotal,
+          'deliveryFee': _deliveryEstimate!.price,
+          'distanceKm': _deliveryEstimate!.distanceKm,
+          'eta': _deliveryEstimate!.eta,
+        },
+      );
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PaystackVerificationScreen(session: session),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Checkout failed: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _processingCheckout = false);
     }
   }
 
@@ -564,37 +683,9 @@ class _CartScreenState extends State<CartScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: () async {
-                              if (_isGuest) {
-                                await _showGuestCheckoutPrompt();
-                                return;
-                              }
-
-                              try {
-                                await firebaseService.placeOrder(cartItems);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Order placed successfully. Delivery created with live route.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Checkout failed: $e',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
+                            onPressed: _processingCheckout
+                                ? null
+                                : () => _checkout(cartItems, grandTotal, total),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF8E2121),
                               foregroundColor: Colors.white,
@@ -602,14 +693,23 @@ class _CartScreenState extends State<CartScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            child: Text(
-                              _isGuest
-                                  ? 'Sign In to Checkout'
-                                  : 'Proceed to Checkout',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            child: _processingCheckout
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    _isGuest
+                                        ? 'Sign In to Checkout'
+                                        : 'Proceed to Checkout',
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 12),
