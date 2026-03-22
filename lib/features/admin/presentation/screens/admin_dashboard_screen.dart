@@ -51,7 +51,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _addAdmin() async {
     final name = _adminNameCtrl.text.trim();
-    final email = _adminEmailCtrl.text.trim();
+    final email = _adminEmailCtrl.text.trim().toLowerCase();
 
     if (name.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,17 +65,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     setState(() => _addingAdmin = true);
     try {
-      final generatedDocId =
-          email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+      // 1. SEARCH for the user in the 'users' collection by email
+      // This allows using their Real UID instead of a fake one.
+      final userQuery = await _firebaseService.firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
 
+      if (userQuery.docs.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'User not found. The person must create an account in the app first.',
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      // 2. Get the REAL UID from the user document
+      final realUid = userQuery.docs.first.id;
+
+      // 3. Create/Update the Admin Document using the REAL UID
       await _firebaseService.addAdmin(
-        uid: generatedDocId,
+        uid: realUid,
         email: email,
       );
 
+      // 4. Update display name
       await _firebaseService.firestore
           .collection(AppConstants.adminsCollection)
-          .doc(generatedDocId)
+          .doc(realUid)
           .set({
         'displayName': name,
       }, SetOptions(merge: true));
@@ -85,8 +109,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Admin record added successfully'),
+        SnackBar(
+          content: Text('Success! $name is now an Admin.'),
+          backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -94,7 +119,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to add admin: $e'),
+          content: Text('Failed: $e'),
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -595,7 +621,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           const SizedBox(height: 12),
                           _Field(
                             controller: _adminEmailCtrl,
-                            hint: 'Admin Email',
+                            hint: 'Admin Email (Must be a registered user)',
                           ),
                           const SizedBox(height: 14),
                           SizedBox(

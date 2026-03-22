@@ -70,145 +70,156 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     final previewController = AdminPreviewScope.of(context);
 
+    // Watch cart items
     return StreamBuilder<int>(
       stream: _firebaseService.watchCartCount(),
       builder: (context, cartSnapshot) {
         final cartCount = cartSnapshot.data ?? 0;
 
+        // Watch favorite items
         return StreamBuilder<List<String>>(
           stream: _firebaseService.watchFavorites(),
           builder: (context, favSnapshot) {
             final favCount = favSnapshot.data?.length ?? 0;
 
-            return Scaffold(
-              backgroundColor: const Color(0xFFF8F5EF),
-              body: Column(
-                children: [
-                  if (!_loadingRole && _isAdmin && previewController.isPreviewMode)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFC29B40),
-                            Color(0xFFE0B95A),
-                          ],
-                        ),
-                      ),
-                      child: SafeArea(
-                        bottom: false,
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.visibility_rounded,
-                              color: Colors.black,
-                              size: 18,
+            // Watch user profile for image
+            return StreamBuilder<Map<String, dynamic>?>(
+              stream: _firebaseService.watchUserProfile(),
+              builder: (context, userSnapshot) {
+                final photoUrl = userSnapshot.data?['photoUrl'] as String? ?? '';
+
+                return Scaffold(
+                  backgroundColor: const Color(0xFFF8F5EF),
+                  body: Column(
+                    children: [
+                      if (!_loadingRole && _isAdmin && previewController.isPreviewMode)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFFC29B40),
+                                Color(0xFFE0B95A),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Preview Mode (User View)',
-                                style: GoogleFonts.poppins(
+                          ),
+                          child: SafeArea(
+                            bottom: false,
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.visibility_rounded,
                                   color: Colors.black,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
+                                  size: 18,
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Preview Mode (User View)',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _backToAdmin,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Back to Admin',
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            TextButton(
-                              onPressed: _backToAdmin,
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              child: Text(
-                                'Back to Admin',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  Expanded(
-                    child: IndexedStack(
-                      index: _currentIndex,
-                      children: _screens,
-                    ),
-                  ),
-                ],
-              ),
-              bottomNavigationBar: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 18,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: BottomNavigationBar(
-                    currentIndex: _currentIndex,
-                    type: BottomNavigationBarType.fixed,
-                    backgroundColor: Colors.white,
-                    selectedItemColor: const Color(0xFFC29B40),
-                    unselectedItemColor: Colors.black45,
-                    selectedLabelStyle: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                    ),
-                    unselectedLabelStyle: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 11,
-                    ),
-                    elevation: 0,
-                    onTap: (index) {
-                      setState(() => _currentIndex = index);
-                      _saveTab(index);
-                    },
-                    items: [
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.home_rounded),
-                        label: 'Home',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: _BadgeIcon(
-                          icon: Icons.shopping_cart_rounded,
-                          count: cartCount,
+                      Expanded(
+                        child: IndexedStack(
+                          index: _currentIndex,
+                          children: _screens,
                         ),
-                        label: 'Cart',
-                      ),
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.receipt_long_rounded),
-                        label: 'Orders',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: _BadgeIcon(
-                          icon: Icons.person_rounded,
-                          count: favCount,
-                        ),
-                        label: 'Profile',
                       ),
                     ],
                   ),
-                ),
-              ),
+                  bottomNavigationBar: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 18,
+                          offset: const Offset(0, -4),
+                        ),
+                      ],
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: BottomNavigationBar(
+                        currentIndex: _currentIndex,
+                        type: BottomNavigationBarType.fixed,
+                        backgroundColor: Colors.white,
+                        selectedItemColor: const Color(0xFFC29B40),
+                        unselectedItemColor: Colors.black45,
+                        selectedLabelStyle: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                        unselectedLabelStyle: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                        ),
+                        elevation: 0,
+                        onTap: (index) {
+                          setState(() => _currentIndex = index);
+                          _saveTab(index);
+                        },
+                        items: [
+                          const BottomNavigationBarItem(
+                            icon: Icon(Icons.home_rounded),
+                            label: 'Home',
+                          ),
+                          BottomNavigationBarItem(
+                            icon: _BadgeIcon(
+                              icon: Icons.shopping_cart_rounded,
+                              count: cartCount,
+                            ),
+                            label: 'Cart',
+                          ),
+                          const BottomNavigationBarItem(
+                            icon: Icon(Icons.receipt_long_rounded),
+                            label: 'Orders',
+                          ),
+                          BottomNavigationBarItem(
+                            icon: _BadgeIcon(
+                              icon: Icons.person_rounded,
+                              count: favCount,
+                              photoUrl: photoUrl, // Pass the image here
+                            ),
+                            label: 'Profile',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -220,20 +231,42 @@ class _MainShellScreenState extends State<MainShellScreen> {
 class _BadgeIcon extends StatelessWidget {
   final IconData icon;
   final int count;
+  final String? photoUrl;
 
   const _BadgeIcon({
     required this.icon,
     required this.count,
+    this.photoUrl,
   });
 
   @override
   Widget build(BuildContext context) {
+    // If we have a photo URL, show the image, otherwise show the Icon
+    final Widget mainContent = (photoUrl != null && photoUrl!.isNotEmpty)
+        ? Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: DecorationImage(
+                image: NetworkImage(photoUrl!),
+                fit: BoxFit.cover,
+              ),
+              border: Border.all(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
+          )
+        : Icon(icon);
+
     return Stack(
       clipBehavior: Clip.none,
+      alignment: Alignment.center,
       children: [
-        Container(
+        Padding(
           padding: const EdgeInsets.all(2),
-          child: Icon(icon),
+          child: mainContent,
         ),
         if (count > 0)
           Positioned(
