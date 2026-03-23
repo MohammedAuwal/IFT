@@ -65,8 +65,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     setState(() => _addingAdmin = true);
     try {
-      // 1. SEARCH for the user in the 'users' collection by email
-      // This allows using their Real UID instead of a fake one.
       final userQuery = await _firebaseService.firestore
           .collection('users')
           .where('email', isEqualTo: email)
@@ -87,16 +85,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return;
       }
 
-      // 2. Get the REAL UID from the user document
       final realUid = userQuery.docs.first.id;
 
-      // 3. Create/Update the Admin Document using the REAL UID
       await _firebaseService.addAdmin(
         uid: realUid,
         email: email,
       );
 
-      // 4. Update display name
       await _firebaseService.firestore
           .collection(AppConstants.adminsCollection)
           .doc(realUid)
@@ -218,6 +213,152 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     super.dispose();
   }
 
+  Widget _buildStatsSection() {
+    const gold = Color(0xFFC29B40);
+
+    if (_isSuperAdmin) {
+      return Column(
+        children: [
+          StreamBuilder<int>(
+            stream: _firebaseService.watchProductsCount(),
+            builder: (context, pSnap) {
+              return StreamBuilder<int>(
+                stream: _firebaseService.watchOrdersCount(),
+                builder: (context, oSnap) {
+                  final products = pSnap.data ?? 0;
+                  final orders = oSnap.data ?? 0;
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Products',
+                          value: '$products',
+                          color: gold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Orders',
+                          value: '$orders',
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          StreamBuilder<int>(
+            stream: _firebaseService.watchRidesCount(),
+            builder: (context, rSnap) {
+              return StreamBuilder<int>(
+                stream: _firebaseService.watchAdminsCount(),
+                builder: (context, aSnap) {
+                  final rides = rSnap.data ?? 0;
+                  final admins = aSnap.data ?? 1;
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Rides',
+                          value: '$rides',
+                          color: Colors.lightBlueAccent,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Admins',
+                          value: '$admins',
+                          color: Colors.purpleAccent,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        StreamBuilder<List<ProductModel>>(
+          stream: _firebaseService.watchMyUploadedProducts(),
+          builder: (context, productsSnap) {
+            return StreamBuilder<int>(
+              stream: _firebaseService.watchAssignedOrdersCount(),
+              builder: (context, ordersSnap) {
+                final products = productsSnap.data?.length ?? 0;
+                final orders = ordersSnap.data ?? 0;
+
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        title: 'My Products',
+                        value: '$products',
+                        color: gold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Assigned Orders',
+                        value: '$orders',
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        StreamBuilder<int>(
+          stream: _firebaseService.watchAssignedRidesCount(),
+          builder: (context, ridesSnap) {
+            return StreamBuilder<int>(
+              stream: _firebaseService.watchAssignedActiveWorkloadCount(),
+              builder: (context, workloadSnap) {
+                final rides = ridesSnap.data ?? 0;
+                final workload = workloadSnap.data ?? 0;
+
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Assigned Rides',
+                        value: '$rides',
+                        color: Colors.lightBlueAccent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Active Workload',
+                        value: '$workload',
+                        color: Colors.purpleAccent,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
@@ -268,7 +409,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   ),
                   Text(
-                    'Manage products, categories, rides & orders',
+                    _isSuperAdmin
+                        ? 'Manage products, categories, rides, orders & admins'
+                        : 'Manage your products, categories and assigned requests',
                     style: GoogleFonts.poppins(
                       color: Colors.white70,
                       fontSize: 12,
@@ -363,7 +506,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'You are in admin mode. Switch to User View to preview the customer experience and your uploaded products.',
+                            _isSuperAdmin
+                                ? 'You are in super admin mode. You can manage the full platform.'
+                                : 'You are in admin mode. You can manage your uploaded products, categories, and requests assigned to you.',
                             style: GoogleFonts.poppins(
                               color: Colors.white,
                               fontSize: 12.5,
@@ -373,71 +518,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ],
                     ),
                   ),
-                  StreamBuilder<int>(
-                    stream: _firebaseService.watchProductsCount(),
-                    builder: (context, pSnap) {
-                      return StreamBuilder<int>(
-                        stream: _firebaseService.watchOrdersCount(),
-                        builder: (context, oSnap) {
-                          final products = pSnap.data ?? 0;
-                          final orders = oSnap.data ?? 0;
-
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: _StatCard(
-                                  title: 'Products',
-                                  value: '$products',
-                                  color: gold,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _StatCard(
-                                  title: 'Orders',
-                                  value: '$orders',
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  StreamBuilder<int>(
-                    stream: _firebaseService.watchRidesCount(),
-                    builder: (context, rSnap) {
-                      return StreamBuilder<int>(
-                        stream: _firebaseService.watchAdminsCount(),
-                        builder: (context, aSnap) {
-                          final rides = rSnap.data ?? 0;
-                          final admins = aSnap.data ?? 1;
-
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: _StatCard(
-                                  title: 'Rides',
-                                  value: '$rides',
-                                  color: Colors.lightBlueAccent,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _StatCard(
-                                  title: 'Admins',
-                                  value: '$admins',
-                                  color: Colors.purpleAccent,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  _buildStatsSection(),
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -476,7 +557,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Expanded(
                         child: _ActionCard(
                           icon: Icons.receipt_long_rounded,
-                          title: 'Orders',
+                          title: _isSuperAdmin ? 'All Orders' : 'My Orders',
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -490,7 +571,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Expanded(
                         child: _ActionCard(
                           icon: Icons.local_taxi_rounded,
-                          title: 'Rides / Delivery',
+                          title: _isSuperAdmin
+                              ? 'All Rides / Delivery'
+                              : 'My Rides / Delivery',
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -519,50 +602,62 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
-                          icon: Icons.location_city_rounded,
-                          title: 'Locations',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const ManageAdminLocationsScreen(),
-                              ),
-                            );
-                          },
+                      if (_isSuperAdmin) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ActionCard(
+                            icon: Icons.location_city_rounded,
+                            title: 'Locations',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ManageAdminLocationsScreen(),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                      ] else ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ActionCard(
+                            icon: Icons.visibility_outlined,
+                            title: 'User Preview',
+                            onTap: _switchToUserView,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionCard(
-                          icon: Icons.payments_rounded,
-                          title: 'Payment Settings',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const PaymentSettingsScreen(),
-                              ),
-                            );
-                          },
+                  if (_isSuperAdmin) const SizedBox(height: 12),
+                  if (_isSuperAdmin)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ActionCard(
+                            icon: Icons.payments_rounded,
+                            title: 'Payment Settings',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const PaymentSettingsScreen(),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
-                          icon: Icons.visibility_outlined,
-                          title: 'User Preview',
-                          onTap: _switchToUserView,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ActionCard(
+                            icon: Icons.visibility_outlined,
+                            title: 'User Preview',
+                            onTap: _switchToUserView,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   const SizedBox(height: 12),
                   if (_isSuperAdmin)
                     Row(

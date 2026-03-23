@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/screens/edit_product_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
@@ -11,6 +13,9 @@ class ManageProductsScreen extends StatelessWidget {
 
   final FirebaseService _firebaseService = FirebaseService();
 
+  bool get _isSuperAdmin =>
+      FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+
   bool _hasValidImage(String url) {
     final value = url.trim();
     return value.isNotEmpty &&
@@ -18,6 +23,18 @@ class ManageProductsScreen extends StatelessWidget {
   }
 
   Future<void> _deleteProduct(BuildContext context, ProductModel product) async {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (!_isSuperAdmin && currentUid != product.createdBy) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can only delete your own products'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
@@ -43,7 +60,10 @@ class ManageProductsScreen extends StatelessWidget {
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Product deleted')),
+      const SnackBar(
+        content: Text('Product deleted'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -54,6 +74,10 @@ class ManageProductsScreen extends StatelessWidget {
     const card = Color(0xFF171A21);
     const gold = Color(0xFFC29B40);
     const wine = Color(0xFF7C1820);
+
+    final Stream<List<ProductModel>> stream = _isSuperAdmin
+        ? _firebaseService.watchAllProducts()
+        : _firebaseService.watchMyUploadedProducts();
 
     return Scaffold(
       backgroundColor: bg,
@@ -85,7 +109,7 @@ class ManageProductsScreen extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Manage Products',
+                _isSuperAdmin ? 'Manage Products' : 'My Products',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
@@ -109,7 +133,7 @@ class ManageProductsScreen extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<ProductModel>>(
-        stream: _firebaseService.watchAllProducts(),
+        stream: stream,
         builder: (context, snapshot) {
           final products = snapshot.data ?? [];
 
@@ -120,7 +144,7 @@ class ManageProductsScreen extends StatelessWidget {
           if (products.isEmpty) {
             return Center(
               child: Text(
-                'No products yet',
+                _isSuperAdmin ? 'No products yet' : 'You have not uploaded any products yet',
                 style: GoogleFonts.poppins(color: Colors.white70),
               ),
             );
@@ -132,6 +156,8 @@ class ManageProductsScreen extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final product = products[index];
+              final canManage =
+                  _isSuperAdmin || product.createdBy == FirebaseAuth.instance.currentUser?.uid;
 
               return Container(
                 decoration: BoxDecoration(
@@ -196,6 +222,16 @@ class ManageProductsScreen extends StatelessWidget {
                             fontSize: 12,
                           ),
                         ),
+                        if (_isSuperAdmin && product.createdBy.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Created by: ${product.createdBy}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white38,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -210,12 +246,34 @@ class ManageProductsScreen extends StatelessWidget {
                           ),
                         );
                       } else if (value == 'edit') {
+                        if (!canManage) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('You can only edit your own products'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => EditProductScreen(product: product),
                           ),
                         );
                       } else if (value == 'delete') {
+                        if (!canManage) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('You can only delete your own products'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+
                         await _deleteProduct(context, product);
                       }
                     },

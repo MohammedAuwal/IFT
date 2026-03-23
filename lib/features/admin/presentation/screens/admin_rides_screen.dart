@@ -37,12 +37,43 @@ class AdminRidesScreen extends StatelessWidget {
     return FutureBuilder<bool>(
       future: firebaseService.isAdmin(),
       builder: (context, adminSnapshot) {
+        if (adminSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF0F1115),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
         final isAdmin = adminSnapshot.data ?? false;
         final isSuperAdmin =
             FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
 
-        final stream =
-            isAdmin ? firebaseService.watchAssignedRidesForAdmin() : firebaseService.watchAllRides();
+        if (!isAdmin && !isSuperAdmin) {
+          return Scaffold(
+            backgroundColor: const Color(0xFF0F1115),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF0F1115),
+              elevation: 0,
+              title: Text(
+                'Manage Rides & Deliveries',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            body: Center(
+              child: Text(
+                'You do not have access to rides',
+                style: GoogleFonts.poppins(color: Colors.white70),
+              ),
+            ),
+          );
+        }
+
+        final stream = isSuperAdmin
+            ? firebaseService.watchAllRides()
+            : firebaseService.watchAssignedRidesForAdmin();
 
         return Scaffold(
           backgroundColor: const Color(0xFF0F1115),
@@ -50,7 +81,9 @@ class AdminRidesScreen extends StatelessWidget {
             backgroundColor: const Color(0xFF0F1115),
             elevation: 0,
             title: Text(
-              'Manage Rides & Deliveries',
+              isSuperAdmin
+                  ? 'Manage All Rides & Deliveries'
+                  : 'My Assigned Rides & Deliveries',
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
@@ -78,7 +111,9 @@ class AdminRidesScreen extends StatelessWidget {
               if (rides.isEmpty) {
                 return Center(
                   child: Text(
-                    'No assigned rides yet',
+                    isSuperAdmin
+                        ? 'No rides yet'
+                        : 'No assigned rides yet',
                     style: GoogleFonts.poppins(color: Colors.white70),
                   ),
                 );

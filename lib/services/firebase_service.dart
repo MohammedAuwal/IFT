@@ -215,23 +215,12 @@ class FirebaseService {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // FIXED: isAdmin() now handles permission-denied
-  // gracefully. The email-based query requires list
-  // permission which normal users don't have.
-  // We catch that and return false instead of crashing.
-  // The admin migration (email→UID) only runs when
-  // the user already has get access to their own doc
-  // OR is already proven admin via superAdmin UID.
-  // ──────────────────────────────────────────────
   Future<bool> isAdmin() async {
     final user = currentUser;
     if (user == null) return false;
 
-    // Super admin always passes
     if (user.uid == AppConstants.superAdminUid) return true;
 
-    // Step 1: Try reading own admin doc by UID (allowed by rules: get if uid == adminId)
     try {
       final uidDoc = await firestore
           .collection(AppConstants.adminsCollection)
@@ -242,14 +231,9 @@ class FirebaseService {
         return true;
       }
     } catch (_) {
-      // If even get fails, user is definitely not admin
       return false;
     }
 
-    // Step 2: Try email-based query for admin migration
-    // This requires "list" permission which only admins have.
-    // For a normal user, this will throw permission-denied.
-    // That's expected — it means they're not admin.
     final email = user.email?.trim().toLowerCase();
     if (email == null || email.isEmpty) return false;
 
@@ -265,10 +249,6 @@ class FirebaseService {
       final oldDoc = emailSnapshot.docs.first;
       final oldData = oldDoc.data();
 
-      // Migrate: create admin doc under current UID
-      // This write requires isSuperAdmin() in rules, so it will only
-      // succeed if the super admin is doing the migration.
-      // For safety, we wrap in try-catch.
       try {
         await firestore
             .collection(AppConstants.adminsCollection)
@@ -291,14 +271,9 @@ class FirebaseService {
 
         return true;
       } catch (_) {
-        // Migration write failed (permission denied) but the email query
-        // found a match — user IS admin but migration couldn't complete.
-        // Return true anyway so they can access admin features.
-        // Migration will complete when super admin re-adds them properly.
         return true;
       }
     } catch (_) {
-      // Email query failed with permission-denied — user is not admin
       return false;
     }
   }
@@ -500,9 +475,31 @@ class FirebaseService {
         .map((snapshot) => snapshot.docs.length);
   }
 
+  Stream<int> watchAssignedOrdersCount() {
+    final user = currentUser;
+    if (user == null) return Stream.value(0);
+
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
   Stream<int> watchRidesCount() {
     return firestore
         .collection(AppConstants.ridesCollection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> watchAssignedRidesCount() {
+    final user = currentUser;
+    if (user == null) return Stream.value(0);
+
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -512,6 +509,38 @@ class FirebaseService {
         .collection(AppConstants.adminsCollection)
         .snapshots()
         .map((snapshot) => snapshot.docs.length + 1);
+  }
+
+  Stream<int> watchAssignedActiveWorkloadCount() {
+    final user = currentUser;
+    if (user == null) return Stream.value(0);
+
+    final ridesStream = firestore
+        .collection(AppConstants.ridesCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.where((doc) {
+        final status = (doc.data()['status'] ?? '').toString();
+        return status != 'completed' && status != 'cancelled';
+      }).length;
+    });
+
+    final ordersStream = firestore
+        .collection(AppConstants.ordersCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.where((doc) {
+        final status = (doc.data()['status'] ?? '').toString();
+        return status != 'delivered' && status != 'cancelled';
+      }).length;
+    });
+
+    return ridesStream.asyncMap((rideCount) async {
+      final orderCount = await ordersStream.first;
+      return rideCount + orderCount;
+    });
   }
 
   Stream<int> watchActiveRideCount() {
@@ -677,10 +706,7 @@ class FirebaseService {
           await ref.set(updates, SetOptions(merge: true));
         }
       }
-    } catch (_) {
-      // If profile ensure fails due to permission or network,
-      // don't block app startup. It will retry next time.
-    }
+    } catch (_) {}
   }
 
   Future<void> updateDisplayName(String displayName) async {

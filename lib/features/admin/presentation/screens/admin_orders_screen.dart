@@ -35,7 +35,7 @@ class AdminOrdersScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF0F1115),
         elevation: 0,
         title: Text(
-          'Manage Orders',
+          isSuperAdmin ? 'Manage All Orders' : 'My Assigned Orders',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -64,11 +64,18 @@ class AdminOrdersScreen extends StatelessWidget {
 
           final isAdmin = adminSnapshot.data ?? false;
 
+          if (!isAdmin && !isSuperAdmin) {
+            return Center(
+              child: Text(
+                'You do not have access to orders',
+                style: GoogleFonts.poppins(color: Colors.white70),
+              ),
+            );
+          }
+
           final ordersStream = isSuperAdmin
               ? firebaseService.watchAllOrders()
-              : (isAdmin
-                  ? firebaseService.watchAssignedOrdersForAdmin()
-                  : firebaseService.watchAllOrders());
+              : firebaseService.watchAssignedOrdersForAdmin();
 
           final ridesStream = isSuperAdmin
               ? firebaseService.watchAllRides()

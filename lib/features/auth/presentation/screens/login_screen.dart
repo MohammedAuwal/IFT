@@ -7,6 +7,7 @@ import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
 import 'package:mix/features/rider/presentation/screens/rider_home_screen.dart';
 import 'package:mix/services/firebase_auth_service.dart';
+import 'package:mix/services/firebase_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? redirectTo;
@@ -19,6 +20,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuthService _authService = FirebaseAuthService();
+  final FirebaseService _firebaseService = FirebaseService();
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -29,6 +31,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _goAfterLogin() async {
     if (!mounted) return;
+
+    try {
+      await _firebaseService.ensureUserProfile();
+    } catch (_) {}
+
+    bool isAdmin = false;
+    try {
+      isAdmin = await _firebaseService.isAdmin();
+    } catch (_) {
+      isAdmin = false;
+    }
+
+    if (!mounted) return;
+
+    if (isAdmin) {
+      await AppRouter.clearAndGo(context, RouteNames.admin);
+      return;
+    }
 
     switch (widget.redirectTo) {
       case RouteNames.redirectCart:
@@ -104,6 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await _authService.signInWithGoogle();
+
       if (!mounted) return;
       await _goAfterLogin();
     } catch (e) {

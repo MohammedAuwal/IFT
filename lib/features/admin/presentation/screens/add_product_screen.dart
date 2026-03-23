@@ -89,7 +89,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         .where((e) => e.isNotEmpty)
         .toList();
 
-    if (name.isEmpty || description.isEmpty || price == null || _selectedImage == null) {
+    if (name.isEmpty ||
+        description.isEmpty ||
+        price == null ||
+        _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please complete all fields and select an image'),
@@ -288,7 +291,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         return FilterChip(
                           label: Text(category),
                           selected: selected,
-                          onSelected: (value) => _toggleCategory(category, value),
+                          onSelected: (value) =>
+                              _toggleCategory(category, value),
                           selectedColor: gold,
                           backgroundColor: const Color(0xFF11141A),
                           labelStyle: GoogleFonts.poppins(
@@ -380,7 +384,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               const SizedBox(height: 12),
                               Text(
                                 'Tap to select product image',
-                                style: GoogleFonts.poppins(color: Colors.white70),
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -423,7 +429,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           )
                         : Text(
                             'Save Product',
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                   ),
                 ),

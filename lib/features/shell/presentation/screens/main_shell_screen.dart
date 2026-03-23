@@ -66,23 +66,33 @@ class _MainShellScreenState extends State<MainShellScreen> {
     await AppRouter.clearAndGo(context, RouteNames.admin);
   }
 
+  void _handleTabTap(int index, bool isPreviewMode) {
+    if (_loadingRole) return;
+
+    if (_isAdmin && !isPreviewMode && index == 3) {
+      _backToAdmin();
+      return;
+    }
+
+    setState(() => _currentIndex = index);
+    _saveTab(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final previewController = AdminPreviewScope.of(context);
+    final isPreviewMode = previewController.isPreviewMode;
 
-    // Watch cart items
     return StreamBuilder<int>(
       stream: _firebaseService.watchCartCount(),
       builder: (context, cartSnapshot) {
         final cartCount = cartSnapshot.data ?? 0;
 
-        // Watch favorite items
         return StreamBuilder<List<String>>(
           stream: _firebaseService.watchFavorites(),
           builder: (context, favSnapshot) {
             final favCount = favSnapshot.data?.length ?? 0;
 
-            // Watch user profile for image
             return StreamBuilder<Map<String, dynamic>?>(
               stream: _firebaseService.watchUserProfile(),
               builder: (context, userSnapshot) {
@@ -92,7 +102,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   backgroundColor: const Color(0xFFF8F5EF),
                   body: Column(
                     children: [
-                      if (!_loadingRole && _isAdmin && previewController.isPreviewMode)
+                      if (!_loadingRole && _isAdmin && isPreviewMode)
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
@@ -186,10 +196,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           fontSize: 11,
                         ),
                         elevation: 0,
-                        onTap: (index) {
-                          setState(() => _currentIndex = index);
-                          _saveTab(index);
-                        },
+                        onTap: (index) => _handleTabTap(index, isPreviewMode),
                         items: [
                           const BottomNavigationBarItem(
                             icon: Icon(Icons.home_rounded),
@@ -208,11 +215,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           ),
                           BottomNavigationBarItem(
                             icon: _BadgeIcon(
-                              icon: Icons.person_rounded,
+                              icon: _isAdmin && !isPreviewMode
+                                  ? Icons.admin_panel_settings_rounded
+                                  : Icons.person_rounded,
                               count: favCount,
-                              photoUrl: photoUrl, // Pass the image here
+                              photoUrl: (_isAdmin && !isPreviewMode)
+                                  ? null
+                                  : photoUrl,
                             ),
-                            label: 'Profile',
+                            label: _isAdmin && !isPreviewMode
+                                ? 'Admin'
+                                : 'Profile',
                           ),
                         ],
                       ),
@@ -241,7 +254,6 @@ class _BadgeIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If we have a photo URL, show the image, otherwise show the Icon
     final Widget mainContent = (photoUrl != null && photoUrl!.isNotEmpty)
         ? Container(
             width: 24,

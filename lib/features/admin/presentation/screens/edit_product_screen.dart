@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
@@ -40,6 +42,14 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late List<String> _selectedCategories;
   bool _loading = false;
 
+  bool get _isSuperAdmin =>
+      FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+
+  bool get _canEdit {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return _isSuperAdmin || uid == widget.product.createdBy;
+  }
+
   bool _hasValidImage(String url) {
     final value = url.trim();
     return value.isNotEmpty &&
@@ -64,9 +74,23 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _isTrending = widget.product.isTrending;
     _inStock = widget.product.inStock;
     _selectedCategories = widget.product.normalizedCategories.toList();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_canEdit && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You can only edit your own products'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   Future<void> _pickImage() async {
+    if (!_canEdit) return;
+
     final file = await _imageService.pickImageWithFallback();
     if (file == null) return;
 
@@ -76,7 +100,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
     if (sizeBytes > maxBytes) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image too large. Max allowed is 3MB')),
+        const SnackBar(
+          content: Text('Image too large. Max allowed is 3MB'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -85,6 +112,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   void _toggleCategory(String category, bool selected) {
+    if (!_canEdit) return;
+
     setState(() {
       if (selected) {
         if (!_selectedCategories.contains(category)) {
@@ -101,13 +130,28 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   Future<void> _save() async {
+    if (!_canEdit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can only edit your own products'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final price = double.tryParse(_priceCtrl.text.trim());
     final stockQty = int.tryParse(_stockQtyCtrl.text.trim()) ?? 0;
     final promoDiscount = double.tryParse(_promoDiscountCtrl.text.trim()) ?? 0;
 
-    if (price == null || _nameCtrl.text.trim().isEmpty || _descCtrl.text.trim().isEmpty) {
+    if (price == null ||
+        _nameCtrl.text.trim().isEmpty ||
+        _descCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill product name, description and valid price')),
+        const SnackBar(
+          content: Text('Please fill product name, description and valid price'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -157,13 +201,19 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product updated successfully')),
+        const SnackBar(
+          content: Text('Product updated successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update product: $e')),
+        SnackBar(
+          content: Text('Failed to update product: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -256,13 +306,34 @@ class _EditProductScreenState extends State<EditProductScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Field(controller: _nameCtrl, hint: 'Product name'),
+                if (_isSuperAdmin)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Created by: ${widget.product.createdBy}',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                _Field(
+                  controller: _nameCtrl,
+                  hint: 'Product name',
+                  enabled: _canEdit,
+                ),
                 const SizedBox(height: 12),
-                _Field(controller: _descCtrl, hint: 'Description', maxLines: 4),
+                _Field(
+                  controller: _descCtrl,
+                  hint: 'Description',
+                  maxLines: 4,
+                  enabled: _canEdit,
+                ),
                 const SizedBox(height: 12),
                 _Field(
                   controller: _priceCtrl,
                   hint: 'Price',
+                  enabled: _canEdit,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                 ),
@@ -289,9 +360,12 @@ class _EditProductScreenState extends State<EditProductScreen> {
                         return FilterChip(
                           label: Text(category),
                           selected: selected,
-                          onSelected: (value) => _toggleCategory(category, value),
+                          onSelected: _canEdit
+                              ? (value) => _toggleCategory(category, value)
+                              : null,
                           selectedColor: gold,
                           backgroundColor: const Color(0xFF11141A),
+                          disabledColor: const Color(0xFF11141A),
                           labelStyle: GoogleFonts.poppins(
                             color: selected ? Colors.black : Colors.white,
                             fontWeight: FontWeight.w600,
@@ -308,16 +382,26 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 _Field(
                   controller: _stockQtyCtrl,
                   hint: 'Stock quantity',
+                  enabled: _canEdit,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
-                _Field(controller: _variantsCtrl, hint: 'Variants comma separated'),
+                _Field(
+                  controller: _variantsCtrl,
+                  hint: 'Variants comma separated',
+                  enabled: _canEdit,
+                ),
                 const SizedBox(height: 12),
-                _Field(controller: _promoTextCtrl, hint: 'Promo text'),
+                _Field(
+                  controller: _promoTextCtrl,
+                  hint: 'Promo text',
+                  enabled: _canEdit,
+                ),
                 const SizedBox(height: 12),
                 _Field(
                   controller: _promoDiscountCtrl,
                   hint: 'Promo discount %',
+                  enabled: _canEdit,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                 ),
@@ -326,7 +410,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   contentPadding: EdgeInsets.zero,
                   activeColor: gold,
                   value: _featured,
-                  onChanged: (v) => setState(() => _featured = v),
+                  onChanged: _canEdit ? (v) => setState(() => _featured = v) : null,
                   title: Text(
                     'Featured',
                     style: GoogleFonts.poppins(color: Colors.white),
@@ -336,7 +420,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   contentPadding: EdgeInsets.zero,
                   activeColor: gold,
                   value: _isTrending,
-                  onChanged: (v) => setState(() => _isTrending = v),
+                  onChanged:
+                      _canEdit ? (v) => setState(() => _isTrending = v) : null,
                   title: Text(
                     'Trending',
                     style: GoogleFonts.poppins(color: Colors.white),
@@ -346,7 +431,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   contentPadding: EdgeInsets.zero,
                   activeColor: gold,
                   value: _inStock,
-                  onChanged: (v) => setState(() => _inStock = v),
+                  onChanged: _canEdit ? (v) => setState(() => _inStock = v) : null,
                   title: Text(
                     'In stock',
                     style: GoogleFonts.poppins(color: Colors.white),
@@ -354,7 +439,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 ),
                 const SizedBox(height: 10),
                 GestureDetector(
-                  onTap: _pickImage,
+                  onTap: _canEdit ? _pickImage : null,
                   child: Container(
                     height: 200,
                     decoration: BoxDecoration(
@@ -396,7 +481,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _save,
+                    onPressed: (_loading || !_canEdit) ? null : _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: gold,
                       foregroundColor: Colors.black,
@@ -429,20 +514,25 @@ class _Field extends StatelessWidget {
     required this.hint,
     this.maxLines = 1,
     this.keyboardType,
+    this.enabled = true,
   });
 
   final TextEditingController controller;
   final String hint;
   final int maxLines;
   final TextInputType? keyboardType;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      enabled: enabled,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: Colors.white),
+      style: GoogleFonts.poppins(
+        color: enabled ? Colors.white : Colors.white54,
+      ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.poppins(color: Colors.white54),
