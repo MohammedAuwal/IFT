@@ -8,10 +8,8 @@ import 'package:mix/services/local_notification_service.dart';
 import 'app.dart';
 
 Future<void> main() async {
-  // 1. Bind Engine immediately
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Set System UI (Visual stability)
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Color(0xFF2A0A12),
@@ -21,20 +19,12 @@ Future<void> main() async {
     ),
   );
 
-  // 3. Initialize Firebase
-  // We keep this awaited as it's critical for the App to function (Providers, etc)
   try {
     await Firebase.initializeApp();
-  } catch (_) {
-    // Prevent hard crash
-  }
+  } catch (_) {}
 
-  // 4. Run App IMMEDIATELY
-  // We do NOT await FCM or Notifications here. They are slow and blocking.
   runApp(const MixApp());
 
-  // 5. Initialize Services in Background
-  // This ensures the UI is already drawing while these load
   _initBackgroundServices();
 }
 

@@ -76,7 +76,6 @@ class FirebaseAuthService {
       throw AuthFailure(e.message ?? 'Google Sign-In failed.');
     } catch (e) {
       if (e is AuthFailure) rethrow;
-      // Don't expose raw error to user
       throw AuthFailure('Google Sign-In failed. Please try again.');
     }
   }

@@ -145,13 +145,17 @@ class FirebaseService {
   }
 
   Future<List<String>> _readUserTokens(String uid) async {
-    final doc = await firestore.collection(AppConstants.usersCollection).doc(uid).get();
+    final doc =
+        await firestore.collection(AppConstants.usersCollection).doc(uid).get();
     final data = doc.data() ?? {};
     return List<String>.from(data['fcmTokens'] ?? []);
   }
 
   Future<List<String>> _readAdminTokens(String uid) async {
-    final doc = await firestore.collection(AppConstants.adminsCollection).doc(uid).get();
+    final doc = await firestore
+        .collection(AppConstants.adminsCollection)
+        .doc(uid)
+        .get();
     final data = doc.data() ?? {};
     return List<String>.from(data['fcmTokens'] ?? []);
   }
@@ -211,63 +215,104 @@ class FirebaseService {
     );
   }
 
+  // ──────────────────────────────────────────────
+  // FIXED: isAdmin() now handles permission-denied
+  // gracefully. The email-based query requires list
+  // permission which normal users don't have.
+  // We catch that and return false instead of crashing.
+  // The admin migration (email→UID) only runs when
+  // the user already has get access to their own doc
+  // OR is already proven admin via superAdmin UID.
+  // ──────────────────────────────────────────────
   Future<bool> isAdmin() async {
     final user = currentUser;
     if (user == null) return false;
 
+    // Super admin always passes
     if (user.uid == AppConstants.superAdminUid) return true;
 
-    final uidDoc = await firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(user.uid)
-        .get();
+    // Step 1: Try reading own admin doc by UID (allowed by rules: get if uid == adminId)
+    try {
+      final uidDoc = await firestore
+          .collection(AppConstants.adminsCollection)
+          .doc(user.uid)
+          .get();
 
-    if (uidDoc.exists) {
-      return true;
+      if (uidDoc.exists) {
+        return true;
+      }
+    } catch (_) {
+      // If even get fails, user is definitely not admin
+      return false;
     }
 
+    // Step 2: Try email-based query for admin migration
+    // This requires "list" permission which only admins have.
+    // For a normal user, this will throw permission-denied.
+    // That's expected — it means they're not admin.
     final email = user.email?.trim().toLowerCase();
     if (email == null || email.isEmpty) return false;
 
-    final emailSnapshot = await firestore
-        .collection(AppConstants.adminsCollection)
-        .where('email', isEqualTo: email)
-        .limit(1)
-        .get();
+    try {
+      final emailSnapshot = await firestore
+          .collection(AppConstants.adminsCollection)
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
 
-    if (emailSnapshot.docs.isEmpty) return false;
+      if (emailSnapshot.docs.isEmpty) return false;
 
-    final oldDoc = emailSnapshot.docs.first;
-    final oldData = oldDoc.data();
+      final oldDoc = emailSnapshot.docs.first;
+      final oldData = oldDoc.data();
 
-    await firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(user.uid)
-        .set({
-      ...oldData,
-      'uid': user.uid,
-      'email': email,
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, SetOptions(merge: true));
-
-    if (oldDoc.id != user.uid) {
+      // Migrate: create admin doc under current UID
+      // This write requires isSuperAdmin() in rules, so it will only
+      // succeed if the super admin is doing the migration.
+      // For safety, we wrap in try-catch.
       try {
         await firestore
             .collection(AppConstants.adminsCollection)
-            .doc(oldDoc.id)
-            .delete();
-      } catch (_) {}
-    }
+            .doc(user.uid)
+            .set({
+          ...oldData,
+          'uid': user.uid,
+          'email': email,
+          'updatedAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
 
-    return true;
+        if (oldDoc.id != user.uid) {
+          try {
+            await firestore
+                .collection(AppConstants.adminsCollection)
+                .doc(oldDoc.id)
+                .delete();
+          } catch (_) {}
+        }
+
+        return true;
+      } catch (_) {
+        // Migration write failed (permission denied) but the email query
+        // found a match — user IS admin but migration couldn't complete.
+        // Return true anyway so they can access admin features.
+        // Migration will complete when super admin re-adds them properly.
+        return true;
+      }
+    } catch (_) {
+      // Email query failed with permission-denied — user is not admin
+      return false;
+    }
   }
 
   Future<bool> isDriver() async {
     final user = currentUser;
     if (user == null) return false;
 
-    final doc = await firestore.collection('drivers').doc(user.uid).get();
-    return doc.exists;
+    try {
+      final doc = await firestore.collection('drivers').doc(user.uid).get();
+      return doc.exists;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> addAdmin({
@@ -385,7 +430,10 @@ class FirebaseService {
       if (inferredState.isNotEmpty) inferredState,
     }.toList();
 
-    await firestore.collection(AppConstants.adminsCollection).doc(adminUid).set({
+    await firestore
+        .collection(AppConstants.adminsCollection)
+        .doc(adminUid)
+        .set({
       'uid': adminUid,
       'email': email,
       'displayName': displayName,
@@ -408,7 +456,10 @@ class FirebaseService {
     required bool isActive,
     required int maxActiveAssignments,
   }) async {
-    await firestore.collection(AppConstants.adminsCollection).doc(adminUid).set({
+    await firestore
+        .collection(AppConstants.adminsCollection)
+        .doc(adminUid)
+        .set({
       'isActive': isActive,
       'maxActiveAssignments': maxActiveAssignments,
       'updatedAt': DateTime.now().toIso8601String(),
@@ -584,45 +635,51 @@ class FirebaseService {
     if (user == null) return;
 
     final ref = _userDoc(user.uid);
-    final snap = await ref.get();
 
-    if (!snap.exists) {
-      await ref.set({
-        'uid': user.uid,
-        'email': user.email ?? '',
-        'displayName': user.displayName ?? '',
-        'photoUrl': user.photoURL ?? '',
-        'favorites': [],
-        'cart': [],
-        'addresses': [],
-        'selectedAddress': '',
-        'createdAt': DateTime.now().toIso8601String(),
-      });
-    } else {
-      final data = snap.data() ?? {};
-      final updates = <String, dynamic>{};
+    try {
+      final snap = await ref.get();
 
-      if (user.displayName != null &&
-          user.displayName!.isNotEmpty &&
-          data['displayName'] != user.displayName) {
-        updates['displayName'] = user.displayName;
+      if (!snap.exists) {
+        await ref.set({
+          'uid': user.uid,
+          'email': user.email ?? '',
+          'displayName': user.displayName ?? '',
+          'photoUrl': user.photoURL ?? '',
+          'favorites': [],
+          'cart': [],
+          'addresses': [],
+          'selectedAddress': '',
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+      } else {
+        final data = snap.data() ?? {};
+        final updates = <String, dynamic>{};
+
+        if (user.displayName != null &&
+            user.displayName!.isNotEmpty &&
+            data['displayName'] != user.displayName) {
+          updates['displayName'] = user.displayName;
+        }
+
+        if (user.photoURL != null &&
+            user.photoURL!.isNotEmpty &&
+            data['photoUrl'] != user.photoURL) {
+          updates['photoUrl'] = user.photoURL;
+        }
+
+        if (user.email != null &&
+            user.email!.isNotEmpty &&
+            data['email'] != user.email) {
+          updates['email'] = user.email;
+        }
+
+        if (updates.isNotEmpty) {
+          await ref.set(updates, SetOptions(merge: true));
+        }
       }
-
-      if (user.photoURL != null &&
-          user.photoURL!.isNotEmpty &&
-          data['photoUrl'] != user.photoURL) {
-        updates['photoUrl'] = user.photoURL;
-      }
-
-      if (user.email != null &&
-          user.email!.isNotEmpty &&
-          data['email'] != user.email) {
-        updates['email'] = user.email;
-      }
-
-      if (updates.isNotEmpty) {
-        await ref.set(updates, SetOptions(merge: true));
-      }
+    } catch (_) {
+      // If profile ensure fails due to permission or network,
+      // don't block app startup. It will retry next time.
     }
   }
 
@@ -1217,7 +1274,9 @@ class FirebaseService {
       final data = doc.data();
       final states = List<String>.from(data['coverageStates'] ?? []);
       return destinationState.isNotEmpty &&
-          states.map((e) => e.toLowerCase()).contains(destinationState.toLowerCase());
+          states
+              .map((e) => e.toLowerCase())
+              .contains(destinationState.toLowerCase());
     }).toList();
 
     final areaMatchedDocs = snapshot.docs.where((doc) {
@@ -1272,7 +1331,9 @@ class FirebaseService {
       final areas = List<String>.from(data['coverageAreas'] ?? []);
 
       final stateMatch = destinationState.isNotEmpty &&
-          states.map((e) => e.toLowerCase()).contains(destinationState.toLowerCase());
+          states
+              .map((e) => e.toLowerCase())
+              .contains(destinationState.toLowerCase());
 
       final matchedArea = areas.firstWhere(
         (area) => destinationLower.contains(area.toLowerCase()),
@@ -1652,8 +1713,10 @@ class FirebaseService {
     }, SetOptions(merge: true));
 
     try {
-      final rideDoc =
-          await firestore.collection(AppConstants.ridesCollection).doc(rideId).get();
+      final rideDoc = await firestore
+          .collection(AppConstants.ridesCollection)
+          .doc(rideId)
+          .get();
       final data = rideDoc.data() ?? {};
       final userId = (data['userId'] ?? '').toString();
 
@@ -1661,7 +1724,8 @@ class FirebaseService {
         await _notifyUser(
           userUid: userId,
           title: 'Ride Update',
-          body: 'Your ${data['type'] == 'delivery' ? 'delivery' : 'ride'} status is now $status',
+          body:
+              'Your ${data['type'] == 'delivery' ? 'delivery' : 'ride'} status is now $status',
           type: data['type'] == 'delivery'
               ? 'delivery_status_update'
               : 'ride_status_update',
@@ -1783,7 +1847,8 @@ class FirebaseService {
     ];
 
     for (final category in defaults) {
-      final ref = firestore.collection('categories').doc(category.toLowerCase());
+      final ref =
+          firestore.collection('categories').doc(category.toLowerCase());
       final snap = await ref.get();
       if (!snap.exists) {
         await ref.set({
