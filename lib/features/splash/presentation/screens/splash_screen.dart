@@ -1,10 +1,14 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/services/fcm_service.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/services/local_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,8 +19,6 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  final FirebaseService _firebaseService = FirebaseService();
-
   bool _navigated = false;
   bool _booting = false;
   String? _errorText;
@@ -97,6 +99,14 @@ class _SplashScreenState extends State<SplashScreen>
       ]);
     } catch (e) {
       if (!mounted) return;
+
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('permission-denied') ||
+          errorStr.contains('permission denied')) {
+        await _safeNavigate(RouteNames.mainShell);
+        return;
+      }
+
       setState(() {
         _errorText = e.toString();
       });
@@ -116,11 +126,24 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _bootstrap() async {
-    final user = _firebaseService.currentUser;
+    // Step 1: Initialize Firebase HERE instead of main()
+    // Splash is already visible, so user sees the loading animation
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {
+      // Firebase may already be initialized on hot restart
+    }
+
+    // Step 2: Initialize background services (non-blocking)
+    _initBackgroundServices();
+
+    // Step 3: Check auth and route
+    final firebaseService = FirebaseService();
+    final user = firebaseService.currentUser;
 
     if (user != null) {
-      await _firebaseService.ensureUserProfile();
-      final isAdmin = await _firebaseService.isAdmin();
+      await firebaseService.ensureUserProfile();
+      final isAdmin = await firebaseService.isAdmin();
 
       if (isAdmin) {
         await _safeNavigate(RouteNames.admin);
@@ -129,6 +152,23 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     await _safeNavigate(RouteNames.mainShell);
+  }
+
+  void _initBackgroundServices() {
+    // Fire and forget — don't await, don't block navigation
+    () async {
+      try {
+        FirebaseMessaging.onBackgroundMessage(FcmService.backgroundHandler);
+      } catch (_) {}
+
+      try {
+        await LocalNotificationService.instance.initialize();
+      } catch (_) {}
+
+      try {
+        await FcmService.instance.initialize();
+      } catch (_) {}
+    }();
   }
 
   Future<void> _retry() async {
@@ -221,7 +261,8 @@ class _SplashScreenState extends State<SplashScreen>
                                             width: 8,
                                             height: 8,
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.85),
+                                              color: Colors.white
+                                                  .withOpacity(0.85),
                                               shape: BoxShape.circle,
                                             ),
                                           ),

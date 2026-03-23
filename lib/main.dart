@@ -1,10 +1,6 @@
 import 'dart:async';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mix/services/fcm_service.dart';
-import 'package:mix/services/local_notification_service.dart';
 import 'app.dart';
 
 Future<void> main() async {
@@ -19,25 +15,8 @@ Future<void> main() async {
     ),
   );
 
-  try {
-    await Firebase.initializeApp();
-  } catch (_) {}
+  // DO NOT await Firebase here — it blocks the entire UI from appearing.
+  // Firebase is initialized inside SplashScreen instead.
 
   runApp(const MixApp());
-
-  _initBackgroundServices();
-}
-
-Future<void> _initBackgroundServices() async {
-  try {
-    FirebaseMessaging.onBackgroundMessage(FcmService.backgroundHandler);
-  } catch (_) {}
-
-  try {
-    await LocalNotificationService.instance.initialize();
-  } catch (_) {}
-
-  try {
-    await FcmService.instance.initialize();
-  } catch (_) {}
 }
