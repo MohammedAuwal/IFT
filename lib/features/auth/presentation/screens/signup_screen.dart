@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/services/firebase_auth_service.dart';
+import 'package:mix/services/firebase_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -13,6 +14,7 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final FirebaseAuthService _authService = FirebaseAuthService();
+  final FirebaseService _firebaseService = FirebaseService();
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -22,6 +24,25 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _googleLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  Future<void> _goAfterSignup() async {
+    try {
+      await _firebaseService.ensureUserProfile();
+      await _firebaseService.syncLocalCartToFirestore();
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    final isAdmin = await _firebaseService.isAdmin();
+    if (!mounted) return;
+
+    if (isAdmin) {
+      await AppRouter.clearAndGo(context, RouteNames.admin);
+      return;
+    }
+
+    await AppRouter.clearAndGo(context, RouteNames.mainShell);
+  }
 
   Future<void> _signup() async {
     final email = _emailCtrl.text.trim();
@@ -51,13 +72,17 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _loading = true);
 
     try {
-      await _authService.signUpWithEmailPassword(
+      final user = await _authService.signUpWithEmailPassword(
         email: email,
         password: password,
       );
 
+      if (user == null) {
+        throw AuthFailure('Account creation failed. Please try again.');
+      }
+
       if (!mounted) return;
-      await AppRouter.clearAndGo(context, RouteNames.mainShell);
+      await _goAfterSignup();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,9 +100,14 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _googleLoading = true);
 
     try {
-      await _authService.signInWithGoogle();
+      final user = await _authService.signInWithGoogle();
+
+      if (user == null) {
+        throw AuthFailure('Google sign-up did not complete.');
+      }
+
       if (!mounted) return;
-      await AppRouter.clearAndGo(context, RouteNames.mainShell);
+      await _goAfterSignup();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

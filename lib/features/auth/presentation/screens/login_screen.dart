@@ -34,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await _firebaseService.ensureUserProfile();
+      await _firebaseService.syncLocalCartToFirestore();
     } catch (_) {}
 
     bool isAdmin = false;
@@ -99,10 +100,14 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      await _authService.signInWithEmailPassword(
+      final user = await _authService.signInWithEmailPassword(
         email: email,
         password: password,
       );
+
+      if (user == null) {
+        throw AuthFailure('Login failed. Please try again.');
+      }
 
       if (!mounted) return;
       await _goAfterLogin();
@@ -123,7 +128,11 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _googleLoading = true);
 
     try {
-      await _authService.signInWithGoogle();
+      final user = await _authService.signInWithGoogle();
+
+      if (user == null) {
+        throw AuthFailure('Google sign-in did not complete.');
+      }
 
       if (!mounted) return;
       await _goAfterLogin();

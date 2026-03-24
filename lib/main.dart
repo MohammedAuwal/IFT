@@ -1,7 +1,21 @@
 import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'app.dart';
+import 'package:mix/app.dart';
+import 'package:mix/services/fcm_service.dart';
+import 'package:mix/services/local_notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
+
+  await FcmService.instance.handleBackgroundMessage(message);
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,8 +29,12 @@ Future<void> main() async {
     ),
   );
 
-  // DO NOT await Firebase here — it blocks the entire UI from appearing.
-  // Firebase is initialized inside SplashScreen instead.
+  await Firebase.initializeApp();
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  await LocalNotificationService.instance.initialize();
+  await FcmService.instance.initialize();
 
   runApp(const MixApp());
 }

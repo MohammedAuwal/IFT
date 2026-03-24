@@ -1,14 +1,10 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
-import 'package:mix/services/fcm_service.dart';
 import 'package:mix/services/firebase_service.dart';
-import 'package:mix/services/local_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -126,25 +122,18 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _bootstrap() async {
-    // Step 1: Initialize Firebase HERE instead of main()
-    // Splash is already visible, so user sees the loading animation
-    try {
-      await Firebase.initializeApp();
-    } catch (_) {
-      // Firebase may already be initialized on hot restart
-    }
-
-    // Step 2: Initialize background services (non-blocking)
-    _initBackgroundServices();
-
-    // Step 3: Check auth and route
     final firebaseService = FirebaseService();
+
+    await firebaseService.seedDefaultAppSettings();
+    await firebaseService.seedDefaultCategoriesIfMissing();
+
     final user = firebaseService.currentUser;
 
     if (user != null) {
       await firebaseService.ensureUserProfile();
-      final isAdmin = await firebaseService.isAdmin();
+      await firebaseService.syncLocalCartToFirestore();
 
+      final isAdmin = await firebaseService.isAdmin();
       if (isAdmin) {
         await _safeNavigate(RouteNames.admin);
         return;
@@ -152,23 +141,6 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     await _safeNavigate(RouteNames.mainShell);
-  }
-
-  void _initBackgroundServices() {
-    // Fire and forget — don't await, don't block navigation
-    () async {
-      try {
-        FirebaseMessaging.onBackgroundMessage(FcmService.backgroundHandler);
-      } catch (_) {}
-
-      try {
-        await LocalNotificationService.instance.initialize();
-      } catch (_) {}
-
-      try {
-        await FcmService.instance.initialize();
-      } catch (_) {}
-    }();
   }
 
   Future<void> _retry() async {

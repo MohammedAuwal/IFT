@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mix/services/fcm_service.dart';
 
 class AuthFailure implements Exception {
   final String message;
@@ -10,8 +11,14 @@ class AuthFailure implements Exception {
 }
 
 class FirebaseAuthService {
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  FirebaseAuthService({
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn();
+
+  final FirebaseAuth _firebaseAuth;
+  final GoogleSignIn _googleSignIn;
 
   User? get currentUser => _firebaseAuth.currentUser;
 
@@ -26,7 +33,13 @@ class FirebaseAuthService {
         email: email.trim(),
         password: password,
       );
-      return credential.user;
+
+      final user = credential.user;
+      if (user != null) {
+        await FcmService.instance.syncTokenForCurrentUser();
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(_mapFirebaseError(e.code, e.message));
     } catch (e) {
@@ -44,7 +57,13 @@ class FirebaseAuthService {
         email: email.trim(),
         password: password,
       );
-      return credential.user;
+
+      final user = credential.user;
+      if (user != null) {
+        await FcmService.instance.syncTokenForCurrentUser();
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(_mapFirebaseError(e.code, e.message));
     } catch (e) {
@@ -55,13 +74,20 @@ class FirebaseAuthService {
 
   Future<User?> signInWithGoogle() async {
     try {
-      await _googleSignIn.signOut();
-
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+
+      if (googleUser == null) {
+        throw AuthFailure('Google sign-in was cancelled.');
+      }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
+      if ((googleAuth.idToken ?? '').isEmpty) {
+        throw AuthFailure(
+          'Google sign-in failed because no ID token was returned.',
+        );
+      }
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -71,9 +97,15 @@ class FirebaseAuthService {
       final userCredential =
           await _firebaseAuth.signInWithCredential(credential);
 
-      return userCredential.user;
+      final user = userCredential.user;
+      if (user == null) {
+        throw AuthFailure('Google sign-in failed. No user account was returned.');
+      }
+
+      await FcmService.instance.syncTokenForCurrentUser();
+      return user;
     } on FirebaseAuthException catch (e) {
-      throw AuthFailure(e.message ?? 'Google Sign-In failed.');
+      throw AuthFailure(_mapFirebaseError(e.code, e.message));
     } catch (e) {
       if (e is AuthFailure) rethrow;
       throw AuthFailure('Google Sign-In failed. Please try again.');
@@ -82,8 +114,13 @@ class FirebaseAuthService {
 
   Future<void> signOut() async {
     try {
+      await FcmService.instance.removeCurrentDeviceTokenForCurrentUser();
+    } catch (_) {}
+
+    try {
       await _googleSignIn.signOut();
     } catch (_) {}
+
     await _firebaseAuth.signOut();
   }
 
@@ -95,6 +132,8 @@ class FirebaseAuthService {
         return 'Incorrect password. Please try again.';
       case 'invalid-credential':
         return 'Invalid email or password.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with the same email using a different sign-in method.';
       case 'email-already-in-use':
         return 'This email is already registered. Try signing in.';
       case 'weak-password':
@@ -109,6 +148,8 @@ class FirebaseAuthService {
         return 'This sign-in method is not enabled.';
       case 'network-request-failed':
         return 'Network error. Please check your connection.';
+      case 'popup-closed-by-user':
+        return 'Google sign-in was cancelled.';
       default:
         return message ?? 'Authentication failed. Please try again.';
     }
