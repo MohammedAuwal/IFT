@@ -36,14 +36,20 @@ jobs:
       - name: Decode Android keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $KEYSTORE_PATH
 
+      - name: Verify keystore file exists
+        run: ls -l android/app/upload-keystore.jks
+
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOT
-          storeFile=app/upload-keystore.jks
+          storeFile=upload-keystore.jks
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           EOT
+
+      - name: Show key.properties
+        run: cat android/key.properties
 
       - name: Install dependencies
         run: flutter pub get
