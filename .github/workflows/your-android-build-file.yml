@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    env:
+      KEYSTORE_PATH: android/app/upload-keystore.jks
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,15 +33,27 @@ jobs:
       - name: Verify google-services.json exists
         run: test -f android/app/google-services.json
 
+      - name: Decode Android keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $KEYSTORE_PATH
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOT
+          storeFile=app/upload-keystore.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOT
+
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Debug APK
-        run: flutter build apk --debug --no-tree-shake-icons
+      - name: Build Release APK
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
