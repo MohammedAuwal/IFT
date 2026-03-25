@@ -735,11 +735,19 @@ class FirebaseService {
     final user = currentUser;
     if (user == null) return;
 
+    final trimmed = photoUrl.trim();
+    if (trimmed.isEmpty) return;
+
+    try {
+      await user.updatePhotoURL(trimmed);
+      await user.reload();
+    } catch (_) {}
+
     await _userDoc(user.uid).set({
       'uid': user.uid,
       'email': user.email ?? '',
       'displayName': user.displayName ?? '',
-      'photoUrl': photoUrl,
+      'photoUrl': trimmed,
     }, SetOptions(merge: true));
   }
 
