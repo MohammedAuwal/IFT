@@ -12,9 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    env:
-      KEYSTORE_PATH: android/app/upload-keystore.jks
-
     steps:
       - uses: actions/checkout@v4
 
@@ -33,27 +30,22 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Inject Firebase config
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
-
-      - name: Decode Android keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $KEYSTORE_PATH
-
-      - name: Create key.properties
+      - name: Inject Firebase Secret
+        shell: bash
         run: |
-          cat > android/key.properties <<EOT
-          storeFile=app/upload-keystore.jks
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          EOT
+          printf '%s' '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
-      - name: Build release APK
-        run: flutter build apk --release --no-tree-shake-icons
+      - name: Validate google-services.json
+        shell: bash
+        run: |
+          python -m json.tool android/app/google-services.json > /dev/null
 
-      - name: Upload release APK
+      - name: Build Debug APK
+        run: flutter build apk --debug --no-tree-shake-icons
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: app-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
