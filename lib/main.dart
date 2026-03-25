@@ -61,15 +61,6 @@ Future<void> main() async {
     }
   }
 
-  if (startupError == null) {
-    try {
-      await FcmService.instance.initialize().timeout(const Duration(seconds: 8));
-    } catch (e, st) {
-      startupError = Exception('FCM service init failed: $e');
-      startupStack = st;
-    }
-  }
-
   runApp(
     startupError == null
         ? const MixApp()
@@ -78,6 +69,18 @@ Future<void> main() async {
             stackTrace: startupStack,
           ),
   );
+
+  if (startupError == null) {
+    unawaited(_initializeFcmNonBlocking());
+  }
+}
+
+Future<void> _initializeFcmNonBlocking() async {
+  try {
+    await FcmService.instance.initialize().timeout(const Duration(seconds: 20));
+  } catch (_) {
+    // Do not block app startup if FCM initialization is slow or fails.
+  }
 }
 
 class StartupErrorApp extends StatelessWidget {

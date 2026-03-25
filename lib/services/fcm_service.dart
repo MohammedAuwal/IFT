@@ -32,19 +32,27 @@ class FcmService {
         badge: true,
         sound: true,
         provisional: false,
-      );
+      ).timeout(const Duration(seconds: 8));
     } catch (_) {}
 
     try {
-      await syncTokenForCurrentUser();
+      await syncTokenForCurrentUser().timeout(const Duration(seconds: 8));
     } catch (_) {}
 
-    _listenTokenRefresh();
-    _listenForegroundMessages();
-    _listenNotificationTapEvents();
+    try {
+      _listenTokenRefresh();
+    } catch (_) {}
 
     try {
-      await _handleInitialMessage();
+      _listenForegroundMessages();
+    } catch (_) {}
+
+    try {
+      _listenNotificationTapEvents();
+    } catch (_) {}
+
+    try {
+      await _handleInitialMessage().timeout(const Duration(seconds: 8));
     } catch (_) {}
   }
 
@@ -71,20 +79,24 @@ class FcmService {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final token = await _messaging.getToken();
+    final token = await _messaging.getToken().timeout(const Duration(seconds: 8));
     if (token == null || token.trim().isEmpty) return;
 
-    await _saveTokenForUser(user.uid, token.trim());
+    await _saveTokenForUser(user.uid, token.trim()).timeout(
+      const Duration(seconds: 8),
+    );
   }
 
   Future<void> removeCurrentDeviceTokenForCurrentUser() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final token = await _messaging.getToken();
+    final token = await _messaging.getToken().timeout(const Duration(seconds: 8));
     if (token == null || token.trim().isEmpty) return;
 
-    await _removeTokenForUser(user.uid, token.trim());
+    await _removeTokenForUser(user.uid, token.trim()).timeout(
+      const Duration(seconds: 8),
+    );
   }
 
   void _listenTokenRefresh() {
