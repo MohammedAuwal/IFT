@@ -39,17 +39,20 @@ jobs:
       - name: Verify keystore file exists
         run: ls -l android/app/upload-keystore.jks
 
+      - name: Inspect keystore aliases
+        run: |
+          keytool -list -v \
+            -keystore android/app/upload-keystore.jks \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOT
           storeFile=upload-keystore.jks
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           EOT
-
-      - name: Show key.properties
-        run: cat android/key.properties
 
       - name: Install dependencies
         run: flutter pub get
