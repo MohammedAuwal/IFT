@@ -26,7 +26,7 @@ class LocalNotificationService {
     if (_initialized) return;
 
     const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_launcher_placeholder');
 
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -64,8 +64,7 @@ class LocalNotificationService {
       },
     );
 
-    final launchDetails =
-        await _plugin.getNotificationAppLaunchDetails();
+    final launchDetails = await _plugin.getNotificationAppLaunchDetails();
     final launchResponse = launchDetails?.notificationResponse;
     final launchPayload = launchResponse?.payload;
 
@@ -113,6 +112,7 @@ class LocalNotificationService {
           channelDescription: _channel.description,
           importance: Importance.max,
           priority: Priority.high,
+          icon: '@drawable/ic_launcher_placeholder',
         ),
         iOS: const DarwinNotificationDetails(),
       ),
