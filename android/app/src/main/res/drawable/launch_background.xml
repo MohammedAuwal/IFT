@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 1. Background Color (Matches App Theme) -->
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="#2A0A12"/>
-        </shape>
-    </item>
-
-    <!-- 2. Center Icon/Logo -->
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/ic_launcher" />
-    </item>
+    <item android:drawable="@android:color/transparent" />
 </layer-list>
