@@ -27,18 +27,11 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Verify google-services.json exists
+        run: test -f android/app/google-services.json
+
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Inject Firebase Secret
-        shell: bash
-        run: |
-          printf '%s' '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
-
-      - name: Validate google-services.json
-        shell: bash
-        run: |
-          python -m json.tool android/app/google-services.json > /dev/null
 
       - name: Build Debug APK
         run: flutter build apk --debug --no-tree-shake-icons
