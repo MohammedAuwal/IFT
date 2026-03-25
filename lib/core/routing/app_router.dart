@@ -7,6 +7,7 @@ import 'package:mix/features/auth/presentation/screens/login_screen.dart';
 import 'package:mix/features/auth/presentation/screens/signup_screen.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
+import 'package:mix/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
 import 'package:mix/features/profile/presentation/screens/profile_screen.dart';
@@ -46,6 +47,8 @@ class AppRouter {
         return _route(AdminOrdersScreen());
       case RouteNames.mainShell:
         return _route(const MainShellScreen());
+      case RouteNames.notifications:
+        return _route(const NotificationsScreen());
       default:
         return _route(
           const Scaffold(

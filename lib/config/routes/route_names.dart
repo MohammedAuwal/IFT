@@ -12,6 +12,7 @@ class RouteNames {
   static const String adminOrders = '/admin-orders';
   static const String mainShell = '/main-shell';
   static const String paystackVerify = '/paystack-verify';
+  static const String notifications = '/notifications';
 
   static const String redirectMainShell = 'redirect_main_shell';
   static const String redirectCart = 'redirect_cart';
