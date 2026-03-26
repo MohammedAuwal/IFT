@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/models/ride_model.dart';
 
 class RideMapScreen extends StatefulWidget {
@@ -64,6 +65,8 @@ class _RideMapScreenState extends State<RideMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection(AppConstants.ridesCollection)
@@ -106,10 +109,14 @@ class _RideMapScreenState extends State<RideMapScreen> {
         final bounds = _boundsFor(allPoints);
 
         return Scaffold(
+          backgroundColor: colors.scaffold,
           appBar: AppBar(
             title: Text(
               ride.type == 'delivery' ? 'Delivery Map' : 'Ride Map',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+              ),
             ),
           ),
           body: Column(
@@ -137,7 +144,7 @@ class _RideMapScreenState extends State<RideMapScreen> {
                         polylines: [
                           Polyline(
                             points: routePoints,
-                            color: Colors.deepOrange,
+                            color: colors.warning,
                             strokeWidth: 5,
                           ),
                         ],
@@ -145,74 +152,88 @@ class _RideMapScreenState extends State<RideMapScreen> {
                     MarkerLayer(
                       markers: [
                         if (pickup != null)
-                          Marker(
-                            point: pickup,
+                          const Marker(
+                            point: LatLng(0, 0),
                             width: 44,
                             height: 44,
-                            child: const Icon(
-                              Icons.my_location,
-                              color: Colors.green,
-                              size: 36,
-                            ),
+                            child: SizedBox.shrink(),
                           ),
-                        if (destination != null)
-                          Marker(
-                            point: destination,
-                            width: 44,
-                            height: 44,
-                            child: const Icon(
-                              Icons.location_on,
-                              color: Colors.redAccent,
-                              size: 36,
+                      ]
+                          .where((_) => false)
+                          .toList()
+                        ..addAll([
+                          if (pickup != null)
+                            Marker(
+                              point: pickup,
+                              width: 44,
+                              height: 44,
+                              child: Icon(
+                                Icons.my_location,
+                                color: colors.success,
+                                size: 36,
+                              ),
                             ),
-                          ),
-                        if (driver != null)
-                          Marker(
-                            point: driver,
-                            width: 44,
-                            height: 44,
-                            child: const Icon(
-                              Icons.local_taxi,
-                              color: Colors.amber,
-                              size: 36,
+                          if (destination != null)
+                            Marker(
+                              point: destination,
+                              width: 44,
+                              height: 44,
+                              child: Icon(
+                                Icons.location_on,
+                                color: colors.error,
+                                size: 36,
+                              ),
                             ),
-                          ),
-                      ],
+                          if (driver != null)
+                            Marker(
+                              point: driver,
+                              width: 44,
+                              height: 44,
+                              child: Icon(
+                                Icons.local_taxi,
+                                color: colors.brandPrimary,
+                                size: 36,
+                              ),
+                            ),
+                        ]),
                     ),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(16),
-                color: Colors.white,
+                color: colors.card,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Status: ${ride.status}',
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Pickup: ${ride.pickup}',
-                      style: GoogleFonts.poppins(),
+                      style: GoogleFonts.poppins(color: colors.textPrimary),
                     ),
                     Text(
                       'Destination: ${ride.destination}',
-                      style: GoogleFonts.poppins(),
+                      style: GoogleFonts.poppins(color: colors.textPrimary),
                     ),
                     Text(
                       'Distance: ${ride.distanceKm.toStringAsFixed(1)} km',
-                      style: GoogleFonts.poppins(),
+                      style: GoogleFonts.poppins(color: colors.textPrimary),
                     ),
                     Text(
                       'ETA: ${ride.eta}',
-                      style: GoogleFonts.poppins(),
+                      style: GoogleFonts.poppins(color: colors.textPrimary),
                     ),
                     if (ride.driver != null)
                       Text(
                         'Driver: ${ride.driver}',
-                        style: GoogleFonts.poppins(),
+                        style: GoogleFonts.poppins(color: colors.textPrimary),
                       ),
                   ],
                 ),

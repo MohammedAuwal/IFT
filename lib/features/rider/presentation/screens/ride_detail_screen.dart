@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class RideDetailScreen extends StatelessWidget {
   final RideModel ride;
@@ -15,37 +18,16 @@ class RideDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
     final isDelivery = ride.type == 'delivery';
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(
-          isDelivery ? 'Delivery Details' : 'Ride Details',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+    return AppPageScaffold(
+      title: isDelivery ? 'Delivery Details' : 'Ride Details',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
+          AppSurfaceCard(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            borderRadius: BorderRadius.circular(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -54,24 +36,25 @@ class RideDetailScreen extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 14),
-                _info('Type', ride.type),
-                _info('Pickup', ride.pickup),
-                _info('Destination', ride.destination),
-                _info('Ride Type', ride.rideType),
-                _info('Status', ride.status),
-                _info('Driver', ride.driver ?? 'Not assigned yet'),
-                _info('ETA', ride.eta.isEmpty ? 'Pending' : ride.eta),
-                _info('Distance', '${ride.distanceKm.toStringAsFixed(1)} km'),
-                _info('Duration', '${ride.durationMin.ceil()} mins'),
-                _info('Fare', '₦${ride.price.toStringAsFixed(0)}'),
+                _info(context, 'Type', ride.type),
+                _info(context, 'Pickup', ride.pickup),
+                _info(context, 'Destination', ride.destination),
+                _info(context, 'Ride Type', ride.rideType),
+                _info(context, 'Status', ride.status),
+                _info(context, 'Driver', ride.driver ?? 'Not assigned yet'),
+                _info(context, 'ETA', ride.eta.isEmpty ? 'Pending' : ride.eta),
+                _info(context, 'Distance', '${ride.distanceKm.toStringAsFixed(1)} km'),
+                _info(context, 'Duration', '${ride.durationMin.ceil()} mins'),
+                _info(context, 'Fare', '₦${ride.price.toStringAsFixed(0)}'),
                 if (ride.orderId != null && ride.orderId!.isNotEmpty)
-                  _info('Order', ride.orderId!),
+                  _info(context, 'Order', ride.orderId!),
                 if (ride.productId != null && ride.productId!.isNotEmpty)
-                  _info('Product', ride.productId!),
-                if (ride.note.isNotEmpty) _info('Note', ride.note),
+                  _info(context, 'Product', ride.productId!),
+                if (ride.note.isNotEmpty) _info(context, 'Note', ride.note),
                 const SizedBox(height: 18),
                 if (ride.status != 'completed' && ride.status != 'cancelled')
                   SizedBox(
@@ -103,13 +86,15 @@ class RideDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _info(String label, String value) {
+  Widget _info(BuildContext context, String label, String value) {
+    final colors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: RichText(
         text: TextSpan(
           style: GoogleFonts.poppins(
-            color: Colors.black87,
+            color: colors.textPrimary,
             fontSize: 14,
           ),
           children: [

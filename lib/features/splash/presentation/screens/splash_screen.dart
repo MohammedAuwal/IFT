@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -160,19 +161,19 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    const top = Color(0xFF2A0A12);
-    const bottom = Color(0xFF12060A);
-    const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF7C1820);
+    final colors = AppTheme.colorsOf(context);
 
     return Scaffold(
-      backgroundColor: top,
+      backgroundColor: colors.scaffold,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [top, bottom],
+            colors: [
+              colors.scaffold,
+              colors.surfaceAlt,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -195,12 +196,13 @@ class _SplashScreenState extends State<SplashScreen>
                                 width: 118,
                                 height: 118,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.08),
+                                  color: colors.surface.withOpacity(0.18),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white12),
+                                  border: Border.all(color: colors.borderSoft),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: gold.withOpacity(0.15),
+                                      color:
+                                          colors.brandPrimary.withOpacity(0.15),
                                       blurRadius: 26,
                                       spreadRadius: 2,
                                     ),
@@ -210,8 +212,8 @@ class _SplashScreenState extends State<SplashScreen>
                                   child: Container(
                                     width: 72,
                                     height: 72,
-                                    decoration: const BoxDecoration(
-                                      color: gold,
+                                    decoration: BoxDecoration(
+                                      color: colors.brandPrimary,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Stack(
@@ -220,7 +222,7 @@ class _SplashScreenState extends State<SplashScreen>
                                         Text(
                                           'M',
                                           style: GoogleFonts.cinzel(
-                                            color: wine,
+                                            color: colors.brandSecondary,
                                             fontSize: 34,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 1.5,
@@ -251,7 +253,7 @@ class _SplashScreenState extends State<SplashScreen>
                               child: Text(
                                 "Maamah's Mix",
                                 style: GoogleFonts.playfairDisplay(
-                                  color: Colors.white,
+                                  color: colors.textPrimary,
                                   fontSize: 30,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -264,7 +266,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 'Food, products, rides & delivery in one app',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white70,
+                                  color: colors.textSecondary,
                                   fontSize: 13,
                                 ),
                               ),
@@ -283,8 +285,8 @@ class _SplashScreenState extends State<SplashScreen>
                                   ),
                                 );
                               },
-                              child: const CircularProgressIndicator(
-                                color: gold,
+                              child: CircularProgressIndicator(
+                                color: colors.brandPrimary,
                                 strokeWidth: 2.6,
                               ),
                             ),
@@ -297,14 +299,14 @@ class _SplashScreenState extends State<SplashScreen>
                               width: 118,
                               height: 118,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.08),
+                                color: colors.surface.withOpacity(0.18),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white12),
+                                border: Border.all(color: colors.borderSoft),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Icon(
                                   Icons.wifi_off_rounded,
-                                  color: Colors.white,
+                                  color: colors.textPrimary,
                                   size: 42,
                                 ),
                               ),
@@ -313,7 +315,7 @@ class _SplashScreenState extends State<SplashScreen>
                             Text(
                               'Unable to load app',
                               style: GoogleFonts.poppins(
-                                color: Colors.white,
+                                color: colors.textPrimary,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 20,
                               ),
@@ -323,7 +325,7 @@ class _SplashScreenState extends State<SplashScreen>
                               _errorText!,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.poppins(
-                                color: Colors.white70,
+                                color: colors.textSecondary,
                                 fontSize: 12.5,
                                 height: 1.5,
                               ),
@@ -331,13 +333,6 @@ class _SplashScreenState extends State<SplashScreen>
                             const SizedBox(height: 18),
                             ElevatedButton(
                               onPressed: _retry,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: gold,
-                                foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
                               child: Text(
                                 'Retry',
                                 style: GoogleFonts.poppins(

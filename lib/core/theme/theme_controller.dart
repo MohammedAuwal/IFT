@@ -4,11 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeController extends ChangeNotifier {
   static const _key = 'theme_mode';
 
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
 
   ThemeMode get themeMode => _themeMode;
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
+  bool get isLightMode => _themeMode == ThemeMode.light;
+  bool get isSystemMode => _themeMode == ThemeMode.system;
 
   ThemeController() {
     _load();
@@ -22,11 +24,12 @@ class ThemeController extends ChangeNotifier {
       case 'dark':
         _themeMode = ThemeMode.dark;
         break;
-      case 'light':
-        _themeMode = ThemeMode.light;
-        break;
-      default:
+      case 'system':
         _themeMode = ThemeMode.system;
+        break;
+      case 'light':
+      default:
+        _themeMode = ThemeMode.light;
     }
 
     notifyListeners();
@@ -42,5 +45,17 @@ class ThemeController extends ChangeNotifier {
 
   Future<void> toggleDarkMode(bool enabled) async {
     await setThemeMode(enabled ? ThemeMode.dark : ThemeMode.light);
+  }
+
+  Future<void> setLightMode() async {
+    await setThemeMode(ThemeMode.light);
+  }
+
+  Future<void> setDarkMode() async {
+    await setThemeMode(ThemeMode.dark);
+  }
+
+  Future<void> setSystemMode() async {
+    await setThemeMode(ThemeMode.system);
   }
 }

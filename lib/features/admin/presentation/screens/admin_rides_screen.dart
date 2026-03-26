@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/screens/admin_reassignment_screen.dart';
 import 'package:mix/features/rider/presentation/screens/driver_mode_screen.dart';
@@ -14,33 +15,36 @@ class AdminRidesScreen extends StatelessWidget {
 
   final firebaseService = FirebaseService();
 
-  Color _statusColor(String status) {
+  Color _statusColor(BuildContext context, String status) {
+    final colors = AppTheme.colorsOf(context);
+
     switch (status) {
       case 'completed':
-        return Colors.green;
+        return colors.success;
       case 'cancelled':
-        return Colors.redAccent;
+        return colors.error;
       case 'ride_in_progress':
       case 'delivery_in_progress':
-        return Colors.blueAccent;
+        return colors.info;
       case 'on_the_way':
-        return Colors.orange;
+        return colors.warning;
       default:
-        return const Color(0xFFC29B40);
+        return colors.brandPrimary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
+    final colors = AppTheme.colorsOf(context);
 
     return FutureBuilder<bool>(
       future: firebaseService.isAdmin(),
       builder: (context, adminSnapshot) {
         if (adminSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF0F1115),
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            backgroundColor: colors.scaffold,
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -50,14 +54,12 @@ class AdminRidesScreen extends StatelessWidget {
 
         if (!isAdmin && !isSuperAdmin) {
           return Scaffold(
-            backgroundColor: const Color(0xFF0F1115),
+            backgroundColor: colors.scaffold,
             appBar: AppBar(
-              backgroundColor: const Color(0xFF0F1115),
-              elevation: 0,
               title: Text(
                 'Manage Rides & Deliveries',
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -65,7 +67,7 @@ class AdminRidesScreen extends StatelessWidget {
             body: Center(
               child: Text(
                 'You do not have access to rides',
-                style: GoogleFonts.poppins(color: Colors.white70),
+                style: GoogleFonts.poppins(color: colors.textSecondary),
               ),
             ),
           );
@@ -76,16 +78,14 @@ class AdminRidesScreen extends StatelessWidget {
             : firebaseService.watchAssignedRidesForAdmin();
 
         return Scaffold(
-          backgroundColor: const Color(0xFF0F1115),
+          backgroundColor: colors.scaffold,
           appBar: AppBar(
-            backgroundColor: const Color(0xFF0F1115),
-            elevation: 0,
             title: Text(
               isSuperAdmin
                   ? 'Manage All Rides & Deliveries'
                   : 'My Assigned Rides & Deliveries',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -98,7 +98,7 @@ class AdminRidesScreen extends StatelessWidget {
                   themeController.isDarkMode
                       ? Icons.light_mode_rounded
                       : Icons.dark_mode_rounded,
-                  color: Colors.white,
+                  color: colors.iconPrimary,
                 ),
               ),
             ],
@@ -114,7 +114,7 @@ class AdminRidesScreen extends StatelessWidget {
                     isSuperAdmin
                         ? 'No rides yet'
                         : 'No assigned rides yet',
-                    style: GoogleFonts.poppins(color: Colors.white70),
+                    style: GoogleFonts.poppins(color: colors.textSecondary),
                   ),
                 );
               }
@@ -138,9 +138,16 @@ class AdminRidesScreen extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF171A21),
+                        color: colors.card,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: colors.borderSoft),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.shadow,
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +160,7 @@ class AdminRidesScreen extends StatelessWidget {
                               Text(
                                 '${isDelivery ? 'Delivery' : 'Ride'} ID: ${ride.id}',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white,
+                                  color: colors.textPrimary,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -164,16 +171,16 @@ class AdminRidesScreen extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isDelivery
-                                      ? Colors.blue.withOpacity(0.15)
-                                      : const Color(0xFFC29B40).withOpacity(0.15),
+                                      ? colors.info.withOpacity(0.15)
+                                      : colors.brandPrimary.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
                                   isDelivery ? 'Delivery' : 'Ride',
                                   style: GoogleFonts.poppins(
                                     color: isDelivery
-                                        ? Colors.lightBlueAccent
-                                        : const Color(0xFFC29B40),
+                                        ? colors.info
+                                        : colors.brandPrimary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -186,13 +193,13 @@ class AdminRidesScreen extends StatelessWidget {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.redAccent.withOpacity(0.15),
+                                    color: colors.error.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
                                     'Escalated',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.redAccent,
+                                      color: colors.error,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -203,27 +210,27 @@ class AdminRidesScreen extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             'From: ${ride.pickup}',
-                            style: GoogleFonts.poppins(color: Colors.white70),
+                            style: GoogleFonts.poppins(color: colors.textSecondary),
                           ),
                           Text(
                             'To: ${ride.destination}',
-                            style: GoogleFonts.poppins(color: Colors.white70),
+                            style: GoogleFonts.poppins(color: colors.textSecondary),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Ride Type: ${ride.rideType}',
-                            style: GoogleFonts.poppins(color: Colors.white70),
+                            style: GoogleFonts.poppins(color: colors.textSecondary),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Distance: ${ride.distanceKm.toStringAsFixed(1)} km • ETA: ${ride.eta}',
-                            style: GoogleFonts.poppins(color: Colors.white70),
+                            style: GoogleFonts.poppins(color: colors.textSecondary),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Fare: ₦${ride.price.toStringAsFixed(0)}',
                             style: GoogleFonts.poppins(
-                              color: const Color(0xFFC29B40),
+                              color: colors.brandPrimary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -231,20 +238,20 @@ class AdminRidesScreen extends StatelessWidget {
                           Text(
                             'Status: ${ride.status}',
                             style: GoogleFonts.poppins(
-                              color: _statusColor(ride.status),
+                              color: _statusColor(context, ride.status),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           if ((ride.assignedAdminName ?? '').isNotEmpty)
                             Text(
                               'Assigned Admin: ${ride.assignedAdminName}',
-                              style: GoogleFonts.poppins(color: Colors.white70),
+                              style: GoogleFonts.poppins(color: colors.textSecondary),
                             ),
                           if ((ride.assignmentMethod ?? '').isNotEmpty)
                             Text(
                               'Assignment: ${ride.assignmentMethod}',
                               style: GoogleFonts.poppins(
-                                color: Colors.white54,
+                                color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -252,38 +259,39 @@ class AdminRidesScreen extends StatelessWidget {
                             Text(
                               'Admin Load Snapshot: ${ride.activeAdminLoad}',
                               style: GoogleFonts.poppins(
-                                color: Colors.white54,
+                                color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
                           if (ride.driver != null)
                             Text(
                               'Driver: ${ride.driver}',
-                              style: GoogleFonts.poppins(color: Colors.white70),
+                              style: GoogleFonts.poppins(color: colors.textSecondary),
                             ),
                           if (ride.orderId != null && ride.orderId!.isNotEmpty)
                             Text(
                               'Order: ${ride.orderId}',
-                              style: GoogleFonts.poppins(color: Colors.white70),
+                              style: GoogleFonts.poppins(color: colors.textSecondary),
                             ),
                           if (ride.note.isNotEmpty)
                             Text(
                               'Note: ${ride.note}',
-                              style: GoogleFonts.poppins(color: Colors.white70),
+                              style: GoogleFonts.poppins(color: colors.textSecondary),
                             ),
                           const SizedBox(height: 10),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              _statusButton(ride.id, 'searching'),
-                              _statusButton(ride.id, 'on_the_way'),
+                              _statusButton(context, ride.id, 'searching'),
+                              _statusButton(context, ride.id, 'on_the_way'),
                               _statusButton(
+                                context,
                                 ride.id,
                                 isDelivery ? 'delivery_in_progress' : 'ride_in_progress',
                               ),
-                              _statusButton(ride.id, 'completed'),
-                              _statusButton(ride.id, 'cancelled'),
+                              _statusButton(context, ride.id, 'completed'),
+                              _statusButton(context, ride.id, 'cancelled'),
                               ElevatedButton(
                                 onPressed: () {
                                   Navigator.of(context).push(
@@ -325,7 +333,7 @@ class AdminRidesScreen extends StatelessWidget {
     );
   }
 
-  Widget _statusButton(String rideId, String status) {
+  Widget _statusButton(BuildContext context, String rideId, String status) {
     return ElevatedButton(
       onPressed: () async {
         await firebaseService.updateRideStatus(

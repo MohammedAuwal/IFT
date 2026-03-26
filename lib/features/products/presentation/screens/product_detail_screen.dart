@@ -5,6 +5,11 @@ import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_status_chip.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductModel product;
@@ -44,10 +49,6 @@ class ProductDetailScreen extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFC29B40),
-                  foregroundColor: Colors.white,
-                ),
                 child: Text(
                   'Sign In',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
@@ -70,49 +71,38 @@ class ProductDetailScreen extends StatelessWidget {
         product.variants.isEmpty ? 'No variants' : product.variants.join(', ');
     final categoryText = product.normalizedCategories.join(', ');
     final isGuest = FirebaseAuth.instance.currentUser == null;
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(
-          product.name,
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          if (!isGuest)
-            StreamBuilder<List<String>>(
-              stream: firebaseService.watchFavorites(),
-              builder: (context, snapshot) {
-                final favorites = snapshot.data ?? [];
-                final isFavorite = favorites.contains(product.id);
+    return AppPageScaffold(
+      title: product.name,
+      actions: [
+        if (!isGuest)
+          StreamBuilder<List<String>>(
+            stream: firebaseService.watchFavorites(),
+            builder: (context, snapshot) {
+              final favorites = snapshot.data ?? [];
+              final isFavorite = favorites.contains(product.id);
 
-                return IconButton(
-                  onPressed: () async {
-                    await firebaseService.toggleFavorite(product.id);
-                  },
-                  icon: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: isFavorite ? Colors.redAccent : Colors.black,
-                  ),
-                );
-              },
-            )
-          else
-            IconButton(
-              onPressed: () => _promptLogin(context, 'save favorites'),
-              icon: const Icon(
-                Icons.favorite_border,
-                color: Colors.black,
-              ),
+              return IconButton(
+                onPressed: () async {
+                  await firebaseService.toggleFavorite(product.id);
+                },
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? colors.error : colors.iconPrimary,
+                ),
+              );
+            },
+          )
+        else
+          IconButton(
+            onPressed: () => _promptLogin(context, 'save favorites'),
+            icon: Icon(
+              Icons.favorite_border,
+              color: colors.iconPrimary,
             ),
-        ],
-      ),
+          ),
+      ],
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -127,21 +117,21 @@ class ProductDetailScreen extends StatelessWidget {
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
                         return Container(
-                          color: Colors.grey.shade100,
+                          color: context.colorScheme.surfaceContainerHighest,
                           child: const Center(
                             child: CircularProgressIndicator(),
                           ),
                         );
                       },
                       errorBuilder: (_, __, ___) => Container(
-                        color: Colors.grey.shade200,
+                        color: context.colorScheme.surfaceContainerHighest,
                         child: const Center(
                           child: Icon(Icons.image_not_supported, size: 42),
                         ),
                       ),
                     )
                   : Container(
-                      color: Colors.grey.shade200,
+                      color: context.colorScheme.surfaceContainerHighest,
                       child: const Center(
                         child: Icon(Icons.image_not_supported, size: 42),
                       ),
@@ -154,27 +144,22 @@ class ProductDetailScreen extends StatelessWidget {
             runSpacing: 8,
             children: [
               if (product.isTrending)
-                _StatusChip(
+                const AppStatusChip(
                   label: 'Trending',
-                  bgColor: const Color(0xFFFFE3D2),
-                  textColor: const Color(0xFFAA4A00),
+                  tone: AppStatusChipTone.warning,
                   icon: Icons.local_fire_department_rounded,
                 ),
               if (product.featured)
-                _StatusChip(
+                const AppStatusChip(
                   label: 'Featured',
-                  bgColor: const Color(0xFFF8E9B0),
-                  textColor: const Color(0xFF7A5A12),
+                  tone: AppStatusChipTone.primary,
                   icon: Icons.star_rounded,
                 ),
-              _StatusChip(
+              AppStatusChip(
                 label: product.inStock ? 'In Stock' : 'Out of Stock',
-                bgColor: product.inStock
-                    ? const Color(0xFFDDF5E4)
-                    : const Color(0xFFFFE0E0),
-                textColor: product.inStock
-                    ? const Color(0xFF1F7A39)
-                    : const Color(0xFFB42318),
+                tone: product.inStock
+                    ? AppStatusChipTone.success
+                    : AppStatusChipTone.error,
                 icon: product.inStock
                     ? Icons.check_circle_rounded
                     : Icons.cancel_rounded,
@@ -187,7 +172,7 @@ class ProductDetailScreen extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF1D1D1F),
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -196,52 +181,49 @@ class ProductDetailScreen extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFFC29B40),
+              color: colors.brandPrimary,
             ),
           ),
           const SizedBox(height: 18),
-          Text(
-            'Categories',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          const AppSectionTitle(
+            title: 'Categories',
+            spacingBottom: 6,
           ),
-          const SizedBox(height: 6),
-          Text(categoryText, style: GoogleFonts.poppins()),
+          Text(
+            categoryText,
+            style: GoogleFonts.poppins(color: colors.textPrimary),
+          ),
           const SizedBox(height: 18),
-          Text(
-            'Variants',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          const AppSectionTitle(
+            title: 'Variants',
+            spacingBottom: 6,
           ),
-          const SizedBox(height: 6),
-          Text(variantText, style: GoogleFonts.poppins()),
+          Text(
+            variantText,
+            style: GoogleFonts.poppins(color: colors.textPrimary),
+          ),
           const SizedBox(height: 18),
-          Text(
-            'Description',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          const AppSectionTitle(
+            title: 'Description',
+            spacingBottom: 8,
           ),
-          const SizedBox(height: 8),
           Text(
             product.description,
             style: GoogleFonts.poppins(
               height: 1.6,
-              color: Colors.black87,
+              color: colors.textPrimary,
             ),
           ),
           if (isGuest)
-            Container(
+            AppSurfaceCard(
               margin: const EdgeInsets.only(top: 20),
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFC29B40).withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFC29B40).withOpacity(0.2),
-                ),
-              ),
+              color: colors.brandPrimary.withOpacity(0.12),
               child: Text(
                 'You are browsing as a guest. Sign in to save favorites and track your activity across devices.',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: const Color(0xFF7A5A12),
+                  color: colors.brown,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -273,7 +255,7 @@ class ProductDetailScreen extends StatelessWidget {
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8E2121),
+                backgroundColor: colors.brandSecondary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -286,46 +268,6 @@ class ProductDetailScreen extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final Color bgColor;
-  final Color textColor;
-  final IconData icon;
-
-  const _StatusChip({
-    required this.label,
-    required this.bgColor,
-    required this.textColor,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: textColor),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              color: textColor,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
             ),
           ),
         ],

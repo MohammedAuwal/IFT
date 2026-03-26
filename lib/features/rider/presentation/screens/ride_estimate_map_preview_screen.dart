@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/services/firebase_service.dart';
 
 class RideEstimateMapPreviewScreen extends StatelessWidget {
@@ -60,6 +60,8 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     final routePoints = _decodeRoute(estimate.routeGeometry);
     final pickup = LatLng(estimate.pickupLat, estimate.pickupLng);
     final destination = LatLng(estimate.destinationLat, estimate.destinationLng);
@@ -73,15 +75,12 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
     final bounds = _boundsFor(points);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: colors.scaffold,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
           title,
           style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -110,7 +109,7 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
                     polylines: [
                       Polyline(
                         points: routePoints,
-                        color: Colors.deepOrange,
+                        color: colors.warning,
                         strokeWidth: 5,
                       ),
                     ],
@@ -121,9 +120,9 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
                       point: pickup,
                       width: 44,
                       height: 44,
-                      child: const Icon(
+                      child: Icon(
                         Icons.my_location,
-                        color: Colors.green,
+                        color: colors.success,
                         size: 36,
                       ),
                     ),
@@ -131,9 +130,9 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
                       point: destination,
                       width: 44,
                       height: 44,
-                      child: const Icon(
+                      child: Icon(
                         Icons.location_on,
-                        color: Colors.redAccent,
+                        color: colors.error,
                         size: 36,
                       ),
                     ),
@@ -145,36 +144,46 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: colors.card,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(top: BorderSide(color: colors.borderSoft)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Pickup: ${estimate.pickupLabel}',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Destination: ${estimate.destinationLabel}',
-                  style: GoogleFonts.poppins(),
+                  style: GoogleFonts.poppins(
+                    color: colors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Distance: ${estimate.distanceKm.toStringAsFixed(1)} km',
-                  style: GoogleFonts.poppins(),
+                  style: GoogleFonts.poppins(
+                    color: colors.textPrimary,
+                  ),
                 ),
                 Text(
                   'ETA: ${estimate.eta}',
-                  style: GoogleFonts.poppins(),
+                  style: GoogleFonts.poppins(
+                    color: colors.textPrimary,
+                  ),
                 ),
                 Text(
                   'Estimated Fare: ₦${estimate.price.toStringAsFixed(0)}',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFFC29B40),
+                    color: colors.brandPrimary,
                   ),
                 ),
               ],

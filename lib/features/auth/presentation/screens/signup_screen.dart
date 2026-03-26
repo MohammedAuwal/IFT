@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/services/firebase_auth_service.dart';
 import 'package:mix/services/firebase_service.dart';
 
@@ -53,7 +54,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('All fields are required'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -63,7 +63,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Passwords do not match'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -88,7 +87,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$e'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -113,7 +111,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$e'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -135,21 +132,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const topGlow = Color(0xFFC9984B);
-    const bgTop = Color(0xFF3B0916);
-    const bgBottom = Color(0xFF19040A);
-    const cardBorder = Color(0x4DFFFFFF);
-    const buttonRed = Color(0xFFB32626);
-    const accentGold = Color(0xFFC9984B);
+    final colors = AppTheme.colorsOf(context);
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              bgTop,
-              Color(0xFF4E0A1B),
-              bgBottom,
+              colors.scaffold,
+              colors.surfaceAlt,
+              colors.scaffold,
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -165,10 +157,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 290,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: topGlow.withOpacity(0.78),
+                  color: colors.brandPrimary.withOpacity(0.22),
                   boxShadow: [
                     BoxShadow(
-                      color: topGlow.withOpacity(0.45),
+                      color: colors.brandPrimary.withOpacity(0.18),
                       blurRadius: 90,
                       spreadRadius: 30,
                     ),
@@ -184,10 +176,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 190,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFCC5E24).withOpacity(0.72),
+                  color: colors.warning.withOpacity(0.16),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFCC5E24).withOpacity(0.35),
+                      color: colors.warning.withOpacity(0.14),
                       blurRadius: 80,
                       spreadRadius: 18,
                     ),
@@ -203,10 +195,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 250,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFB10E2D).withOpacity(0.88),
+                  color: colors.brandSecondary.withOpacity(0.22),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFB10E2D).withOpacity(0.35),
+                      color: colors.brandSecondary.withOpacity(0.18),
                       blurRadius: 100,
                       spreadRadius: 20,
                     ),
@@ -230,7 +222,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             "Maamah's Mix",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.playfairDisplay(
-                              color: Colors.white,
+                              color: colors.textPrimary,
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.5,
@@ -241,7 +233,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             'Premium African spices, flours & traditional foods',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              color: Colors.white.withOpacity(0.82),
+                              color: colors.textSecondary,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w400,
                             ),
@@ -251,9 +243,16 @@ class _SignupScreenState extends State<SignupScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.08),
+                              color: colors.card.withOpacity(0.82),
                               borderRadius: BorderRadius.circular(28),
-                              border: Border.all(color: cardBorder),
+                              border: Border.all(color: colors.border),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.shadow,
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,7 +260,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 Text(
                                   'Create account',
                                   style: GoogleFonts.poppins(
-                                    color: Colors.white,
+                                    color: colors.textPrimary,
                                     fontSize: 22,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -270,7 +269,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 Text(
                                   'Join Mix and enjoy seamless shopping, rides and deliveries.',
                                   style: GoogleFonts.poppins(
-                                    color: Colors.white.withOpacity(0.78),
+                                    color: colors.textSecondary,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -297,7 +296,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                       _obscurePassword
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
-                                      color: Colors.white,
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                 ),
@@ -318,7 +317,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                       _obscureConfirmPassword
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
-                                      color: Colors.white,
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                 ),
@@ -328,15 +327,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                   height: 58,
                                   child: ElevatedButton(
                                     onPressed: _loading ? null : _signup,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: buttonRed,
-                                      foregroundColor: Colors.white,
-                                      elevation: 3,
-                                      shadowColor: Colors.black.withOpacity(0.25),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                    ),
                                     child: _loading
                                         ? const SizedBox(
                                             width: 22,
@@ -361,7 +351,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Expanded(
                                       child: Container(
                                         height: 1,
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: colors.border,
                                       ),
                                     ),
                                     Padding(
@@ -369,7 +359,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                       child: Text(
                                         'or',
                                         style: GoogleFonts.poppins(
-                                          color: Colors.white.withOpacity(0.78),
+                                          color: colors.textSecondary,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -377,7 +367,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Expanded(
                                       child: Container(
                                         height: 1,
-                                        color: Colors.white.withOpacity(0.18),
+                                        color: colors.border,
                                       ),
                                     ),
                                   ],
@@ -389,22 +379,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                   child: OutlinedButton(
                                     onPressed: _googleLoading ? null : _signupWithGoogle,
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.white,
-                                      side: BorderSide(
-                                        color: Colors.white.withOpacity(0.22),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      backgroundColor: Colors.white.withOpacity(0.03),
+                                      backgroundColor: colors.surface.withOpacity(0.5),
                                     ),
                                     child: _googleLoading
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             width: 22,
                                             height: 22,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: Colors.white,
+                                              color: colors.brandPrimary,
                                             ),
                                           )
                                         : Row(
@@ -413,7 +396,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                               Text(
                                                 'G',
                                                 style: GoogleFonts.poppins(
-                                                  color: Colors.white,
+                                                  color: colors.textPrimary,
                                                   fontSize: 22,
                                                   fontWeight: FontWeight.w700,
                                                 ),
@@ -422,7 +405,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                               Text(
                                                 'Continue with Google',
                                                 style: GoogleFonts.poppins(
-                                                  color: Colors.white,
+                                                  color: colors.textPrimary,
                                                   fontWeight: FontWeight.w700,
                                                   fontSize: 15,
                                                 ),
@@ -438,7 +421,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                       Text(
                                         'Already have an account?',
                                         style: GoogleFonts.poppins(
-                                          color: Colors.white.withOpacity(0.72),
+                                          color: colors.textSecondary,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -448,7 +431,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                         child: Text(
                                           'Sign in',
                                           style: GoogleFonts.poppins(
-                                            color: accentGold,
+                                            color: colors.brandPrimary,
                                             fontSize: 16,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -465,7 +448,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             'By continuing, you agree to our Terms & Privacy Policy.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              color: Colors.white.withOpacity(0.68),
+                              color: colors.textSecondary,
                               fontSize: 12.5,
                             ),
                           ),
@@ -502,22 +485,24 @@ class _GlassField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     return Material(
       color: Colors.transparent,
       child: Container(
         height: 74,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: colors.surface.withOpacity(0.72),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withOpacity(0.16)),
+          border: Border.all(color: colors.border),
         ),
         child: TextField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          cursorColor: Colors.white,
+          cursorColor: colors.brandPrimary,
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: colors.textPrimary,
             fontSize: 15,
           ),
           decoration: InputDecoration(
@@ -525,10 +510,14 @@ class _GlassField extends StatelessWidget {
             fillColor: Colors.transparent,
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
-              color: Colors.white.withOpacity(0.65),
+              color: colors.textSecondary,
               fontSize: 15,
             ),
-            prefixIcon: Icon(icon, color: Colors.white, size: 26),
+            prefixIcon: Icon(
+              icon,
+              color: colors.iconPrimary,
+              size: 26,
+            ),
             suffixIcon: suffix,
             border: InputBorder.none,
             enabledBorder: InputBorder.none,

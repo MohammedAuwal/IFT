@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/screens/admin_reassignment_screen.dart';
 import 'package:mix/models/order_model.dart';
@@ -26,18 +27,17 @@ class AdminOrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
+    final colors = AppTheme.colorsOf(context);
     final isSuperAdmin =
         FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1115),
+      backgroundColor: colors.scaffold,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F1115),
-        elevation: 0,
         title: Text(
           isSuperAdmin ? 'Manage All Orders' : 'My Assigned Orders',
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -50,7 +50,7 @@ class AdminOrdersScreen extends StatelessWidget {
               themeController.isDarkMode
                   ? Icons.light_mode_rounded
                   : Icons.dark_mode_rounded,
-              color: Colors.white,
+              color: colors.iconPrimary,
             ),
           ),
         ],
@@ -68,7 +68,7 @@ class AdminOrdersScreen extends StatelessWidget {
             return Center(
               child: Text(
                 'You do not have access to orders',
-                style: GoogleFonts.poppins(color: Colors.white70),
+                style: GoogleFonts.poppins(color: colors.textSecondary),
               ),
             );
           }
@@ -92,7 +92,7 @@ class AdminOrdersScreen extends StatelessWidget {
                     isSuperAdmin
                         ? 'No orders yet'
                         : 'No assigned orders yet',
-                    style: GoogleFonts.poppins(color: Colors.white70),
+                    style: GoogleFonts.poppins(color: colors.textSecondary),
                   ),
                 );
               }
@@ -113,9 +113,16 @@ class AdminOrdersScreen extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF171A21),
+                          color: colors.card,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(color: colors.borderSoft),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.shadow,
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,7 +134,7 @@ class AdminOrdersScreen extends StatelessWidget {
                                 Text(
                                   order.id,
                                   style: GoogleFonts.poppins(
-                                    color: Colors.white,
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -138,13 +145,13 @@ class AdminOrdersScreen extends StatelessWidget {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.redAccent.withOpacity(0.15),
+                                      color: colors.error.withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                     child: Text(
                                       'Escalated',
                                       style: GoogleFonts.poppins(
-                                        color: Colors.redAccent,
+                                        color: colors.error,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -156,7 +163,7 @@ class AdminOrdersScreen extends StatelessWidget {
                             Text(
                               'Total: ₦${order.totalAmount.toStringAsFixed(2)}',
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFFC29B40),
+                                color: colors.brandPrimary,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -164,7 +171,7 @@ class AdminOrdersScreen extends StatelessWidget {
                             Text(
                               'Order Status: ${order.status}',
                               style: GoogleFonts.poppins(
-                                color: Colors.white70,
+                                color: colors.textSecondary,
                               ),
                             ),
                             if (order.assignedAdminName.isNotEmpty) ...[
@@ -172,7 +179,7 @@ class AdminOrdersScreen extends StatelessWidget {
                               Text(
                                 'Assigned Admin: ${order.assignedAdminName}',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white70,
+                                  color: colors.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -181,14 +188,14 @@ class AdminOrdersScreen extends StatelessWidget {
                               Text(
                                 'Assignment: ${order.assignmentMethod}',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white54,
+                                  color: colors.textSecondary,
                                   fontSize: 11,
                                 ),
                               ),
                             Text(
                               'Admin Load Snapshot: ${order.activeAdminLoad}',
                               style: GoogleFonts.poppins(
-                                color: Colors.white54,
+                                color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -197,7 +204,7 @@ class AdminOrdersScreen extends StatelessWidget {
                               Text(
                                 'Delivery Address: ${order.deliveryAddress}',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white70,
+                                  color: colors.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -207,14 +214,14 @@ class AdminOrdersScreen extends StatelessWidget {
                               Text(
                                 'Delivery Status: ${deliveryRide.status}',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.lightBlueAccent,
+                                  color: colors.info,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               Text(
                                 'ETA: ${deliveryRide.eta} • ${deliveryRide.distanceKm.toStringAsFixed(1)} km',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white70,
+                                  color: colors.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),

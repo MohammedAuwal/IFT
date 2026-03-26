@@ -2,28 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/features/products/presentation/screens/product_detail_screen.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class FavoritesScreen extends StatelessWidget {
   FavoritesScreen({super.key});
 
   final firebaseService = FirebaseService();
 
+  bool _hasValidImage(String url) {
+    final value = url.trim();
+    return value.isNotEmpty &&
+        (value.startsWith('http://') || value.startsWith('https://'));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(
-          'Favorites',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+    final colors = context.appColors;
+
+    return AppPageScaffold(
+      title: 'Favorites',
       body: StreamBuilder(
         stream: firebaseService.watchFavoriteProducts(),
         builder: (context, snapshot) {
@@ -33,7 +32,9 @@ class FavoritesScreen extends StatelessWidget {
             return Center(
               child: Text(
                 'No favorite products yet',
-                style: GoogleFonts.poppins(),
+                style: GoogleFonts.poppins(
+                  color: colors.textPrimary,
+                ),
               ),
             );
           }
@@ -44,46 +45,66 @@ class FavoritesScreen extends StatelessWidget {
             itemBuilder: (_, i) {
               final product = items[i];
 
-              return Container(
+              return AppSurfaceCard(
                 margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                ),
+                padding: const EdgeInsets.all(0),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailScreen(product: product),
+                    ),
+                  );
+                },
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(12),
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      product.imageUrl,
+                    child: SizedBox(
                       width: 56,
                       height: 56,
-                      fit: BoxFit.cover,
+                      child: _hasValidImage(product.imageUrl)
+                          ? Image.network(
+                              product.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: context.colorScheme.surfaceContainerHighest,
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              color: context.colorScheme.surfaceContainerHighest,
+                              child: Icon(
+                                Icons.image_not_supported,
+                                color: colors.textSecondary,
+                              ),
+                            ),
                     ),
                   ),
                   title: Text(
                     product.name,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      color: colors.textPrimary,
+                    ),
                   ),
                   subtitle: Text(
                     '₦${product.price.toStringAsFixed(2)}',
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFFC29B40),
+                      color: colors.brandPrimary,
                     ),
                   ),
                   trailing: IconButton(
                     onPressed: () async {
                       await firebaseService.toggleFavorite(product.id);
                     },
-                    icon: const Icon(Icons.favorite, color: Colors.redAccent),
+                    icon: Icon(
+                      Icons.favorite,
+                      color: colors.error,
+                    ),
                   ),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ProductDetailScreen(product: product),
-                      ),
-                    );
-                  },
                 ),
               );
             },

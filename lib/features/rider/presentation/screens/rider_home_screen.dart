@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/features/auth/presentation/screens/login_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_detail_screen.dart';
 import 'package:mix/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
@@ -56,39 +57,46 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   Future<void> _showGuestRidePrompt() async {
     final go = await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            title: Text(
-              'Sign in required',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
-            ),
-            content: Text(
-              'Please sign in or create an account to confirm a ride and track it properly.',
-              style: GoogleFonts.poppins(fontSize: 13.5, height: 1.5),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(
-                  'Later',
-                  style: GoogleFonts.poppins(),
+          builder: (ctx) {
+            final colors = AppTheme.colorsOf(ctx);
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              title: Text(
+                'Sign in required',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
                 ),
               ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFC29B40),
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  'Sign In',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+              content: Text(
+                'Please sign in or create an account to confirm a ride and track it properly.',
+                style: GoogleFonts.poppins(
+                  fontSize: 13.5,
+                  height: 1.5,
+                  color: colors.textSecondary,
                 ),
               ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(
+                    'Later',
+                    style: GoogleFonts.poppins(),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(
+                    'Sign In',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            );
+          },
         ) ??
         false;
 
@@ -253,18 +261,15 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const gold = Color(0xFFC29B40);
+    final colors = AppTheme.colorsOf(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: colors.scaffold,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
           'Book a Ride',
           style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -299,25 +304,24 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFC29B40).withOpacity(0.12),
+                            color: colors.brandPrimary.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color:
-                                  const Color(0xFFC29B40).withOpacity(0.25),
+                              color: colors.brandPrimary.withOpacity(0.25),
                             ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.person_outline_rounded,
-                                color: Color(0xFF7A5A12),
+                                color: colors.brown,
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   'You can check route estimates as a guest. Sign in to confirm and track rides.',
                                   style: GoogleFonts.poppins(
-                                    color: const Color(0xFF7A5A12),
+                                    color: colors.brown,
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -359,15 +363,16 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: colors.card,
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: colors.shadow,
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
                           ],
+                          border: Border.all(color: colors.borderSoft),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,6 +382,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -410,7 +416,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.grey.shade600,
+                                        color: colors.textSecondary,
                                       ),
                                     ),
                                   ),
@@ -442,11 +448,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                 prefixIcon:
                                     const Icon(Icons.note_alt_outlined),
                                 filled: true,
-                                fillColor: const Color(0xFFF5F5F5),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide.none,
-                                ),
+                                fillColor: colors.surfaceAlt,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -454,6 +456,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                               'Ride Type',
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w600,
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -465,7 +468,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                     selected: _rideType == 'bike',
                                     onSelected: (_) =>
                                         setState(() => _rideType = 'bike'),
-                                    selectedColor: gold,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -475,7 +477,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                     selected: _rideType == 'car',
                                     onSelected: (_) =>
                                         setState(() => _rideType = 'car'),
-                                    selectedColor: gold,
                                   ),
                                 ),
                               ],
@@ -487,14 +488,14 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                 padding: const EdgeInsets.all(12),
                                 margin: const EdgeInsets.only(bottom: 10),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.08),
+                                  color: colors.error.withOpacity(0.08),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   _estimateError!,
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
-                                    color: Colors.redAccent,
+                                    color: colors.error,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -505,11 +506,10 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                 padding: const EdgeInsets.all(14),
                                 margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF7F0E0),
+                                  color: colors.paleOrange,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: const Color(0xFFC29B40)
-                                        .withOpacity(0.25),
+                                    color: colors.brandPrimary.withOpacity(0.25),
                                   ),
                                 ),
                                 child: Column(
@@ -521,18 +521,24 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF7A5A12),
+                                        color: colors.brown,
                                       ),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       'Pickup: ${_estimate!.pickupLabel}',
-                                      style: GoogleFonts.poppins(fontSize: 12),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: colors.textPrimary,
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Destination: ${_estimate!.destinationLabel}',
-                                      style: GoogleFonts.poppins(fontSize: 12),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: colors.textPrimary,
+                                      ),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
@@ -540,6 +546,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
+                                        color: colors.textPrimary,
                                       ),
                                     ),
                                     Text(
@@ -547,13 +554,14 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
+                                        color: colors.textPrimary,
                                       ),
                                     ),
                                     Text(
                                       'Fare: ₦${_estimate!.price.toStringAsFixed(0)}',
                                       style: GoogleFonts.poppins(
                                         fontSize: 14,
-                                        color: const Color(0xFFC29B40),
+                                        color: colors.brandPrimary,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -633,7 +641,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                       ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            const Color(0xFF8E2121),
+                                            colors.brandSecondary,
                                         foregroundColor: Colors.white,
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
@@ -654,6 +662,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -667,7 +676,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'No past rides yet',
-                      style: GoogleFonts.poppins(color: Colors.black54),
+                      style: GoogleFonts.poppins(color: colors.textSecondary),
                     ),
                   ),
                 )
@@ -681,15 +690,16 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colors.card,
                             borderRadius: BorderRadius.circular(18),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: colors.shadow,
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
                             ],
+                            border: Border.all(color: colors.borderSoft),
                           ),
                           child: ListTile(
                             onTap: () {
@@ -700,9 +710,9 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                                 ),
                               );
                             },
-                            leading: const CircleAvatar(
-                              backgroundColor: Color(0xFFC29B40),
-                              child: Icon(
+                            leading: CircleAvatar(
+                              backgroundColor: colors.brandPrimary,
+                              child: const Icon(
                                 Icons.history_rounded,
                                 color: Colors.white,
                               ),
@@ -711,21 +721,22 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                               '${ride.pickup} → ${ride.destination}',
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w600,
+                                color: colors.textPrimary,
                               ),
                             ),
                             subtitle: Text(
                               '${ride.status} • ${ride.distanceKm.toStringAsFixed(1)} km • ${ride.eta}',
                               style: GoogleFonts.poppins(
                                 color: ride.status == 'completed'
-                                    ? Colors.green
-                                    : Colors.redAccent,
+                                    ? colors.success
+                                    : colors.error,
                               ),
                             ),
                             trailing: Text(
                               '₦${ride.price.toStringAsFixed(0)}',
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700,
-                                color: gold,
+                                color: colors.brandPrimary,
                               ),
                             ),
                           ),
@@ -758,6 +769,7 @@ class _RideStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
     final isDelivery = ride.type == 'delivery';
 
     return GestureDetector(
@@ -765,15 +777,16 @@ class _RideStatusCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.card,
           borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: colors.shadow,
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
+          border: Border.all(color: colors.borderSoft),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -783,42 +796,55 @@ class _RideStatusCard extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 10),
-            Text('From: ${ride.pickup}', style: GoogleFonts.poppins()),
-            Text('To: ${ride.destination}', style: GoogleFonts.poppins()),
+            Text(
+              'From: ${ride.pickup}',
+              style: GoogleFonts.poppins(color: colors.textPrimary),
+            ),
+            Text(
+              'To: ${ride.destination}',
+              style: GoogleFonts.poppins(color: colors.textPrimary),
+            ),
             const SizedBox(height: 10),
             Text(
               'Status: ${ride.status}',
               style: GoogleFonts.poppins(
-                color: Colors.orange,
+                color: colors.warning,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Distance: ${ride.distanceKm.toStringAsFixed(1)} km',
-              style: GoogleFonts.poppins(),
+              style: GoogleFonts.poppins(color: colors.textPrimary),
             ),
             Text(
               'ETA: ${ride.eta}',
-              style: GoogleFonts.poppins(),
+              style: GoogleFonts.poppins(color: colors.textPrimary),
             ),
             if (ride.driver != null) ...[
               const SizedBox(height: 6),
-              Text('Driver: ${ride.driver}', style: GoogleFonts.poppins()),
+              Text(
+                'Driver: ${ride.driver}',
+                style: GoogleFonts.poppins(color: colors.textPrimary),
+              ),
             ],
             if (ride.note.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text('Note: ${ride.note}', style: GoogleFonts.poppins()),
+              Text(
+                'Note: ${ride.note}',
+                style: GoogleFonts.poppins(color: colors.textPrimary),
+              ),
             ],
             const SizedBox(height: 6),
             Text(
               'Fare: ₦${ride.price.toStringAsFixed(0)}',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFC29B40),
+                color: colors.brandPrimary,
               ),
             ),
             const SizedBox(height: 14),

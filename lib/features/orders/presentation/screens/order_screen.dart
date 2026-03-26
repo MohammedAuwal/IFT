@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/features/orders/presentation/screens/order_detail_screen.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/ride_model.dart';
@@ -24,6 +25,8 @@ class OrderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     final content = StreamBuilder<List<OrderModel>>(
       stream: firebaseService.watchOrders(),
       builder: (context, snapshot) {
@@ -33,7 +36,9 @@ class OrderScreen extends StatelessWidget {
           return Center(
             child: Text(
               'No orders yet',
-              style: GoogleFonts.poppins(),
+              style: GoogleFonts.poppins(
+                color: colors.textPrimary,
+              ),
             ),
           );
         }
@@ -63,39 +68,52 @@ class OrderScreen extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colors.card,
                       borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: colors.borderSoft),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.shadow,
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: isDelivered
-                              ? Colors.green.withOpacity(0.15)
-                              : Colors.orange.withOpacity(0.15),
+                          backgroundColor: (isDelivered
+                                  ? colors.success
+                                  : colors.warning)
+                              .withOpacity(0.15),
                           child: Icon(
                             deliveryRide != null
                                 ? Icons.delivery_dining_rounded
                                 : Icons.receipt_long_rounded,
-                            color: isDelivered ? Colors.green : Colors.orange,
+                            color:
+                                isDelivered ? colors.success : colors.warning,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Text(
                                 order.id,
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w700,
+                                  color: colors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 order.status,
                                 style: GoogleFonts.poppins(
-                                  color:
-                                      isDelivered ? Colors.green : Colors.orange,
+                                  color: isDelivered
+                                      ? colors.success
+                                      : colors.warning,
                                   fontSize: 12,
                                 ),
                               ),
@@ -106,7 +124,7 @@ class OrderScreen extends StatelessWidget {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
-                                    color: Colors.black54,
+                                    color: colors.textSecondary,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -116,7 +134,7 @@ class OrderScreen extends StatelessWidget {
                                 Text(
                                   'Delivery: ${deliveryRide.status} • ${deliveryRide.distanceKm.toStringAsFixed(1)} km • ${deliveryRide.eta}',
                                   style: GoogleFonts.poppins(
-                                    color: const Color(0xFF8E2121),
+                                    color: colors.brandSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -129,7 +147,7 @@ class OrderScreen extends StatelessWidget {
                           '₦${order.totalAmount.toStringAsFixed(2)}',
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFFC29B40),
+                            color: colors.brandPrimary,
                           ),
                         ),
                       ],
@@ -145,21 +163,18 @@ class OrderScreen extends StatelessWidget {
 
     if (!showScaffold) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF8F5EF),
+        backgroundColor: colors.scaffold,
         body: SafeArea(child: content),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: colors.scaffold,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
           'My Orders',
           style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),

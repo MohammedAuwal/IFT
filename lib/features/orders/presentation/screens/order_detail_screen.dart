@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderModel order;
@@ -15,21 +19,10 @@ class OrderDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(
-          'Order Details',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+    return AppPageScaffold(
+      title: 'Order Details',
       body: StreamBuilder<List<RideModel>>(
         stream: firebaseService.watchUserRides(),
         builder: (context, snapshot) {
@@ -53,6 +46,7 @@ class OrderDetailScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -60,8 +54,8 @@ class OrderDetailScreen extends StatelessWidget {
                 'Status: ${order.status}',
                 style: GoogleFonts.poppins(
                   color: order.status == 'delivered'
-                      ? Colors.green
-                      : Colors.orange,
+                      ? colors.success
+                      : colors.warning,
                 ),
               ),
               if (order.deliveryAddress.isNotEmpty) ...[
@@ -69,51 +63,52 @@ class OrderDetailScreen extends StatelessWidget {
                 Text(
                   'Delivery Address: ${order.deliveryAddress}',
                   style: GoogleFonts.poppins(
-                    color: Colors.black87,
+                    color: colors.textPrimary,
                   ),
                 ),
               ],
               if (deliveryRide != null) ...[
                 const SizedBox(height: 16),
-                Container(
+                AppSurfaceCard(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Delivery Tracking',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      const AppSectionTitle(
+                        title: 'Delivery Tracking',
+                        spacingBottom: 8,
                       ),
-                      const SizedBox(height: 8),
                       Text(
                         'Status: ${deliveryRide.status}',
                         style: GoogleFonts.poppins(
-                          color: const Color(0xFF8E2121),
+                          color: colors.brandSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
                         'ETA: ${deliveryRide.eta}',
-                        style: GoogleFonts.poppins(),
+                        style: GoogleFonts.poppins(
+                          color: colors.textPrimary,
+                        ),
                       ),
                       Text(
                         'Distance: ${deliveryRide.distanceKm.toStringAsFixed(1)} km',
-                        style: GoogleFonts.poppins(),
+                        style: GoogleFonts.poppins(
+                          color: colors.textPrimary,
+                        ),
                       ),
                       Text(
                         'Fare: ₦${deliveryRide.price.toStringAsFixed(0)}',
-                        style: GoogleFonts.poppins(),
+                        style: GoogleFonts.poppins(
+                          color: colors.textPrimary,
+                        ),
                       ),
                       if (deliveryRide.driver != null)
                         Text(
                           'Driver: ${deliveryRide.driver}',
-                          style: GoogleFonts.poppins(),
+                          style: GoogleFonts.poppins(
+                            color: colors.textPrimary,
+                          ),
                         ),
                     ],
                   ),
@@ -121,13 +116,9 @@ class OrderDetailScreen extends StatelessWidget {
               ],
               const SizedBox(height: 16),
               ...order.items.map((item) {
-                return Container(
+                return AppSurfaceCard(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -135,19 +126,22 @@ class OrderDetailScreen extends StatelessWidget {
                           (item['name'] ?? '').toString(),
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w600,
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
                       Text(
                         'x${item['qty']}',
-                        style: GoogleFonts.poppins(),
+                        style: GoogleFonts.poppins(
+                          color: colors.textPrimary,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Text(
                         '₦${(((item['price'] ?? 0) as num).toDouble() * ((item['qty'] ?? 1) as int)).toStringAsFixed(2)}',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFFC29B40),
+                          color: colors.brandPrimary,
                         ),
                       ),
                     ],
@@ -160,6 +154,7 @@ class OrderDetailScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w700,
                   fontSize: 18,
+                  color: colors.textPrimary,
                 ),
               ),
             ],

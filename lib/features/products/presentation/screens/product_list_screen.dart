@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
@@ -74,13 +75,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   void _openGuestNotificationsPanel() {
+    final colors = AppTheme.colorsOf(context);
+
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
+        final sheetColors = AppTheme.colorsOf(context);
+
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -93,7 +98,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.black12,
+                      color: sheetColors.border,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -104,7 +109,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
-                    color: const Color(0xFF1D1D1F),
+                    color: sheetColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -112,7 +117,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   'Sign in to receive order, ride, delivery, and account notifications.',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: Colors.black54,
+                    color: sheetColors.textSecondary,
                     height: 1.5,
                   ),
                 ),
@@ -125,13 +130,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       Navigator.of(context).pop();
                       await _goToLogin();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC29B40),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
                     child: Text(
                       'Sign In',
                       style: GoogleFonts.poppins(
@@ -152,6 +150,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     required IconData icon,
     required int count,
   }) {
+    final colors = AppTheme.colorsOf(context);
     final showBadge = count > 0;
     final badgeText = count > 99 ? '99+' : '$count';
 
@@ -170,9 +169,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: Colors.redAccent,
+                color: colors.error,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white, width: 1.2),
+                border: Border.all(color: colors.surface, width: 1.2),
               ),
               child: Center(
                 child: Text(
@@ -206,6 +205,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   Widget build(BuildContext context) {
     final previewController = AdminPreviewScope.of(context);
+    final colors = AppTheme.colorsOf(context);
 
     final body = SafeArea(
       child: StreamBuilder<Map<String, dynamic>?>(
@@ -278,7 +278,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             return Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colors.card,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Column(
@@ -336,7 +336,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: const Color(0xFFC29B40)
+                                        color: colors.brandPrimary
                                             .withOpacity(0.45),
                                         width: 2,
                                       ),
@@ -348,7 +348,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                               fit: BoxFit.cover,
                                             )
                                           : null,
-                                      color: const Color(0xFFF1E4BE),
+                                      color: colors.cream,
                                     ),
                                     child: !hasHeaderPhoto
                                         ? Center(
@@ -359,9 +359,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   : 'M',
                                               style:
                                                   GoogleFonts.poppins(
-                                                color: const Color(
-                                                  0xFF7A5A12,
-                                                ),
+                                                color: colors.brown,
                                                 fontWeight:
                                                     FontWeight.w700,
                                               ),
@@ -381,9 +379,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                               width: 34,
                                               height: 34,
                                               decoration:
-                                                  const BoxDecoration(
+                                                  BoxDecoration(
                                                 color:
-                                                    Color(0xFFC29B40),
+                                                    colors.brandPrimary,
                                                 shape:
                                                     BoxShape.circle,
                                               ),
@@ -392,9 +390,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   'M',
                                                   style: GoogleFonts
                                                       .cinzel(
-                                                    color: const Color(
-                                                      0xFF7C1820,
-                                                    ),
+                                                    color: colors.brandSecondary,
                                                     fontSize: 18,
                                                     fontWeight:
                                                         FontWeight
@@ -413,9 +409,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                 fontWeight:
                                                     FontWeight.w800,
                                                 fontSize: 24,
-                                                color: const Color(
-                                                  0xFF1D1D1F,
-                                                ),
+                                                color: colors.textPrimary,
                                               ),
                                             ),
                                           ],
@@ -426,7 +420,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                               ? 'Welcome, Guest 👋'
                                               : 'Hi, $displayName 👋',
                                           style: GoogleFonts.poppins(
-                                            color: Colors.black87,
+                                            color: colors.textPrimary,
                                             fontSize: 15,
                                             fontWeight:
                                                 FontWeight.w600,
@@ -458,15 +452,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                               height: 42,
                                               decoration:
                                                   BoxDecoration(
-                                                color: Colors.white,
+                                                color: colors.surface,
                                                 shape:
                                                     BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: Colors
-                                                        .black
-                                                        .withOpacity(
-                                                            0.06),
+                                                    color:
+                                                        colors.shadow,
                                                     blurRadius: 12,
                                                     offset:
                                                         const Offset(
@@ -476,12 +468,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              child: const Icon(
+                                              child: Icon(
                                                 Icons
                                                     .notifications_none_rounded,
-                                                color: Color(
-                                                  0xFF1D1D1F,
-                                                ),
+                                                color: colors.iconPrimary,
                                               ),
                                             ),
                                             if (showBadge)
@@ -502,8 +492,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   ),
                                                   decoration:
                                                       BoxDecoration(
-                                                    color: Colors
-                                                        .redAccent,
+                                                    color:
+                                                        colors.error,
                                                     borderRadius:
                                                         BorderRadius
                                                             .circular(
@@ -512,7 +502,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                     border:
                                                         Border.all(
                                                       color:
-                                                          Colors.white,
+                                                          colors.surface,
                                                       width: 1.5,
                                                     ),
                                                   ),
@@ -556,29 +546,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFC29B40)
+                                    color: colors.brandPrimary
                                         .withOpacity(0.12),
                                     borderRadius:
                                         BorderRadius.circular(18),
                                     border: Border.all(
-                                      color: const Color(0xFFC29B40)
+                                      color: colors.brandPrimary
                                           .withOpacity(0.25),
                                     ),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.person_outline_rounded,
-                                        color: Color(0xFF7A5A12),
+                                        color: colors.brown,
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
                                           'You are browsing as a guest. Sign in to save favorites, confirm rides, save addresses, and checkout orders.',
                                           style: GoogleFonts.poppins(
-                                            color: const Color(
-                                              0xFF7A5A12,
-                                            ),
+                                            color: colors.brown,
                                             fontWeight:
                                                 FontWeight.w600,
                                             fontSize: 12.5,
@@ -591,9 +579,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         child: Text(
                                           'Sign In',
                                           style: GoogleFonts.poppins(
-                                            color: const Color(
-                                              0xFF7A5A12,
-                                            ),
+                                            color: colors.brown,
                                             fontWeight:
                                                 FontWeight.w700,
                                           ),
@@ -621,29 +607,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFC29B40)
+                                    color: colors.brandPrimary
                                         .withOpacity(0.12),
                                     borderRadius:
                                         BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: const Color(0xFFC29B40)
+                                      color: colors.brandPrimary
                                           .withOpacity(0.25),
                                     ),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.visibility_rounded,
-                                        color: Color(0xFF7A5A12),
+                                        color: colors.brown,
                                         size: 18,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
                                         'Preview Mode',
                                         style: GoogleFonts.poppins(
-                                          color: const Color(
-                                            0xFF7A5A12,
-                                          ),
+                                          color: colors.brown,
                                           fontWeight:
                                               FontWeight.w700,
                                           fontSize: 12,
@@ -668,18 +652,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       'Search products, categories, variants...',
                                   prefixIcon:
                                       const Icon(Icons.search),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 14,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(18),
-                                    borderSide: BorderSide.none,
-                                  ),
                                 ),
                               ),
                             ),
@@ -720,20 +692,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                           vertical: 14,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
+                                          color: colors.surface,
                                           borderRadius:
                                               BorderRadius.circular(
                                             18,
                                           ),
                                           border: Border.all(
-                                            color: const Color(
-                                              0xFFE8DDC0,
-                                            ),
+                                            color: colors.borderSoft,
                                           ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black
-                                                  .withOpacity(0.04),
+                                              color: colors.shadow,
                                               blurRadius: 12,
                                               offset:
                                                   const Offset(0, 4),
@@ -747,12 +716,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                           children: [
                                             Row(
                                               children: [
-                                                const Icon(
+                                                Icon(
                                                   Icons
                                                       .location_on_rounded,
-                                                  color: Color(
-                                                    0xFFC29B40,
-                                                  ),
+                                                  color:
+                                                      colors.brandPrimary,
                                                   size: 20,
                                                 ),
                                                 const SizedBox(
@@ -763,10 +731,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                     'Selected delivery location',
                                                     style: GoogleFonts
                                                         .poppins(
-                                                      color:
-                                                          const Color(
-                                                        0xFF1D1D1F,
-                                                      ),
+                                                      color: colors.textPrimary,
                                                       fontWeight:
                                                           FontWeight
                                                               .w600,
@@ -789,9 +754,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                 color: (_isGuest ||
                                                         selectedAddress
                                                             .isEmpty)
-                                                    ? Colors
-                                                        .black45
-                                                    : Colors.black87,
+                                                    ? colors.textSecondary
+                                                    : colors.textPrimary,
                                                 fontSize: 11,
                                               ),
                                               maxLines: 2,
@@ -804,7 +768,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                               style: GoogleFonts
                                                   .poppins(
                                                 color:
-                                                    Colors.black54,
+                                                    colors.textSecondary,
                                                 fontSize: 11,
                                                 fontWeight:
                                                     FontWeight.w600,
@@ -839,9 +803,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       title: 'Book a Ride',
                                       icon: Icons
                                           .directions_car_filled_rounded,
-                                      iconBg: const Color(
-                                        0xFFE7F0FF,
-                                      ),
+                                      iconBg: colors.paleBlue,
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
@@ -858,9 +820,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       title: 'Shop Products',
                                       icon: Icons
                                           .shopping_cart_rounded,
-                                      iconBg: const Color(
-                                        0xFFF7F0E0,
-                                      ),
+                                      iconBg: colors.paleOrange,
                                       onTap: () {},
                                     ),
                                   ),
@@ -971,20 +931,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       () => _selectedCategory =
                                           item,
                                     ),
-                                    selectedColor:
-                                        const Color(0xFFC29B40),
                                     labelStyle: GoogleFonts.poppins(
                                       color: selected
                                           ? Colors.white
-                                          : Colors.black87,
+                                          : colors.textPrimary,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
-                                    ),
-                                    backgroundColor:
-                                        Colors.white,
-                                    side: BorderSide(
-                                      color: Colors.black
-                                          .withOpacity(0.08),
                                     ),
                                   );
                                 },
@@ -1079,9 +1031,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     fontWeight:
                                         FontWeight.w700,
                                     fontSize: 20,
-                                    color: const Color(
-                                      0xFF1D1D1F,
-                                    ),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ),
@@ -1168,9 +1118,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     fontWeight:
                                         FontWeight.w700,
                                     fontSize: 18,
-                                    color: const Color(
-                                      0xFF1D1D1F,
-                                    ),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ),
@@ -1244,7 +1192,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                             decoration:
                                                 BoxDecoration(
                                               color:
-                                                  Colors.white,
+                                                  colors.card,
                                               borderRadius:
                                                   BorderRadius
                                                       .circular(
@@ -1253,17 +1201,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                               border:
                                                   Border.all(
                                                 color:
-                                                    const Color(
-                                                  0xFFE9DFC6,
-                                                ),
+                                                    colors.border,
                                               ),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors
-                                                      .black
-                                                      .withOpacity(
-                                                    0.04,
-                                                  ),
+                                                  color:
+                                                      colors.shadow,
                                                   blurRadius:
                                                       12,
                                                   offset:
@@ -1313,8 +1256,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                     return child;
                                                                   }
                                                                   return Container(
-                                                                    color: Colors.grey
-                                                                        .shade100,
+                                                                    color: Theme.of(context)
+                                                                        .colorScheme
+                                                                        .surfaceContainerHighest,
                                                                     child:
                                                                         const Center(
                                                                       child:
@@ -1331,9 +1275,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                   ___,
                                                                 ) =>
                                                                     Container(
-                                                                  color: Colors
-                                                                      .grey
-                                                                      .shade200,
+                                                                  color: Theme.of(context)
+                                                                      .colorScheme
+                                                                      .surfaceContainerHighest,
                                                                   child:
                                                                       const Center(
                                                                     child:
@@ -1345,9 +1289,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                 ),
                                                               )
                                                             : Container(
-                                                                color: Colors
-                                                                    .grey
-                                                                    .shade200,
+                                                                color: Theme.of(context)
+                                                                    .colorScheme
+                                                                    .surfaceContainerHighest,
                                                                 child:
                                                                     const Center(
                                                                   child:
@@ -1373,9 +1317,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                 label:
                                                                     'Trending',
                                                                 color:
-                                                                    const Color(
-                                                                  0xFFFF7A00,
-                                                                ),
+                                                                    colors.warning,
                                                               ),
                                                             if (product
                                                                 .featured)
@@ -1391,9 +1333,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                   label:
                                                                       'Featured',
                                                                   color:
-                                                                      const Color(
-                                                                    0xFFC29B40,
-                                                                  ),
+                                                                      colors.brandPrimary,
                                                                 ),
                                                               ),
                                                           ],
@@ -1421,16 +1361,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                             radius:
                                                                 14,
                                                             backgroundColor:
-                                                                Colors
-                                                                    .white,
+                                                                colors.surface,
                                                             child:
                                                                 Icon(
                                                               isFavorite
                                                                   ? Icons.favorite
                                                                   : Icons.favorite_border,
                                                               color: isFavorite
-                                                                  ? Colors.redAccent
-                                                                  : Colors.black,
+                                                                  ? colors.error
+                                                                  : colors.iconPrimary,
                                                               size:
                                                                   16,
                                                             ),
@@ -1468,9 +1407,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                           fontSize:
                                                               12,
                                                           color:
-                                                              const Color(
-                                                            0xFF1D1D1F,
-                                                          ),
+                                                              colors.textPrimary,
                                                         ),
                                                       ),
                                                       const SizedBox(
@@ -1488,7 +1425,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                             .poppins(
                                                           fontSize:
                                                               10,
-                                                          color: Colors.black54,
+                                                          color: colors.textSecondary,
                                                         ),
                                                       ),
                                                       const SizedBox(
@@ -1504,9 +1441,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                               style:
                                                                   GoogleFonts.poppins(
                                                                 color:
-                                                                    const Color(
-                                                                  0xFF1D1D1F,
-                                                                ),
+                                                                    colors.textPrimary,
                                                                 fontWeight:
                                                                     FontWeight.w700,
                                                                 fontSize:
@@ -1523,9 +1458,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                             decoration:
                                                                 BoxDecoration(
                                                               color:
-                                                                  const Color(
-                                                                0xFFC29B40,
-                                                              ),
+                                                                  colors.brandPrimary,
                                                               borderRadius:
                                                                   BorderRadius.circular(
                                                                 999,
@@ -1588,11 +1521,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                   vertical: 14,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient:
-                                      const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFFF3D47A),
-                                      Color(0xFFC29B40),
+                                      colors.cream,
+                                      colors.brandPrimary,
                                     ],
                                   ),
                                   borderRadius:
@@ -1616,9 +1548,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                             : 'Live route pricing now powers rides and deliveries across Nigeria!',
                                         style:
                                             GoogleFonts.poppins(
-                                          color: const Color(
-                                            0xFF3D2A00,
-                                          ),
+                                          color: colors.darkBrown,
                                           fontWeight:
                                               FontWeight.w700,
                                           fontSize: 13,
@@ -1644,7 +1574,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
     if (!widget.showBottomNav) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF8F5EF),
+        backgroundColor: colors.scaffold,
         body: body,
       );
     }
@@ -1655,12 +1585,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
         final unreadNotifications = notifSnapshot.data ?? 0;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F5EF),
+          backgroundColor: colors.scaffold,
           body: body,
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: 0,
-            selectedItemColor: const Color(0xFFC29B40),
-            unselectedItemColor: Colors.black45,
             onTap: (index) {
               if (index == 1) {
                 Navigator.of(context).push(
@@ -1730,17 +1658,19 @@ class _TrendingProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 170,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.card,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFE9DFC6)),
+          border: Border.all(color: colors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: colors.shadow,
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -1762,7 +1692,9 @@ class _TrendingProductCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
                             Container(
-                          color: Colors.grey.shade200,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           child: const Center(
                             child: Icon(
                               Icons.image_not_supported,
@@ -1771,7 +1703,9 @@ class _TrendingProductCard extends StatelessWidget {
                         ),
                       )
                     : Container(
-                        color: Colors.grey.shade200,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         child: const Center(
                           child: Icon(
                             Icons.image_not_supported,
@@ -1798,7 +1732,7 @@ class _TrendingProductCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: const Color(0xFF1D1D1F),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1808,7 +1742,7 @@ class _TrendingProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: Colors.black54,
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1816,7 +1750,7 @@ class _TrendingProductCard extends StatelessWidget {
                     '₦${product.price.toStringAsFixed(0)}',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFFC29B40),
+                      color: colors.brandPrimary,
                     ),
                   ),
                 ],
@@ -1878,18 +1812,20 @@ class _MainActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     return Container(
       height: 138,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.card,
         borderRadius:
             BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFFE8DDC0),
+          color: colors.borderSoft,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: colors.shadow,
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1915,9 +1851,7 @@ class _MainActionCard extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(
-                    0xFF1D1D1F,
-                  ),
+                  color: colors.iconPrimary,
                   size: 28,
                 ),
               ),
@@ -1928,9 +1862,7 @@ class _MainActionCard extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
-                  color: const Color(
-                    0xFF1D1D1F,
-                  ),
+                  color: colors.textPrimary,
                 ),
               ),
             ],
@@ -1954,6 +1886,8 @@ class _QuickActionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     return InkWell(
       borderRadius:
           BorderRadius.circular(18),
@@ -1968,17 +1902,14 @@ class _QuickActionItem extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.surface,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(
-                    0xFFE8DDC0,
-                  ),
+                  color: colors.borderSoft,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color:
-                        Colors.black.withOpacity(0.04),
+                    color: colors.shadow,
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -1986,9 +1917,7 @@ class _QuickActionItem extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: const Color(
-                  0xFF1D1D1F,
-                ),
+                color: colors.iconPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -1996,9 +1925,7 @@ class _QuickActionItem extends StatelessWidget {
               label,
               style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: const Color(
-                  0xFF1D1D1F,
-                ),
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),

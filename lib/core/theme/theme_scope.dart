@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'theme_controller.dart';
 
 class ThemeScope extends InheritedNotifier<ThemeController> {
@@ -12,5 +13,9 @@ class ThemeScope extends InheritedNotifier<ThemeController> {
     final scope = context.dependOnInheritedWidgetOfExactType<ThemeScope>();
     assert(scope != null, 'ThemeScope not found in widget tree');
     return scope!.notifier!;
+  }
+
+  static AppThemeColors colorsOf(BuildContext context) {
+    return AppTheme.colorsOf(context);
   }
 }

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/app_notification_model.dart';
 import 'package:mix/services/firebase_service.dart';
@@ -17,17 +18,15 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
     final isGuest = FirebaseAuth.instance.currentUser == null;
+    final colors = AppTheme.colorsOf(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: colors.scaffold,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F5EF),
-        elevation: 0,
-        scrolledUnderElevation: 0,
         title: Text(
           'Notifications',
           style: GoogleFonts.poppins(
-            color: const Color(0xFF1D1D1F),
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
@@ -55,8 +54,8 @@ class NotificationsScreen extends StatelessWidget {
                     'Mark all',
                     style: GoogleFonts.poppins(
                       color: unreadCount == 0
-                          ? Colors.black26
-                          : const Color(0xFFC29B40),
+                          ? colors.textSecondary.withOpacity(0.5)
+                          : colors.brandPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -88,9 +87,7 @@ class NotificationsScreen extends StatelessWidget {
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFC29B40),
-                    ),
+                    child: CircularProgressIndicator(),
                   );
                 }
 
@@ -108,7 +105,6 @@ class NotificationsScreen extends StatelessWidget {
                   );
                 }
 
-                // Group by date
                 final grouped = <String, List<AppNotificationModel>>{};
                 for (final n in notifications) {
                   grouped.putIfAbsent(n.dateGroup, () => []).add(n);
@@ -137,7 +133,7 @@ class NotificationsScreen extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
-                              color: const Color(0xFF1D1D1F),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ),
@@ -204,13 +200,6 @@ class _GuestNotificationsState extends StatelessWidget {
             height: 48,
             child: ElevatedButton(
               onPressed: onSignIn,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC29B40),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
               child: Text(
                 'Sign In',
                 style: GoogleFonts.poppins(
@@ -238,6 +227,8 @@ class _DismissibleNotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
+
     return Dismissible(
       key: ValueKey('${notification.recipientCollection}_${notification.id}'),
       direction: DismissDirection.endToStart,
@@ -245,7 +236,7 @@ class _DismissibleNotificationCard extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: Colors.redAccent,
+          color: colors.error,
           borderRadius: BorderRadius.circular(20),
         ),
         child: const Icon(
@@ -256,42 +247,53 @@ class _DismissibleNotificationCard extends StatelessWidget {
       confirmDismiss: (direction) async {
         return await showDialog<bool>(
               context: context,
-              builder: (ctx) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                title: Text(
-                  'Delete notification?',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
-                ),
-                content: Text(
-                  'This notification will be permanently deleted.',
-                  style: GoogleFonts.poppins(fontSize: 13),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              builder: (ctx) {
+                final dialogColors = AppTheme.colorsOf(ctx);
+
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  title: Text(
+                    'Delete notification?',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      color: dialogColors.textPrimary,
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  content: Text(
+                    'This notification will be permanently deleted.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: dialogColors.textSecondary,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'Delete',
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: dialogColors.error,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(
+                        'Delete',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ) ??
             false;
       },
@@ -329,15 +331,16 @@ class _NotificationCard extends StatelessWidget {
     return Icons.notifications_active_outlined;
   }
 
-  Color _iconBgForType(String type) {
+  Color _iconBgForType(BuildContext context, String type) {
+    final colors = AppTheme.colorsOf(context);
     final value = type.toLowerCase();
 
-    if (value.contains('order')) return const Color(0xFFEAF2FF);
-    if (value.contains('delivery')) return const Color(0xFFEAFBF1);
-    if (value.contains('ride')) return const Color(0xFFFFF4E8);
-    if (value.contains('escalation')) return const Color(0xFFFFEFEF);
-    if (value.contains('admin')) return const Color(0xFFF4EEFF);
-    return const Color(0xFFF8F5EF);
+    if (value.contains('order')) return colors.paleBlue;
+    if (value.contains('delivery')) return colors.paleGreen;
+    if (value.contains('ride')) return colors.paleOrange;
+    if (value.contains('escalation')) return colors.paleRed;
+    if (value.contains('admin')) return colors.palePurple;
+    return colors.surfaceAlt;
   }
 
   String _formatTime(DateTime dateTime) {
@@ -353,12 +356,13 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
     final unread = !notification.isRead;
     final isAdminNotice =
         notification.recipientCollection == AppConstants.adminsCollection;
 
     return Material(
-      color: Colors.white,
+      color: colors.card,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
@@ -369,17 +373,17 @@ class _NotificationCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: unread
-                  ? const Color(0xFFC29B40).withOpacity(0.32)
-                  : const Color(0xFFE9DFC6),
+                  ? colors.brandPrimary.withOpacity(0.32)
+                  : colors.border,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: colors.shadow,
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
             ],
-            color: Colors.white,
+            color: colors.card,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,18 +392,19 @@ class _NotificationCard extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: _iconBgForType(notification.type),
+                  color: _iconBgForType(context, notification.type),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   _iconForType(notification.type),
-                  color: const Color(0xFF1D1D1F),
+                  color: colors.iconPrimary,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
@@ -407,10 +412,11 @@ class _NotificationCard extends StatelessWidget {
                           child: Text(
                             notification.title,
                             style: GoogleFonts.poppins(
-                              fontWeight:
-                                  unread ? FontWeight.w700 : FontWeight.w600,
+                              fontWeight: unread
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
                               fontSize: 13.5,
-                              color: const Color(0xFF1D1D1F),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ),
@@ -418,8 +424,8 @@ class _NotificationCard extends StatelessWidget {
                           Container(
                             width: 10,
                             height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFC29B40),
+                            decoration: BoxDecoration(
+                              color: colors.brandPrimary,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -431,7 +437,7 @@ class _NotificationCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         height: 1.45,
-                        color: Colors.black87,
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -439,21 +445,24 @@ class _NotificationCard extends StatelessWidget {
                       children: [
                         if (isAdminNotice)
                           Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(
+                            margin:
+                                const EdgeInsets.only(right: 8),
+                            padding:
+                                const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4EEFF),
-                              borderRadius: BorderRadius.circular(999),
+                              color: colors.palePurple,
+                              borderRadius:
+                                  BorderRadius.circular(999),
                             ),
                             child: Text(
                               'Admin',
                               style: GoogleFonts.poppins(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF5D34A4),
+                                color: colors.purple,
                               ),
                             ),
                           ),
@@ -462,7 +471,7 @@ class _NotificationCard extends StatelessWidget {
                             _formatTime(notification.createdAt),
                             style: GoogleFonts.poppins(
                               fontSize: 10.5,
-                              color: Colors.black45,
+                              color: colors.textSecondary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -471,13 +480,14 @@ class _NotificationCard extends StatelessWidget {
                           '← swipe to delete',
                           style: GoogleFonts.poppins(
                             fontSize: 9,
-                            color: Colors.black26,
+                            color: colors.textSecondary
+                                .withOpacity(0.6),
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right_rounded,
-                          color: Colors.black38,
+                          color: colors.textSecondary,
                         ),
                       ],
                     ),

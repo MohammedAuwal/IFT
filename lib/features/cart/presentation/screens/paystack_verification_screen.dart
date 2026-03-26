@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/models/payment_session_model.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/payment_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class PaystackVerificationScreen extends StatefulWidget {
   final PaymentSessionModel session;
@@ -45,14 +48,12 @@ class _PaystackVerificationScreenState
       }
 
       await _paymentService.confirmManualPaymentSuccess(widget.session);
-
       await _firebaseService.placeOrder(widget.session.items);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Payment confirmed. Order placed successfully.'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       Navigator.of(context).popUntil((route) => route.isFirst);
@@ -68,71 +69,22 @@ class _PaystackVerificationScreenState
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFFF8F5EF);
-    const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF7C1820);
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: const BoxDecoration(
-                color: gold,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: wine,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Verify Payment',
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppPageScaffold(
+      title: 'Verify Payment',
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(22),
-          child: Container(
-            width: double.infinity,
+          child: AppSurfaceCard(
             padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
+            borderRadius: BorderRadius.circular(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.verified_rounded,
-                  color: gold,
+                  color: colors.brandPrimary,
                   size: 42,
                 ),
                 const SizedBox(height: 14),
@@ -141,7 +93,7 @@ class _PaystackVerificationScreenState
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
-                    color: Colors.black,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -149,7 +101,7 @@ class _PaystackVerificationScreenState
                   'After completing payment in Paystack, come back here and tap the button below to continue.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
-                    color: Colors.black54,
+                    color: colors.textSecondary,
                     fontSize: 13,
                     height: 1.5,
                   ),
@@ -159,7 +111,7 @@ class _PaystackVerificationScreenState
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F0E0),
+                    color: colors.paleOrange,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -170,6 +122,7 @@ class _PaystackVerificationScreenState
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -178,6 +131,7 @@ class _PaystackVerificationScreenState
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
@@ -189,7 +143,7 @@ class _PaystackVerificationScreenState
                     _statusText!,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      color: Colors.redAccent,
+                      color: colors.error,
                       fontSize: 12,
                     ),
                   ),
@@ -201,7 +155,7 @@ class _PaystackVerificationScreenState
                   child: ElevatedButton(
                     onPressed: _verifying ? null : _verifyNow,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8E2121),
+                      backgroundColor: colors.brandSecondary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
