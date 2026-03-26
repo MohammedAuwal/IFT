@@ -64,7 +64,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
     await AppRouter.clearAndGo(context, RouteNames.login);
   }
 
-  void _openNotificationsPanel() {
+  Future<void> _openNotifications() async {
+    if (_isGuest) {
+      _openGuestNotificationsPanel();
+      return;
+    }
+
+    await Navigator.of(context).pushNamed(RouteNames.notifications);
+  }
+
+  void _openGuestNotificationsPanel() {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -72,8 +81,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        final user = FirebaseAuth.instance.currentUser;
-
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -102,9 +109,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  user == null
-                      ? 'Sign in to receive order, ride, delivery, and account notifications.'
-                      : 'Push notifications are enabled in the background. In-app notification history screen is not wired yet.',
+                  'Sign in to receive order, ride, delivery, and account notifications.',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     color: Colors.black54,
@@ -112,64 +117,76 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                if (user == null)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        Navigator.of(context).pop();
-                        await _goToLogin();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFC29B40),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        'Sign In',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                        ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await _goToLogin();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC29B40),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8F5EF),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE9DFC6)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.notifications_active_outlined,
-                          color: Color(0xFFC29B40),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Notification bell is now clickable. Next step is building full notification history UI.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12.5,
-                              color: const Color(0xFF1D1D1F),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Sign In',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
+                ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildBottomNavIcon({
+    required IconData icon,
+    required int count,
+  }) {
+    final showBadge = count > 0;
+    final badgeText = count > 99 ? '99+' : '$count';
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        if (showBadge)
+          Positioned(
+            right: -8,
+            top: -6,
+            child: Container(
+              constraints: const BoxConstraints(
+                minWidth: 16,
+                minHeight: 16,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white, width: 1.2),
+              ),
+              child: Center(
+                child: Text(
+                  badgeText,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -197,7 +214,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
           final profile = profileSnapshot.data ?? {};
           final authUser = FirebaseAuth.instance.currentUser;
 
-          final profileDisplayName = (profile['displayName'] ?? '').toString().trim();
+          final profileDisplayName =
+              (profile['displayName'] ?? '').toString().trim();
           final authDisplayName = (authUser?.displayName ?? '').trim();
           final authEmail = (authUser?.email ?? '').trim();
 
@@ -205,22 +223,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ? profileDisplayName
               : (authDisplayName.isNotEmpty
                   ? authDisplayName
-                  : (_isGuest ? 'Guest' : (authEmail.isNotEmpty ? authEmail : 'User')));
+                  : (_isGuest
+                      ? 'Guest'
+                      : (authEmail.isNotEmpty ? authEmail : 'User')));
 
-          final profilePhotoUrl = (profile['photoUrl'] ?? '').toString().trim();
+          final profilePhotoUrl =
+              (profile['photoUrl'] ?? '').toString().trim();
           final authPhotoUrl = (authUser?.photoURL ?? '').trim();
           final headerPhotoUrl =
               profilePhotoUrl.isNotEmpty ? profilePhotoUrl : authPhotoUrl;
+          final hasHeaderPhoto = _hasValidImage(headerPhotoUrl);
 
           return StreamBuilder<List<String>>(
             stream: _firebaseService.watchCategories(),
             builder: (context, categorySnapshot) {
-              final dynamicCategories = categorySnapshot.data ?? const <String>[];
+              final dynamicCategories =
+                  categorySnapshot.data ?? const <String>[];
               final categories = ['All', ...dynamicCategories];
 
-              if (!categories.contains(_selectedCategory)) {
-                _selectedCategory = 'All';
-              }
+              final effectiveSelectedCategory =
+                  categories.contains(_selectedCategory)
+                      ? _selectedCategory
+                      : 'All';
 
               return StreamBuilder<List<RideModel>>(
                 stream: _firebaseService.watchUserRides(),
@@ -258,12 +282,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: AppShimmerLoader(
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(14)),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(14),
+                                      ),
                                     ),
                                   ),
                                   SizedBox(height: 10),
@@ -278,11 +304,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       }
 
                       final items = productSnapshot.data ?? [];
-                      final query = _searchCtrl.text.trim().toLowerCase();
+                      final query =
+                          _searchCtrl.text.trim().toLowerCase();
 
                       final filtered = items.where((p) {
                         return _matchesSearch(p, query) &&
-                            _matchesCategory(p, _selectedCategory);
+                            _matchesCategory(
+                              p,
+                              effectiveSelectedCategory,
+                            );
                       }).toList();
 
                       final trendingItems =
@@ -292,7 +322,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         slivers: [
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                14,
+                                16,
+                                10,
+                              ),
                               child: Row(
                                 children: [
                                   Container(
@@ -305,23 +340,30 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                             .withOpacity(0.45),
                                         width: 2,
                                       ),
-                                      image: headerPhotoUrl.isNotEmpty
+                                      image: hasHeaderPhoto
                                           ? DecorationImage(
-                                              image: NetworkImage(headerPhotoUrl),
+                                              image: NetworkImage(
+                                                headerPhotoUrl,
+                                              ),
                                               fit: BoxFit.cover,
                                             )
                                           : null,
                                       color: const Color(0xFFF1E4BE),
                                     ),
-                                    child: headerPhotoUrl.isEmpty
+                                    child: !hasHeaderPhoto
                                         ? Center(
                                             child: Text(
                                               displayName.isNotEmpty
-                                                  ? displayName[0].toUpperCase()
+                                                  ? displayName[0]
+                                                      .toUpperCase()
                                                   : 'M',
-                                              style: GoogleFonts.poppins(
-                                                color: const Color(0xFF7A5A12),
-                                                fontWeight: FontWeight.w700,
+                                              style:
+                                                  GoogleFonts.poppins(
+                                                color: const Color(
+                                                  0xFF7A5A12,
+                                                ),
+                                                fontWeight:
+                                                    FontWeight.w700,
                                               ),
                                             ),
                                           )
@@ -332,23 +374,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     child: Column(
                                       children: [
                                         Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisSize:
+                                              MainAxisSize.min,
                                           children: [
                                             Container(
                                               width: 34,
                                               height: 34,
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xFFC29B40),
-                                                shape: BoxShape.circle,
+                                              decoration:
+                                                  const BoxDecoration(
+                                                color:
+                                                    Color(0xFFC29B40),
+                                                shape:
+                                                    BoxShape.circle,
                                               ),
                                               child: Center(
                                                 child: Text(
                                                   'M',
-                                                  style: GoogleFonts.cinzel(
-                                                    color: const Color(0xFF7C1820),
+                                                  style: GoogleFonts
+                                                      .cinzel(
+                                                    color: const Color(
+                                                      0xFF7C1820,
+                                                    ),
                                                     fontSize: 18,
-                                                    fontWeight: FontWeight.w900,
-                                                    letterSpacing: 1.0,
+                                                    fontWeight:
+                                                        FontWeight
+                                                            .w900,
+                                                    letterSpacing:
+                                                        1.0,
                                                   ),
                                                 ),
                                               ),
@@ -356,10 +408,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                             const SizedBox(width: 8),
                                             Text(
                                               'Mix',
-                                              style: GoogleFonts.playfairDisplay(
-                                                fontWeight: FontWeight.w800,
+                                              style: GoogleFonts
+                                                  .playfairDisplay(
+                                                fontWeight:
+                                                    FontWeight.w800,
                                                 fontSize: 24,
-                                                color: const Color(0xFF1D1D1F),
+                                                color: const Color(
+                                                  0xFF1D1D1F,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -372,51 +428,115 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                           style: GoogleFonts.poppins(
                                             color: Colors.black87,
                                             fontSize: 15,
-                                            fontWeight: FontWeight.w600,
+                                            fontWeight:
+                                                FontWeight.w600,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: _openNotificationsPanel,
-                                    child: Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        Container(
-                                          width: 42,
-                                          height: 42,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color:
-                                                    Colors.black.withOpacity(0.06),
-                                                blurRadius: 12,
-                                                offset: const Offset(0, 4),
+                                  StreamBuilder<int>(
+                                    stream: _firebaseService
+                                        .watchUnreadNotificationCount(),
+                                    builder: (context, snapshot) {
+                                      final unreadCount =
+                                          snapshot.data ?? 0;
+                                      final showBadge =
+                                          unreadCount > 0;
+                                      final badgeText =
+                                          unreadCount > 99
+                                              ? '99+'
+                                              : '$unreadCount';
+
+                                      return GestureDetector(
+                                        onTap: _openNotifications,
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            Container(
+                                              width: 42,
+                                              height: 42,
+                                              decoration:
+                                                  BoxDecoration(
+                                                color: Colors.white,
+                                                shape:
+                                                    BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors
+                                                        .black
+                                                        .withOpacity(
+                                                            0.06),
+                                                    blurRadius: 12,
+                                                    offset:
+                                                        const Offset(
+                                                      0,
+                                                      4,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                          child: const Icon(
-                                            Icons.notifications_none_rounded,
-                                            color: Color(0xFF1D1D1F),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          right: 2,
-                                          top: 2,
-                                          child: Container(
-                                            width: 9,
-                                            height: 9,
-                                            decoration: const BoxDecoration(
-                                              color: Colors.redAccent,
-                                              shape: BoxShape.circle,
+                                              child: const Icon(
+                                                Icons
+                                                    .notifications_none_rounded,
+                                                color: Color(
+                                                  0xFF1D1D1F,
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            if (showBadge)
+                                              Positioned(
+                                                right: -4,
+                                                top: -4,
+                                                child: Container(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 18,
+                                                    minHeight: 18,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets
+                                                          .symmetric(
+                                                    horizontal: 5,
+                                                    vertical: 2,
+                                                  ),
+                                                  decoration:
+                                                      BoxDecoration(
+                                                    color: Colors
+                                                        .redAccent,
+                                                    borderRadius:
+                                                        BorderRadius
+                                                            .circular(
+                                                      999,
+                                                    ),
+                                                    border:
+                                                        Border.all(
+                                                      color:
+                                                          Colors.white,
+                                                      width: 1.5,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      badgeText,
+                                                      style:
+                                                          GoogleFonts
+                                                              .poppins(
+                                                        color: Colors
+                                                            .white,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight
+                                                                .w700,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
@@ -426,16 +546,23 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           if (_isGuest)
                             SliverToBoxAdapter(
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  12,
+                                ),
                                 child: Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFC29B40).withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(18),
+                                    color: const Color(0xFFC29B40)
+                                        .withOpacity(0.12),
+                                    borderRadius:
+                                        BorderRadius.circular(18),
                                     border: Border.all(
-                                      color:
-                                          const Color(0xFFC29B40).withOpacity(0.25),
+                                      color: const Color(0xFFC29B40)
+                                          .withOpacity(0.25),
                                     ),
                                   ),
                                   child: Row(
@@ -449,8 +576,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         child: Text(
                                           'You are browsing as a guest. Sign in to save favorites, confirm rides, save addresses, and checkout orders.',
                                           style: GoogleFonts.poppins(
-                                            color: const Color(0xFF7A5A12),
-                                            fontWeight: FontWeight.w600,
+                                            color: const Color(
+                                              0xFF7A5A12,
+                                            ),
+                                            fontWeight:
+                                                FontWeight.w600,
                                             fontSize: 12.5,
                                           ),
                                         ),
@@ -461,8 +591,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         child: Text(
                                           'Sign In',
                                           style: GoogleFonts.poppins(
-                                            color: const Color(0xFF7A5A12),
-                                            fontWeight: FontWeight.w700,
+                                            color: const Color(
+                                              0xFF7A5A12,
+                                            ),
+                                            fontWeight:
+                                                FontWeight.w700,
                                           ),
                                         ),
                                       ),
@@ -475,7 +608,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           if (previewController.isPreviewMode)
                             SliverToBoxAdapter(
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  10,
+                                ),
                                 child: Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(
@@ -483,9 +621,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        const Color(0xFFC29B40).withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(16),
+                                    color: const Color(0xFFC29B40)
+                                        .withOpacity(0.12),
+                                    borderRadius:
+                                        BorderRadius.circular(16),
                                     border: Border.all(
                                       color: const Color(0xFFC29B40)
                                           .withOpacity(0.25),
@@ -502,8 +641,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       Text(
                                         'Preview Mode',
                                         style: GoogleFonts.poppins(
-                                          color: const Color(0xFF7A5A12),
-                                          fontWeight: FontWeight.w700,
+                                          color: const Color(
+                                            0xFF7A5A12,
+                                          ),
+                                          fontWeight:
+                                              FontWeight.w700,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -515,22 +657,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: TextField(
                                 controller: _searchCtrl,
                                 onChanged: (_) => setState(() {}),
                                 decoration: InputDecoration(
                                   hintText:
                                       'Search products, categories, variants...',
-                                  prefixIcon: const Icon(Icons.search),
+                                  prefixIcon:
+                                      const Icon(Icons.search),
                                   filled: true,
                                   fillColor: Colors.white,
-                                  contentPadding: const EdgeInsets.symmetric(
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 14,
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius:
+                                        BorderRadius.circular(18),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
@@ -538,65 +685,91 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 12),
+                          ),
 
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: StreamBuilder<String>(
-                                stream: _firebaseService.watchSelectedAddress(),
-                                builder: (context, addressSnapshot) {
+                                stream: _firebaseService
+                                    .watchSelectedAddress(),
+                                builder:
+                                    (context, addressSnapshot) {
                                   final selectedAddress =
                                       addressSnapshot.data ?? '';
 
                                   return StreamBuilder<String>(
-                                    stream:
-                                        _firebaseService.watchVendorPickupAddress(),
-                                    builder: (context, vendorSnapshot) {
+                                    stream: _firebaseService
+                                        .watchVendorPickupAddress(),
+                                    builder: (context,
+                                        vendorSnapshot) {
                                       final vendorAddress =
                                           vendorSnapshot.data ??
-                                              AppConstants.defaultVendorLocation;
+                                              AppConstants
+                                                  .defaultVendorLocation;
 
                                       return Container(
                                         width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
+                                        padding:
+                                            const EdgeInsets.symmetric(
                                           horizontal: 14,
                                           vertical: 14,
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(18),
+                                          borderRadius:
+                                              BorderRadius.circular(
+                                            18,
+                                          ),
                                           border: Border.all(
-                                            color: const Color(0xFFE8DDC0),
+                                            color: const Color(
+                                              0xFFE8DDC0,
+                                            ),
                                           ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color:
-                                                  Colors.black.withOpacity(0.04),
+                                              color: Colors.black
+                                                  .withOpacity(0.04),
                                               blurRadius: 12,
-                                              offset: const Offset(0, 4),
+                                              offset:
+                                                  const Offset(0, 4),
                                             ),
                                           ],
                                         ),
                                         child: Column(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                              CrossAxisAlignment
+                                                  .start,
                                           children: [
                                             Row(
                                               children: [
                                                 const Icon(
-                                                  Icons.location_on_rounded,
-                                                  color: Color(0xFFC29B40),
+                                                  Icons
+                                                      .location_on_rounded,
+                                                  color: Color(
+                                                    0xFFC29B40,
+                                                  ),
                                                   size: 20,
                                                 ),
-                                                const SizedBox(width: 10),
+                                                const SizedBox(
+                                                  width: 10,
+                                                ),
                                                 Expanded(
                                                   child: Text(
                                                     'Selected delivery location',
-                                                    style: GoogleFonts.poppins(
+                                                    style: GoogleFonts
+                                                        .poppins(
                                                       color:
-                                                          const Color(0xFF1D1D1F),
-                                                      fontWeight: FontWeight.w600,
+                                                          const Color(
+                                                        0xFF1D1D1F,
+                                                      ),
+                                                      fontWeight:
+                                                          FontWeight
+                                                              .w600,
                                                       fontSize: 13,
                                                     ),
                                                   ),
@@ -607,29 +780,38 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                             Text(
                                               _isGuest
                                                   ? 'Sign in to save and use delivery addresses'
-                                                  : (selectedAddress.isEmpty
+                                                  : (selectedAddress
+                                                          .isEmpty
                                                       ? 'No saved address selected yet'
                                                       : selectedAddress),
-                                              style: GoogleFonts.poppins(
+                                              style: GoogleFonts
+                                                  .poppins(
                                                 color: (_isGuest ||
-                                                        selectedAddress.isEmpty)
-                                                    ? Colors.black45
+                                                        selectedAddress
+                                                            .isEmpty)
+                                                    ? Colors
+                                                        .black45
                                                     : Colors.black87,
                                                 fontSize: 11,
                                               ),
                                               maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                              overflow: TextOverflow
+                                                  .ellipsis,
                                             ),
                                             const SizedBox(height: 8),
                                             Text(
                                               'Vendor Pickup: $vendorAddress',
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.black54,
+                                              style: GoogleFonts
+                                                  .poppins(
+                                                color:
+                                                    Colors.black54,
                                                 fontSize: 11,
-                                                fontWeight: FontWeight.w600,
+                                                fontWeight:
+                                                    FontWeight.w600,
                                               ),
                                               maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                              overflow: TextOverflow
+                                                  .ellipsis,
                                             ),
                                           ],
                                         ),
@@ -641,19 +823,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 12),
+                          ),
 
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: _MainActionCard(
                                       title: 'Book a Ride',
-                                      icon:
-                                          Icons.directions_car_filled_rounded,
-                                      iconBg: const Color(0xFFE7F0FF),
+                                      icon: Icons
+                                          .directions_car_filled_rounded,
+                                      iconBg: const Color(
+                                        0xFFE7F0FF,
+                                      ),
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
@@ -668,8 +856,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                   Expanded(
                                     child: _MainActionCard(
                                       title: 'Shop Products',
-                                      icon: Icons.shopping_cart_rounded,
-                                      iconBg: const Color(0xFFF7F0E0),
+                                      icon: Icons
+                                          .shopping_cart_rounded,
+                                      iconBg: const Color(
+                                        0xFFF7F0E0,
+                                      ),
                                       onTap: () {},
                                     ),
                                   ),
@@ -678,30 +869,40 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 12),
+                          ),
 
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: _QuickActionItem(
-                                      icon: Icons.payments_outlined,
+                                      icon:
+                                          Icons.payments_outlined,
                                       label: 'Pay',
-                                      onTap: _isGuest ? _goToLogin : () {},
+                                      onTap: _isGuest
+                                          ? _goToLogin
+                                          : () {},
                                     ),
                                   ),
                                   Expanded(
                                     child: _QuickActionItem(
-                                      icon: Icons.receipt_long_rounded,
+                                      icon: Icons
+                                          .receipt_long_rounded,
                                       label: 'My Orders',
                                       onTap: _isGuest
                                           ? _goToLogin
                                           : () {
-                                              Navigator.of(context).push(
+                                              Navigator.of(context)
+                                                  .push(
                                                 MaterialPageRoute(
-                                                  builder: (_) => OrderScreen(),
+                                                  builder: (_) =>
+                                                      OrderScreen(),
                                                 ),
                                               );
                                             },
@@ -709,14 +910,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                   ),
                                   Expanded(
                                     child: _QuickActionItem(
-                                      icon: Icons.history_rounded,
+                                      icon:
+                                          Icons.history_rounded,
                                       label: 'History',
                                       onTap: _isGuest
                                           ? _goToLogin
                                           : () {
-                                              Navigator.of(context).push(
+                                              Navigator.of(context)
+                                                  .push(
                                                 MaterialPageRoute(
-                                                  builder: (_) => OrderScreen(),
+                                                  builder: (_) =>
+                                                      OrderScreen(),
                                                 ),
                                               );
                                             },
@@ -741,25 +945,34 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 14),
+                          ),
 
                           SliverToBoxAdapter(
                             child: SizedBox(
                               height: 40,
                               child: ListView.separated(
                                 padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                scrollDirection: Axis.horizontal,
+                                    const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                scrollDirection:
+                                    Axis.horizontal,
                                 itemBuilder: (_, i) {
                                   final item = categories[i];
-                                  final selected = item == _selectedCategory;
+                                  final selected =
+                                      item ==
+                                          effectiveSelectedCategory;
                                   return ChoiceChip(
                                     label: Text(item),
                                     selected: selected,
                                     onSelected: (_) => setState(
-                                      () => _selectedCategory = item,
+                                      () => _selectedCategory =
+                                          item,
                                     ),
-                                    selectedColor: const Color(0xFFC29B40),
+                                    selectedColor:
+                                        const Color(0xFFC29B40),
                                     labelStyle: GoogleFonts.poppins(
                                       color: selected
                                           ? Colors.white
@@ -767,9 +980,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                     ),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor:
+                                        Colors.white,
                                     side: BorderSide(
-                                      color: Colors.black.withOpacity(0.08),
+                                      color: Colors.black
+                                          .withOpacity(0.08),
                                     ),
                                   );
                                 },
@@ -780,40 +995,60 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 10),
+                          ),
 
                           if (activeServices.isNotEmpty)
                             SliverToBoxAdapter(
                               child: Padding(
                                 padding:
-                                    const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                    const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  12,
+                                ),
                                 child: Column(
-                                  children: activeServices.map((service) {
+                                  children: activeServices
+                                      .map((service) {
                                     return Padding(
                                       padding:
-                                          const EdgeInsets.only(bottom: 10),
+                                          const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
                                       child: ActiveServiceCard(
-                                        icon: service.type == 'delivery'
-                                            ? Icons.delivery_dining_rounded
-                                            : Icons.local_taxi_rounded,
-                                        title: service.type == 'delivery'
+                                        icon: service.type ==
+                                                'delivery'
+                                            ? Icons
+                                                .delivery_dining_rounded
+                                            : Icons
+                                                .local_taxi_rounded,
+                                        title: service.type ==
+                                                'delivery'
                                             ? 'Delivery ${service.driver ?? 'in progress'}'
                                             : 'Driver: ${service.driver ?? 'Searching...'}',
                                         subtitle:
                                             '${service.pickup} → ${service.destination}',
-                                        status: service.status,
-                                        eta: service.eta.isEmpty
+                                        status:
+                                            service.status,
+                                        eta: service.eta
+                                                .isEmpty
                                             ? null
                                             : service.eta,
-                                        trailingText: service.eta.isEmpty
-                                            ? (service.type == 'delivery'
+                                        trailingText: service
+                                                .eta.isEmpty
+                                            ? (service.type ==
+                                                    'delivery'
                                                 ? 'Delivery in progress 📦'
                                                 : 'Driver is coming 🚗')
                                             : 'ETA: ${service.eta}',
                                         onTap: () {
-                                          Navigator.of(context).push(
+                                          Navigator.of(context)
+                                              .push(
                                             MaterialPageRoute(
-                                              builder: (_) => RideDetailScreen(
+                                              builder: (_) =>
+                                                  RideDetailScreen(
                                                 ride: service,
                                               ),
                                             ),
@@ -829,15 +1064,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           SliverToBoxAdapter(
                             child: Padding(
                               padding:
-                                  const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                                  const EdgeInsets.fromLTRB(
+                                16,
+                                0,
+                                16,
+                                10,
+                              ),
                               child: Align(
-                                alignment: Alignment.centerLeft,
+                                alignment:
+                                    Alignment.centerLeft,
                                 child: Text(
                                   'Trending Now 🔥',
                                   style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight:
+                                        FontWeight.w700,
                                     fontSize: 20,
-                                    color: const Color(0xFF1D1D1F),
+                                    color: const Color(
+                                      0xFF1D1D1F,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -847,11 +1091,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           if (trendingItems.isEmpty)
                             const SliverToBoxAdapter(
                               child: Padding(
-                                padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                padding:
+                                    EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  16,
+                                ),
                                 child: EmptyStateCard(
-                                  icon:
-                                      Icons.local_fire_department_outlined,
-                                  title: 'No trending products yet',
+                                  icon: Icons
+                                      .local_fire_department_outlined,
+                                  title:
+                                      'No trending products yet',
                                   subtitle:
                                       'Mark products as trending from admin to show them here.',
                                 ),
@@ -863,21 +1114,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 height: 210,
                                 child: ListView.separated(
                                   padding:
-                                      const EdgeInsets.symmetric(horizontal: 16),
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: trendingItems.length,
+                                      const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  scrollDirection:
+                                      Axis.horizontal,
+                                  itemCount:
+                                      trendingItems.length,
                                   separatorBuilder: (_, __) =>
                                       const SizedBox(width: 12),
                                   itemBuilder: (_, i) {
-                                    final product = trendingItems[i];
+                                    final product =
+                                        trendingItems[i];
                                     return _TrendingProductCard(
                                       product: product,
                                       onTap: () {
-                                        Navigator.of(context).push(
+                                        Navigator.of(context)
+                                            .push(
                                           MaterialPageRoute(
                                             builder: (_) =>
                                                 ProductDetailScreen(
-                                              product: product,
+                                              product:
+                                                  product,
                                             ),
                                           ),
                                         );
@@ -888,20 +1146,31 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ),
                             ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 16),
+                          ),
 
                           SliverToBoxAdapter(
                             child: Padding(
                               padding:
-                                  const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                                  const EdgeInsets.fromLTRB(
+                                16,
+                                0,
+                                16,
+                                10,
+                              ),
                               child: Align(
-                                alignment: Alignment.centerLeft,
+                                alignment:
+                                    Alignment.centerLeft,
                                 child: Text(
                                   'All Products',
                                   style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight:
+                                        FontWeight.w700,
                                     fontSize: 18,
-                                    color: const Color(0xFF1D1D1F),
+                                    color: const Color(
+                                      0xFF1D1D1F,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -912,10 +1181,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             const SliverFillRemaining(
                               hasScrollBody: false,
                               child: Padding(
-                                padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                padding:
+                                    EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  16,
+                                ),
                                 child: EmptyStateCard(
-                                  icon: Icons.inventory_2_outlined,
-                                  title: 'No products found',
+                                  icon: Icons
+                                      .inventory_2_outlined,
+                                  title:
+                                      'No products found',
                                   subtitle:
                                       'Try another search or category.',
                                 ),
@@ -923,81 +1200,120 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             )
                           else
                             StreamBuilder<List<String>>(
-                              stream: _firebaseService.watchFavorites(),
-                              builder: (context, favSnapshot) {
-                                final favorites = favSnapshot.data ?? [];
+                              stream: _firebaseService
+                                  .watchFavorites(),
+                              builder: (context,
+                                  favSnapshot) {
+                                final favorites =
+                                    favSnapshot.data ?? [];
 
                                 return SliverPadding(
-                                  padding: const EdgeInsets.fromLTRB(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(
                                     16,
                                     0,
                                     16,
                                     8,
                                   ),
                                   sliver: SliverGrid(
-                                    delegate: SliverChildBuilderDelegate(
+                                    delegate:
+                                        SliverChildBuilderDelegate(
                                       (_, i) {
-                                        final product = filtered[i];
+                                        final product =
+                                            filtered[i];
                                         final isFavorite =
-                                            favorites.contains(product.id);
+                                            favorites
+                                                .contains(
+                                          product.id,
+                                        );
 
                                         return GestureDetector(
                                           onTap: () {
-                                            Navigator.of(context).push(
+                                            Navigator.of(context)
+                                                .push(
                                               MaterialPageRoute(
                                                 builder: (_) =>
                                                     ProductDetailScreen(
-                                                  product: product,
+                                                  product:
+                                                      product,
                                                 ),
                                               ),
                                             );
                                           },
                                           child: Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
+                                            decoration:
+                                                BoxDecoration(
+                                              color:
+                                                  Colors.white,
                                               borderRadius:
-                                                  BorderRadius.circular(20),
-                                              border: Border.all(
-                                                color: const Color(0xFFE9DFC6),
+                                                  BorderRadius
+                                                      .circular(
+                                                20,
+                                              ),
+                                              border:
+                                                  Border.all(
+                                                color:
+                                                    const Color(
+                                                  0xFFE9DFC6,
+                                                ),
                                               ),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.04),
-                                                  blurRadius: 12,
-                                                  offset: const Offset(0, 4),
+                                                  color: Colors
+                                                      .black
+                                                      .withOpacity(
+                                                    0.04,
+                                                  ),
+                                                  blurRadius:
+                                                      12,
+                                                  offset:
+                                                      const Offset(
+                                                    0,
+                                                    4,
+                                                  ),
                                                 ),
                                               ],
                                             ),
                                             child: Column(
                                               crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                                  CrossAxisAlignment
+                                                      .start,
                                               children: [
                                                 Expanded(
                                                   child: Stack(
                                                     children: [
                                                       ClipRRect(
                                                         borderRadius:
-                                                            const BorderRadius.vertical(
-                                                          top: Radius.circular(20),
+                                                            const BorderRadius
+                                                                .vertical(
+                                                          top: Radius
+                                                              .circular(
+                                                            20,
+                                                          ),
                                                         ),
                                                         child: _hasValidImage(
-                                                                product.imageUrl)
-                                                            ? Image.network(
-                                                                product.imageUrl,
-                                                                width: double.infinity,
-                                                                fit: BoxFit.cover,
+                                                                product
+                                                                    .imageUrl)
+                                                            ? Image
+                                                                .network(
+                                                                product
+                                                                    .imageUrl,
+                                                                width: double
+                                                                    .infinity,
+                                                                fit: BoxFit
+                                                                    .cover,
                                                                 loadingBuilder:
-                                                                    (context,
-                                                                        child,
-                                                                        progress) {
+                                                                    (
+                                                                  context,
+                                                                  child,
+                                                                  progress,
+                                                                ) {
                                                                   if (progress ==
                                                                       null) {
                                                                     return child;
                                                                   }
                                                                   return Container(
-                                                                    color: Colors
-                                                                        .grey
+                                                                    color: Colors.grey
                                                                         .shade100,
                                                                     child:
                                                                         const Center(
@@ -1009,16 +1325,19 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                     ),
                                                                   );
                                                                 },
-                                                                errorBuilder: (_,
-                                                                        __,
-                                                                        ___) =>
+                                                                errorBuilder: (
+                                                                  _,
+                                                                  __,
+                                                                  ___,
+                                                                ) =>
                                                                     Container(
                                                                   color: Colors
                                                                       .grey
                                                                       .shade200,
                                                                   child:
                                                                       const Center(
-                                                                    child: Icon(
+                                                                    child:
+                                                                        Icon(
                                                                       Icons
                                                                           .image_not_supported,
                                                                     ),
@@ -1031,7 +1350,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                     .shade200,
                                                                 child:
                                                                     const Center(
-                                                                  child: Icon(
+                                                                  child:
+                                                                      Icon(
                                                                     Icons
                                                                         .image_not_supported,
                                                                   ),
@@ -1041,27 +1361,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                       Positioned(
                                                         top: 8,
                                                         left: 8,
-                                                        child: Column(
+                                                        child:
+                                                            Column(
                                                           crossAxisAlignment:
                                                               CrossAxisAlignment
                                                                   .start,
                                                           children: [
-                                                            if (product.isTrending)
+                                                            if (product
+                                                                .isTrending)
                                                               _MiniTag(
                                                                 label:
                                                                     'Trending',
-                                                                color: const Color(
+                                                                color:
+                                                                    const Color(
                                                                   0xFFFF7A00,
                                                                 ),
                                                               ),
-                                                            if (product.featured)
+                                                            if (product
+                                                                .featured)
                                                               Padding(
                                                                 padding:
                                                                     const EdgeInsets
                                                                         .only(
-                                                                  top: 4,
+                                                                  top:
+                                                                      4,
                                                                 ),
-                                                                child: _MiniTag(
+                                                                child:
+                                                                    _MiniTag(
                                                                   label:
                                                                       'Featured',
                                                                   color:
@@ -1076,31 +1402,37 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                       Positioned(
                                                         top: 8,
                                                         right: 8,
-                                                        child: GestureDetector(
-                                                          onTap: () async {
+                                                        child:
+                                                            GestureDetector(
+                                                          onTap:
+                                                              () async {
                                                             if (_isGuest) {
                                                               await _goToLogin();
                                                               return;
                                                             }
                                                             await _firebaseService
                                                                 .toggleFavorite(
-                                                              product.id,
+                                                              product
+                                                                  .id,
                                                             );
                                                           },
-                                                          child: CircleAvatar(
-                                                            radius: 14,
+                                                          child:
+                                                              CircleAvatar(
+                                                            radius:
+                                                                14,
                                                             backgroundColor:
-                                                                Colors.white,
-                                                            child: Icon(
+                                                                Colors
+                                                                    .white,
+                                                            child:
+                                                                Icon(
                                                               isFavorite
                                                                   ? Icons.favorite
-                                                                  : Icons
-                                                                      .favorite_border,
+                                                                  : Icons.favorite_border,
                                                               color: isFavorite
-                                                                  ? Colors
-                                                                      .redAccent
+                                                                  ? Colors.redAccent
                                                                   : Colors.black,
-                                                              size: 16,
+                                                              size:
+                                                                  16,
                                                             ),
                                                           ),
                                                         ),
@@ -1110,7 +1442,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                 ),
                                                 Padding(
                                                   padding:
-                                                      const EdgeInsets.fromLTRB(
+                                                      const EdgeInsets
+                                                          .fromLTRB(
                                                     8,
                                                     8,
                                                     8,
@@ -1118,80 +1451,96 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   ),
                                                   child: Column(
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Text(
-                                                        product.name,
-                                                        maxLines: 1,
+                                                        product
+                                                            .name,
+                                                        maxLines:
+                                                            1,
                                                         overflow:
                                                             TextOverflow.ellipsis,
-                                                        style: GoogleFonts.poppins(
+                                                        style: GoogleFonts
+                                                            .poppins(
                                                           fontWeight:
                                                               FontWeight.w600,
-                                                          fontSize: 12,
-                                                          color: const Color(
+                                                          fontSize:
+                                                              12,
+                                                          color:
+                                                              const Color(
                                                             0xFF1D1D1F,
                                                           ),
                                                         ),
                                                       ),
-                                                      const SizedBox(height: 2),
+                                                      const SizedBox(
+                                                        height:
+                                                            2,
+                                                      ),
                                                       Text(
-                                                        product.primaryCategory,
-                                                        maxLines: 1,
+                                                        product
+                                                            .primaryCategory,
+                                                        maxLines:
+                                                            1,
                                                         overflow:
                                                             TextOverflow.ellipsis,
-                                                        style: GoogleFonts.poppins(
-                                                          fontSize: 10,
+                                                        style: GoogleFonts
+                                                            .poppins(
+                                                          fontSize:
+                                                              10,
                                                           color: Colors.black54,
                                                         ),
                                                       ),
-                                                      const SizedBox(height: 4),
+                                                      const SizedBox(
+                                                        height:
+                                                            4,
+                                                      ),
                                                       Row(
                                                         children: [
                                                           Expanded(
-                                                            child: Text(
+                                                            child:
+                                                                Text(
                                                               '₦${product.price.toStringAsFixed(0)}',
-                                                              style: GoogleFonts
-                                                                  .poppins(
+                                                              style:
+                                                                  GoogleFonts.poppins(
                                                                 color:
                                                                     const Color(
                                                                   0xFF1D1D1F,
                                                                 ),
                                                                 fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                fontSize: 12,
+                                                                    FontWeight.w700,
+                                                                fontSize:
+                                                                    12,
                                                               ),
                                                             ),
                                                           ),
                                                           Container(
                                                             padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
+                                                                const EdgeInsets.symmetric(
                                                               horizontal: 8,
                                                               vertical: 4,
                                                             ),
                                                             decoration:
                                                                 BoxDecoration(
-                                                              color: const Color(
+                                                              color:
+                                                                  const Color(
                                                                 0xFFC29B40,
                                                               ),
                                                               borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
+                                                                  BorderRadius.circular(
                                                                 999,
                                                               ),
                                                             ),
-                                                            child: Text(
+                                                            child:
+                                                                Text(
                                                               'Buy',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color:
-                                                                    Colors.white,
+                                                              style:
+                                                                  GoogleFonts.poppins(
+                                                                color: Colors.white,
                                                                 fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                fontSize: 10,
+                                                                    FontWeight.w700,
+                                                                fontSize:
+                                                                    10,
                                                               ),
                                                             ),
                                                           ),
@@ -1205,14 +1554,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                           ),
                                         );
                                       },
-                                      childCount: filtered.length,
+                                      childCount:
+                                          filtered.length,
                                     ),
                                     gridDelegate:
                                         const SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 3,
-                                      childAspectRatio: 0.62,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
+                                      childAspectRatio:
+                                          0.62,
+                                      crossAxisSpacing:
+                                          12,
+                                      mainAxisSpacing:
+                                          12,
                                     ),
                                   ),
                                 );
@@ -1221,27 +1574,39 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                8,
+                                16,
+                                24,
+                              ),
                               child: Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
+                                padding:
+                                    const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 14,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient:
+                                      const LinearGradient(
                                     colors: [
                                       Color(0xFFF3D47A),
                                       Color(0xFFC29B40),
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius:
+                                      BorderRadius.circular(
+                                    16,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
                                     const Text(
                                       '🔥',
-                                      style: TextStyle(fontSize: 18),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
@@ -1249,9 +1614,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         _isGuest
                                             ? 'Sign in to unlock favorites, delivery checkout, ride booking, and personal tracking.'
                                             : 'Live route pricing now powers rides and deliveries across Nigeria!',
-                                        style: GoogleFonts.poppins(
-                                          color: const Color(0xFF3D2A00),
-                                          fontWeight: FontWeight.w700,
+                                        style:
+                                            GoogleFonts.poppins(
+                                          color: const Color(
+                                            0xFF3D2A00,
+                                          ),
+                                          fontWeight:
+                                              FontWeight.w700,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -1280,53 +1649,67 @@ class _ProductListScreenState extends State<ProductListScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
-      body: body,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        selectedItemColor: const Color(0xFFC29B40),
-        unselectedItemColor: Colors.black45,
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CartScreen()),
-            );
-          } else if (index == 2) {
-            if (_isGuest) {
-              _goToLogin();
-              return;
-            }
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => OrderScreen()),
-            );
-          } else if (index == 3) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const ProfileScreen(),
+    return StreamBuilder<int>(
+      stream: _firebaseService.watchUnreadNotificationCount(),
+      builder: (context, notifSnapshot) {
+        final unreadNotifications = notifSnapshot.data ?? 0;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F5EF),
+          body: body,
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: 0,
+            selectedItemColor: const Color(0xFFC29B40),
+            unselectedItemColor: Colors.black45,
+            onTap: (index) {
+              if (index == 1) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const CartScreen(),
+                  ),
+                );
+              } else if (index == 2) {
+                if (_isGuest) {
+                  _goToLogin();
+                  return;
+                }
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => OrderScreen(),
+                  ),
+                );
+              } else if (index == 3) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ProfileScreen(),
+                  ),
+                );
+              }
+            },
+            items: [
+              BottomNavigationBarItem(
+                icon: _buildBottomNavIcon(
+                  icon: Icons.home_rounded,
+                  count: unreadNotifications,
+                ),
+                label: 'Home',
               ),
-            );
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.shopping_cart_rounded),
+                label: 'Cart',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.receipt_long_rounded),
+                label: 'Orders',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person_rounded),
+                label: 'Profile',
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_rounded),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_rounded),
-            label: 'Orders',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -1364,7 +1747,8 @@ class _TrendingProductCard extends StatelessWidget {
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
             Expanded(
               child: ClipRRect(
@@ -1376,25 +1760,36 @@ class _TrendingProductCard extends StatelessWidget {
                         product.imageUrl,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (_, __, ___) =>
+                            Container(
                           color: Colors.grey.shade200,
                           child: const Center(
-                            child: Icon(Icons.image_not_supported),
+                            child: Icon(
+                              Icons.image_not_supported,
+                            ),
                           ),
                         ),
                       )
                     : Container(
                         color: Colors.grey.shade200,
                         child: const Center(
-                          child: Icon(Icons.image_not_supported),
+                          child: Icon(
+                            Icons.image_not_supported,
+                          ),
                         ),
                       ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              padding: const EdgeInsets.fromLTRB(
+                12,
+                10,
+                12,
+                12,
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
@@ -1446,10 +1841,15 @@ class _MiniTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 7,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius:
+            BorderRadius.circular(999),
       ),
       child: Text(
         label,
@@ -1482,8 +1882,11 @@ class _MainActionCard extends StatelessWidget {
       height: 138,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE8DDC0)),
+        borderRadius:
+            BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFE8DDC0),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -1494,22 +1897,27 @@ class _MainActionCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius:
+            BorderRadius.circular(22),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment:
+                MainAxisAlignment.center,
             children: [
               Container(
                 width: 54,
                 height: 54,
                 decoration: BoxDecoration(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius:
+                      BorderRadius.circular(18),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xFF1D1D1F),
+                  color: const Color(
+                    0xFF1D1D1F,
+                  ),
                   size: 28,
                 ),
               ),
@@ -1520,7 +1928,9 @@ class _MainActionCard extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
-                  color: const Color(0xFF1D1D1F),
+                  color: const Color(
+                    0xFF1D1D1F,
+                  ),
                 ),
               ),
             ],
@@ -1545,10 +1955,13 @@ class _QuickActionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius:
+          BorderRadius.circular(18),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          vertical: 4,
+        ),
         child: Column(
           children: [
             Container(
@@ -1557,10 +1970,15 @@ class _QuickActionItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE8DDC0)),
+                border: Border.all(
+                  color: const Color(
+                    0xFFE8DDC0,
+                  ),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color:
+                        Colors.black.withOpacity(0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -1568,7 +1986,9 @@ class _QuickActionItem extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: const Color(0xFF1D1D1F),
+                color: const Color(
+                  0xFF1D1D1F,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -1576,7 +1996,9 @@ class _QuickActionItem extends StatelessWidget {
               label,
               style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: const Color(0xFF1D1D1F),
+                color: const Color(
+                  0xFF1D1D1F,
+                ),
                 fontWeight: FontWeight.w500,
               ),
             ),

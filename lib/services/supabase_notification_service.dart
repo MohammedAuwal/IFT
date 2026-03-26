@@ -16,6 +16,8 @@ class SupabaseNotificationService {
     required String type,
     String? targetScreen,
     String? targetId,
+    String? notificationId,
+    String? notificationCollection,
   }) async {
     final cleanedTokens = tokens
         .map((e) => e.trim())
@@ -28,7 +30,9 @@ class SupabaseNotificationService {
     final url = AppConstants.supabaseFcmFunctionUrl;
     final secret = AppConstants.supabaseFunctionSecret;
 
-    if (url.isEmpty || secret.isEmpty || secret == 'REPLACE_WITH_EDGE_FUNCTION_SECRET') {
+    if (url.isEmpty ||
+        secret.isEmpty ||
+        secret == 'REPLACE_WITH_EDGE_FUNCTION_SECRET') {
       return;
     }
 
@@ -45,6 +49,8 @@ class SupabaseNotificationService {
         'type': type,
         'targetScreen': targetScreen ?? '',
         'targetId': targetId ?? '',
+        'notificationId': notificationId ?? '',
+        'notificationCollection': notificationCollection ?? '',
       }),
     );
 

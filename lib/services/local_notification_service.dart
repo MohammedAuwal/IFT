@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mix/services/notification_navigation_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalNotificationService {
   LocalNotificationService._();
@@ -14,12 +15,24 @@ class LocalNotificationService {
 
   bool _initialized = false;
 
-  static const AndroidNotificationChannel _channel =
+  static const String _soundPrefKey = 'mix_notification_sound';
+
+  static const AndroidNotificationChannel _defaultChannel =
       AndroidNotificationChannel(
     'mix_high_importance_channel',
     'Mix Notifications',
     description: 'Important alerts for rides, deliveries, orders, and admin ops',
     importance: Importance.max,
+  );
+
+  static const AndroidNotificationChannel _silentChannel =
+      AndroidNotificationChannel(
+    'mix_silent_channel',
+    'Mix Silent Notifications',
+    description: 'Silent notifications without sound',
+    importance: Importance.max,
+    playSound: false,
+    enableVibration: false,
   );
 
   Future<void> initialize() async {
@@ -91,30 +104,69 @@ class LocalNotificationService {
     await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_channel);
+        ?.createNotificationChannel(_defaultChannel);
+
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_silentChannel);
 
     _initialized = true;
   }
+
+  /// Get current sound preference.
+  /// Returns 'default', 'silent', or a custom name.
+  Future<String> getNotificationSound() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_soundPrefKey) ?? 'default';
+  }
+
+  /// Set notification sound preference.
+  Future<void> setNotificationSound(String sound) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_soundPrefKey, sound);
+  }
+
+  /// Get available sound options.
+  List<String> get availableSounds => const [
+        'default',
+        'silent',
+      ];
 
   Future<void> show({
     required String title,
     required String body,
     String? payload,
   }) async {
+    final soundPref = await getNotificationSound();
+
+    final bool isSilent = soundPref == 'silent';
+
+    final channelId =
+        isSilent ? _silentChannel.id : _defaultChannel.id;
+    final channelName =
+        isSilent ? _silentChannel.name : _defaultChannel.name;
+    final channelDesc =
+        isSilent ? _silentChannel.description : _defaultChannel.description;
+
     await _plugin.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
       body,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          _channel.id,
-          _channel.name,
-          channelDescription: _channel.description,
+          channelId,
+          channelName,
+          channelDescription: channelDesc,
           importance: Importance.max,
           priority: Priority.high,
           icon: '@drawable/ic_launcher_placeholder',
+          playSound: !isSilent,
+          enableVibration: !isSilent,
         ),
-        iOS: const DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          presentSound: !isSilent,
+        ),
       ),
       payload: payload,
     );
