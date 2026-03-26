@@ -4,12 +4,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/products/data/product_repository.dart';
 import 'package:mix/models/product_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -52,7 +55,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Image too large. Max allowed is 3MB'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -96,7 +98,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please complete all fields and select an image'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -145,7 +146,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Product created successfully'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       Navigator.of(context).pop();
@@ -154,7 +154,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to add product: $e'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -176,87 +175,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeScope.of(context);
-    const bg = Color(0xFF0F1115);
-    const card = Color(0xFF171A21);
-    const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF7C1820);
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                color: gold,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: wine,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Add Product',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Toggle theme',
-            onPressed: () =>
-                themeController.toggleDarkMode(!themeController.isDarkMode),
-            icon: Icon(
-              themeController.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return AppPageScaffold(
+      title: 'Add Product',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
+          AppSurfaceCard(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: card,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.white10),
-            ),
+            borderRadius: BorderRadius.circular(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Create a new product',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                const AppSectionTitle(
+                  title: 'Create a new product',
+                  spacingBottom: 16,
                 ),
-                const SizedBox(height: 16),
                 _Field(controller: _nameCtrl, hint: 'Product name'),
                 const SizedBox(height: 12),
                 _Field(controller: _descCtrl, hint: 'Description', maxLines: 4),
@@ -271,7 +206,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 Text(
                   'Categories',
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -293,14 +228,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           selected: selected,
                           onSelected: (value) =>
                               _toggleCategory(category, value),
-                          selectedColor: gold,
-                          backgroundColor: const Color(0xFF11141A),
+                          selectedColor: colors.brandPrimary,
+                          backgroundColor: colors.surfaceAlt,
                           labelStyle: GoogleFonts.poppins(
-                            color: selected ? Colors.black : Colors.white,
+                            color: selected ? Colors.white : colors.textPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                           side: BorderSide(
-                            color: selected ? gold : Colors.white12,
+                            color: selected ? colors.brandPrimary : colors.borderSoft,
                           ),
                         );
                       }).toList(),
@@ -333,32 +268,32 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: gold,
+                  activeColor: colors.brandPrimary,
                   value: _featured,
                   onChanged: (v) => setState(() => _featured = v),
                   title: Text(
                     'Featured product',
-                    style: GoogleFonts.poppins(color: Colors.white),
+                    style: GoogleFonts.poppins(color: colors.textPrimary),
                   ),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: gold,
+                  activeColor: colors.brandPrimary,
                   value: _isTrending,
                   onChanged: (v) => setState(() => _isTrending = v),
                   title: Text(
                     'Trending product',
-                    style: GoogleFonts.poppins(color: Colors.white),
+                    style: GoogleFonts.poppins(color: colors.textPrimary),
                   ),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: gold,
+                  activeColor: colors.brandPrimary,
                   value: _inStock,
                   onChanged: (v) => setState(() => _inStock = v),
                   title: Text(
                     'In stock',
-                    style: GoogleFonts.poppins(color: Colors.white),
+                    style: GoogleFonts.poppins(color: colors.textPrimary),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -368,31 +303,31 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     height: 200,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF11141A),
+                      color: colors.surfaceAlt,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white12),
+                      border: Border.all(color: colors.borderSoft),
                     ),
                     child: _selectedImage == null
                         ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.add_photo_alternate_outlined,
-                                color: Colors.white70,
+                                color: colors.textSecondary,
                                 size: 40,
                               ),
                               const SizedBox(height: 12),
                               Text(
                                 'Tap to select product image',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white70,
+                                  color: colors.textSecondary,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Max image size: 3MB',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white38,
+                                  color: colors.textSecondary.withOpacity(0.7),
                                   fontSize: 11,
                                 ),
                               ),
@@ -414,8 +349,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: gold,
-                      foregroundColor: Colors.black,
+                      backgroundColor: colors.brandPrimary,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -459,20 +394,18 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return TextField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: Colors.white),
+      style: GoogleFonts.poppins(color: colors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(color: Colors.white54),
+        hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
         filled: true,
-        fillColor: const Color(0xFF11141A),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
+        fillColor: colors.surfaceAlt,
       ),
     );
   }

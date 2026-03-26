@@ -1,86 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/screens/admin_reassignment_screen.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_status_chip.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class AdminEscalationDashboardScreen extends StatelessWidget {
   AdminEscalationDashboardScreen({super.key});
 
   final FirebaseService _firebaseService = FirebaseService();
 
-  Color _statusColor(String status) {
+  Color _statusColor(BuildContext context, String status) {
+    final colors = context.appColors;
     switch (status) {
       case 'completed':
       case 'delivered':
-        return Colors.green;
+        return colors.success;
       case 'cancelled':
-        return Colors.redAccent;
+        return colors.error;
       case 'processing':
       case 'ride_in_progress':
       case 'delivery_in_progress':
-        return Colors.blueAccent;
+        return colors.info;
       case 'on_the_way':
-        return Colors.orange;
+        return colors.warning;
       default:
-        return const Color(0xFFC29B40);
+        return colors.brandPrimary;
     }
-  }
-
-  Widget _sectionTitle(String text) {
-    return Builder(
-      builder: (context) => Text(
-        text,
-        style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeScope.of(context);
+    final colors = context.appColors;
     final isSuperAdmin =
         _firebaseService.currentUser?.uid == AppConstants.superAdminUid;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F1115),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F1115),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          'Escalation Dashboard',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Toggle theme',
-            onPressed: () =>
-                themeController.toggleDarkMode(!themeController.isDarkMode),
-            icon: Icon(
-              themeController.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return AppPageScaffold(
+      title: 'Escalation Dashboard',
       body: !isSuperAdmin
           ? Center(
               child: Text(
                 'Only super admin can view escalations',
-                style: GoogleFonts.poppins(color: Colors.white70),
+                style: GoogleFonts.poppins(color: colors.textSecondary),
               ),
             )
           : StreamBuilder<List<RideModel>>(
@@ -97,7 +64,7 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                       return Center(
                         child: Text(
                           'No escalated requests right now',
-                          style: GoogleFonts.poppins(color: Colors.white70),
+                          style: GoogleFonts.poppins(color: colors.textSecondary),
                         ),
                       );
                     }
@@ -105,28 +72,21 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                     return ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
-                        Container(
+                        AppSurfaceCard(
                           margin: const EdgeInsets.only(bottom: 18),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFC29B40).withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: const Color(0xFFC29B40).withOpacity(0.25),
-                            ),
-                          ),
+                          color: colors.brandPrimary.withOpacity(0.10),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.warning_amber_rounded,
-                                color: Color(0xFFC29B40),
+                                color: colors.brandPrimary,
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   'Escalated requests are items that could not be assigned properly and now require super admin action.',
                                   style: GoogleFonts.poppins(
-                                    color: Colors.white,
+                                    color: colors.textPrimary,
                                     fontSize: 12.5,
                                   ),
                                 ),
@@ -135,19 +95,15 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                           ),
                         ),
                         if (escalatedRides.isNotEmpty) ...[
-                          _sectionTitle('Escalated Rides & Deliveries'),
-                          const SizedBox(height: 12),
+                          const AppSectionTitle(
+                            title: 'Escalated Rides & Deliveries',
+                            spacingBottom: 12,
+                          ),
                           ...escalatedRides.map((ride) {
                             final isDelivery = ride.type == 'delivery';
 
-                            return Container(
+                            return AppSurfaceCard(
                               margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF171A21),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: Colors.white10),
-                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -160,27 +116,13 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                             ? 'Escalated Delivery'
                                             : 'Escalated Ride',
                                         style: GoogleFonts.poppins(
-                                          color: Colors.white,
+                                          color: colors.textPrimary,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.redAccent.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(999),
-                                        ),
-                                        child: Text(
-                                          'Escalated',
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.redAccent,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
+                                      const AppStatusChip(
+                                        label: 'Escalated',
+                                        tone: AppStatusChipTone.error,
                                       ),
                                     ],
                                   ),
@@ -188,21 +130,21 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                   Text(
                                     '${ride.pickup} → ${ride.destination}',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white70,
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Status: ${ride.status}',
                                     style: GoogleFonts.poppins(
-                                      color: _statusColor(ride.status),
+                                      color: _statusColor(context, ride.status),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                   Text(
                                     'Assignment Method: ${ride.assignmentMethod ?? 'unknown'}',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white54,
+                                      color: colors.textSecondary,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -210,7 +152,7 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                     Text(
                                       'Current Owner: ${ride.assignedAdminName}',
                                       style: GoogleFonts.poppins(
-                                        color: Colors.white54,
+                                        color: colors.textSecondary,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -244,7 +186,6 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             const SnackBar(
                                               content: Text('Ride reset to searching'),
-                                              behavior: SnackBarBehavior.floating,
                                             ),
                                           );
                                         },
@@ -259,17 +200,13 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                           const SizedBox(height: 16),
                         ],
                         if (escalatedOrders.isNotEmpty) ...[
-                          _sectionTitle('Escalated Orders'),
-                          const SizedBox(height: 12),
+                          const AppSectionTitle(
+                            title: 'Escalated Orders',
+                            spacingBottom: 12,
+                          ),
                           ...escalatedOrders.map((order) {
-                            return Container(
+                            return AppSurfaceCard(
                               margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF171A21),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: Colors.white10),
-                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -280,27 +217,13 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                       Text(
                                         'Escalated Order',
                                         style: GoogleFonts.poppins(
-                                          color: Colors.white,
+                                          color: colors.textPrimary,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.redAccent.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(999),
-                                        ),
-                                        child: Text(
-                                          'Escalated',
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.redAccent,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
+                                      const AppStatusChip(
+                                        label: 'Escalated',
+                                        tone: AppStatusChipTone.error,
                                       ),
                                     ],
                                   ),
@@ -308,27 +231,27 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                   Text(
                                     'Order ID: ${order.id}',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white70,
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                   Text(
                                     'Address: ${order.deliveryAddress}',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white70,
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Status: ${order.status}',
                                     style: GoogleFonts.poppins(
-                                      color: _statusColor(order.status),
+                                      color: _statusColor(context, order.status),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                   Text(
                                     'Assignment Method: ${order.assignmentMethod}',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white54,
+                                      color: colors.textSecondary,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -336,7 +259,7 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                     Text(
                                       'Current Owner: ${order.assignedAdminName}',
                                       style: GoogleFonts.poppins(
-                                        color: Colors.white54,
+                                        color: colors.textSecondary,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -370,7 +293,6 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             const SnackBar(
                                               content: Text('Order reset to pending'),
-                                              behavior: SnackBarBehavior.floating,
                                             ),
                                           );
                                         },

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
-import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/auth/presentation/screens/login_screen.dart';
 import 'package:mix/features/favorites/presentation/screens/favorites_screen.dart';
@@ -14,6 +13,10 @@ import 'package:mix/services/firebase_auth_service.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
 import 'package:mix/services/local_notification_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -103,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        final colors = AppTheme.colorsOf(ctx);
+        final colors = ctx.appColors;
 
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -207,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) {
-        final colors = AppTheme.colorsOf(ctx);
+        final colors = ctx.appColors;
 
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -309,7 +312,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        final colors = AppTheme.colorsOf(ctx);
+        final colors = ctx.appColors;
 
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -368,7 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) {
-        final colors = AppTheme.colorsOf(ctx);
+        final colors = ctx.appColors;
 
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -428,7 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showNotificationSoundPicker() {
     final sounds = LocalNotificationService.instance.availableSounds;
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
 
     showModalBottomSheet<void>(
       context: context,
@@ -437,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        final sheetColors = AppTheme.colorsOf(ctx);
+        final sheetColors = ctx.appColors;
 
         return SafeArea(
           child: Padding(
@@ -535,215 +538,162 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildGuestContent(BuildContext context) {
+    final colors = context.appColors;
     final themeController = ThemeScope.of(context);
-    final colors = AppTheme.colorsOf(context);
 
-    if (_isGuest) {
-      final guestContent = CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(
-                [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colors.card,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.shadow,
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 92,
-                          height: 92,
-                          decoration: BoxDecoration(
-                            color: colors.brandPrimary.withOpacity(0.14),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: colors.brandPrimary.withOpacity(0.25),
-                            ),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate(
+              [
+                AppSurfaceCard(
+                  padding: const EdgeInsets.all(20),
+                  borderRadius: BorderRadius.circular(22),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 92,
+                        height: 92,
+                        decoration: BoxDecoration(
+                          color: colors.brandPrimary.withOpacity(0.14),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: colors.brandPrimary.withOpacity(0.25),
                           ),
-                          child: Center(
-                            child: Container(
-                              width: 58,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: colors.brandPrimary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'M',
-                                  style: GoogleFonts.cinzel(
-                                    color: colors.brandSecondary,
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.2,
-                                  ),
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 58,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              color: colors.brandPrimary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                'M',
+                                style: GoogleFonts.cinzel(
+                                  color: colors.brandSecondary,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Continue as Guest',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                          ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Continue as Guest',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Browse products freely. Sign in to save favorites, track orders, manage addresses, and enjoy the full Mix experience.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12.5,
-                            height: 1.5,
-                            color: colors.textSecondary,
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Browse products freely. Sign in to save favorites, track orders, manage addresses, and enjoy the full Mix experience.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12.5,
+                          height: 1.5,
+                          color: colors.textSecondary,
                         ),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: _goToLogin,
-                            icon: const Icon(Icons.login_rounded),
-                            label: Text(
-                              'Sign In / Create Account',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w700,
-                              ),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: _goToLogin,
+                          icon: const Icon(Icons.login_rounded),
+                          label: Text(
+                            'Sign In / Create Account',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _ProfileTile(
-                    icon: Icons.dark_mode_rounded,
-                    title: 'Dark mode',
-                    subtitle: 'Switch between light and dark theme',
-                    trailing: Switch(
-                      value: themeController.isDarkMode,
-                      onChanged: themeController.toggleDarkMode,
-                    ),
-                  ),
-                  _ProfileTile(
-                    icon: Icons.notifications_outlined,
-                    title: 'Notification sound',
-                    subtitle:
-                        'Current: ${_currentNotifSound == 'default' ? 'Default Sound' : 'Silent'}',
-                    onTap: _showNotificationSoundPicker,
-                  ),
-                  _ProfileTile(
-                    icon: Icons.favorite_border_rounded,
-                    title: 'Favorites',
-                    subtitle: 'Sign in to save your favorite products',
-                    onTap: _goToLogin,
-                  ),
-                  _ProfileTile(
-                    icon: Icons.location_on_outlined,
-                    title: 'Saved addresses',
-                    subtitle: 'Sign in to save delivery addresses',
-                    onTap: _goToLogin,
-                  ),
-                  _ProfileTile(
-                    icon: Icons.receipt_long_rounded,
-                    title: 'Orders',
-                    subtitle: 'Sign in to track your order history',
-                    onTap: _goToLogin,
-                  ),
-                  _ProfileTile(
-                    icon: Icons.support_agent_rounded,
-                    title: 'Help & support',
-                    subtitle: 'Chat with us on WhatsApp',
-                    onTap: _openWhatsAppSupport,
-                  ),
-                  _ProfileTile(
-                    icon: Icons.info_outline_rounded,
-                    title: 'About Mix',
-                    subtitle: "Learn more about Maamah's Mix",
-                    onTap: _showAboutDialog,
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Text(
-                      'Version 1.0.0',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: colors.textSecondary.withOpacity(0.6),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _ProfileTile(
+                  icon: Icons.dark_mode_rounded,
+                  title: 'Dark mode',
+                  subtitle: 'Switch between light and dark theme',
+                  trailing: Switch(
+                    value: themeController.isDarkMode,
+                    onChanged: themeController.toggleDarkMode,
+                  ),
+                ),
+                _ProfileTile(
+                  icon: Icons.notifications_outlined,
+                  title: 'Notification sound',
+                  subtitle:
+                      'Current: ${_currentNotifSound == 'default' ? 'Default Sound' : 'Silent'}',
+                  onTap: _showNotificationSoundPicker,
+                ),
+                _ProfileTile(
+                  icon: Icons.favorite_border_rounded,
+                  title: 'Favorites',
+                  subtitle: 'Sign in to save your favorite products',
+                  onTap: _goToLogin,
+                ),
+                _ProfileTile(
+                  icon: Icons.location_on_outlined,
+                  title: 'Saved addresses',
+                  subtitle: 'Sign in to save delivery addresses',
+                  onTap: _goToLogin,
+                ),
+                _ProfileTile(
+                  icon: Icons.receipt_long_rounded,
+                  title: 'Orders',
+                  subtitle: 'Sign in to track your order history',
+                  onTap: _goToLogin,
+                ),
+                _ProfileTile(
+                  icon: Icons.support_agent_rounded,
+                  title: 'Help & support',
+                  subtitle: 'Chat with us on WhatsApp',
+                  onTap: _openWhatsAppSupport,
+                ),
+                _ProfileTile(
+                  icon: Icons.info_outline_rounded,
+                  title: 'About Mix',
+                  subtitle: "Learn more about Maamah's Mix",
+                  onTap: _showAboutDialog,
+                ),
+                const SizedBox(height: 24),
+                Center(
+                  child: Text(
+                    'Version 1.0.0',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: colors.textSecondary.withOpacity(0.6),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+              ],
             ),
           ),
-        ],
-      );
-
-      if (!widget.showScaffold) {
-        return Scaffold(
-          backgroundColor: colors.scaffold,
-          body: SafeArea(child: guestContent),
-        );
-      }
-
-      return Scaffold(
-        backgroundColor: colors.scaffold,
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: colors.brandPrimary,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    'M',
-                    style: GoogleFonts.cinzel(
-                      color: colors.brandSecondary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Profile',
-                style: GoogleFonts.poppins(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
         ),
-        body: guestContent,
-      );
-    }
+      ],
+    );
+  }
 
-    final content = StreamBuilder<Map<String, dynamic>?>(
+  Widget _buildAuthenticatedContent(BuildContext context) {
+    final colors = context.appColors;
+    final themeController = ThemeScope.of(context);
+
+    return StreamBuilder<Map<String, dynamic>?>(
       stream: _firebaseService.watchUserProfile(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
@@ -773,19 +723,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate(
                   [
-                    Container(
+                    AppSurfaceCard(
                       padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: colors.card,
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.shadow,
-                            blurRadius: 14,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
+                      borderRadius: BorderRadius.circular(22),
                       child: Row(
                         children: [
                           GestureDetector(
@@ -796,8 +736,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 CircleAvatar(
                                   radius: 32,
-                                  backgroundColor:
-                                      colors.brandPrimary,
+                                  backgroundColor: colors.brandPrimary,
                                   backgroundImage: photoUrl.isNotEmpty
                                       ? NetworkImage(photoUrl)
                                       : null,
@@ -879,15 +818,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 if (_uploadingPhoto)
                                   Padding(
-                                    padding:
-                                        const EdgeInsets.only(top: 6),
+                                    padding: const EdgeInsets.only(top: 6),
                                     child: Row(
                                       children: [
                                         SizedBox(
                                           width: 12,
                                           height: 12,
-                                          child:
-                                              CircularProgressIndicator(
+                                          child: CircularProgressIndicator(
                                             strokeWidth: 1.5,
                                             color: colors.brandPrimary,
                                           ),
@@ -905,8 +842,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 if (_savingName)
                                   Padding(
-                                    padding:
-                                        const EdgeInsets.only(top: 6),
+                                    padding: const EdgeInsets.only(top: 6),
                                     child: Text(
                                       'Saving name...',
                                       style: GoogleFonts.poppins(
@@ -957,49 +893,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'Current: ${_currentNotifSound == 'default' ? 'Default Sound' : 'Silent'}',
                       onTap: _showNotificationSoundPicker,
                     ),
-                    Container(
+                    AppSurfaceCard(
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colors.card,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.shadow,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 16,
-                                backgroundColor:
-                                    colors.brandPrimary
-                                        .withOpacity(0.15),
-                                child: Icon(
-                                  Icons.location_on_rounded,
-                                  color: colors.brandPrimary,
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Saved addresses',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                            ],
+                          const AppSectionTitle(
+                            title: 'Saved addresses',
+                            spacingBottom: 8,
                           ),
-                          const SizedBox(height: 8),
                           Text(
                             selectedAddress.isEmpty
                                 ? 'No selected delivery address'
@@ -1047,17 +949,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     selectedAddress == address;
 
                                 return Container(
-                                  margin:
-                                      const EdgeInsets.only(top: 6),
-                                  padding:
-                                      const EdgeInsets.symmetric(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
                                     color: colors.surfaceAlt,
-                                    borderRadius:
-                                        BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isSelected
                                           ? colors.brandPrimary
@@ -1252,6 +1151,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    if (_isGuest) {
+      final guestContent = _buildGuestContent(context);
+
+      if (!widget.showScaffold) {
+        return Scaffold(
+          backgroundColor: colors.scaffold,
+          body: SafeArea(child: guestContent),
+        );
+      }
+
+      return AppPageScaffold(
+        title: 'Profile',
+        body: guestContent,
+      );
+    }
+
+    final content = _buildAuthenticatedContent(context);
 
     if (!widget.showScaffold) {
       return Scaffold(
@@ -1260,41 +1182,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: colors.scaffold,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: colors.brandPrimary,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: colors.brandSecondary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Profile',
-              style: GoogleFonts.poppins(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppPageScaffold(
+      title: 'Profile',
       body: content,
     );
   }
@@ -1311,21 +1200,9 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.card,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: colors.shadow,
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return AppSurfaceCard(
       child: Column(
         children: [
           Text(
@@ -1367,21 +1244,11 @@ class _ProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
 
-    return Container(
+    return AppSurfaceCard(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: colors.card,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: colors.shadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.zero,
       child: ListTile(
         onTap: onTap,
         shape: RoundedRectangleBorder(

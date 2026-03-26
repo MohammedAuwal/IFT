@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/models/place_suggestion_model.dart';
 import 'package:mix/services/geocoding_service.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class LocationSearchField extends StatefulWidget {
   final TextEditingController controller;
@@ -136,6 +137,7 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
   OverlayEntry _buildOverlay() {
     final renderBox = context.findRenderObject() as RenderBox;
     final size = renderBox.size;
+    final colors = context.appColors;
 
     return OverlayEntry(
       builder: (context) {
@@ -152,15 +154,16 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
                   maxHeight: 240,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: colors.shadow,
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
                   ],
+                  border: Border.all(color: colors.borderSoft),
                 ),
                 child: _loading
                     ? const Padding(
@@ -174,15 +177,15 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
                         shrinkWrap: true,
                         itemCount: _suggestions.length,
                         separatorBuilder: (_, __) =>
-                            Divider(height: 1, color: Colors.grey.shade200),
+                            Divider(height: 1, color: colors.borderSoft),
                         itemBuilder: (context, index) {
                           final suggestion = _suggestions[index];
 
                           return ListTile(
                             dense: true,
-                            leading: const Icon(
+                            leading: Icon(
                               Icons.location_on_outlined,
-                              color: Color(0xFFC29B40),
+                              color: colors.brandPrimary,
                             ),
                             title: Text(
                               suggestion.displayName,
@@ -191,6 +194,7 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
                               style: GoogleFonts.poppins(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w500,
+                                color: colors.textPrimary,
                               ),
                             ),
                             onTap: () => _selectSuggestion(suggestion),
@@ -232,6 +236,7 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final showInvalid =
         widget.controller.text.trim().isNotEmpty && !_hasSelectedSuggestion;
 
@@ -243,8 +248,10 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
           TextField(
             controller: widget.controller,
             focusNode: _focusNode,
+            style: GoogleFonts.poppins(color: colors.textPrimary),
             decoration: InputDecoration(
               hintText: widget.hintText,
+              hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
               prefixIcon: Icon(widget.prefixIcon),
               suffixIcon: widget.showCurrentLocationAction
                   ? IconButton(
@@ -253,17 +260,13 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
                       tooltip: 'Use current location',
                     )
                   : (_hasSelectedSuggestion
-                      ? const Icon(
+                      ? Icon(
                           Icons.check_circle_rounded,
-                          color: Colors.green,
+                          color: colors.success,
                         )
                       : null),
               filled: true,
-              fillColor: const Color(0xFFF5F5F5),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
+              fillColor: colors.surfaceAlt,
             ),
           ),
           if (showInvalid)
@@ -273,7 +276,7 @@ class _LocationSearchFieldState extends State<LocationSearchField> {
                 'Please choose a location from the suggestion list',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: Colors.redAccent,
+                  color: colors.error,
                   fontWeight: FontWeight.w500,
                 ),
               ),

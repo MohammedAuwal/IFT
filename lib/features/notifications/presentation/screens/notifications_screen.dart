@@ -5,11 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/constants/app_constants.dart';
 import 'package:mix/core/routing/app_router.dart';
-import 'package:mix/core/theme/app_theme.dart';
 import 'package:mix/features/shared/presentation/widgets/empty_state_card.dart';
 import 'package:mix/models/app_notification_model.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/notification_navigation_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_status_chip.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -18,53 +22,43 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
     final isGuest = FirebaseAuth.instance.currentUser == null;
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: colors.scaffold,
-      appBar: AppBar(
-        title: Text(
-          'Notifications',
-          style: GoogleFonts.poppins(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          if (!isGuest)
-            StreamBuilder<int>(
-              stream: firebaseService.watchUnreadNotificationCount(),
-              builder: (context, snapshot) {
-                final unreadCount = snapshot.data ?? 0;
+    return AppPageScaffold(
+      title: 'Notifications',
+      actions: [
+        if (!isGuest)
+          StreamBuilder<int>(
+            stream: firebaseService.watchUnreadNotificationCount(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
 
-                return TextButton(
-                  onPressed: unreadCount == 0
-                      ? null
-                      : () async {
-                          await firebaseService.markAllNotificationsAsRead();
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('All notifications marked as read'),
-                            ),
-                          );
-                        },
-                  child: Text(
-                    'Mark all',
-                    style: GoogleFonts.poppins(
-                      color: unreadCount == 0
-                          ? colors.textSecondary.withOpacity(0.5)
-                          : colors.brandPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
+              return TextButton(
+                onPressed: unreadCount == 0
+                    ? null
+                    : () async {
+                        await firebaseService.markAllNotificationsAsRead();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('All notifications marked as read'),
+                          ),
+                        );
+                      },
+                child: Text(
+                  'Mark all',
+                  style: GoogleFonts.poppins(
+                    color: unreadCount == 0
+                        ? colors.textSecondary.withOpacity(0.5)
+                        : colors.brandPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
                   ),
-                );
-              },
-            ),
-        ],
-      ),
+                ),
+              );
+            },
+          ),
+      ],
       body: isGuest
           ? _GuestNotificationsState(
               onSignIn: () async {
@@ -126,16 +120,9 @@ class NotificationsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (sectionIndex > 0) const SizedBox(height: 18),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Text(
-                            groupLabel,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: colors.textPrimary,
-                            ),
-                          ),
+                        AppSectionTitle(
+                          title: groupLabel,
+                          spacingBottom: 10,
                         ),
                         ...items.map((notification) {
                           return Padding(
@@ -227,7 +214,7 @@ class _DismissibleNotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
 
     return Dismissible(
       key: ValueKey('${notification.recipientCollection}_${notification.id}'),
@@ -248,7 +235,7 @@ class _DismissibleNotificationCard extends StatelessWidget {
         return await showDialog<bool>(
               context: context,
               builder: (ctx) {
-                final dialogColors = AppTheme.colorsOf(ctx);
+                final dialogColors = ctx.appColors;
 
                 return AlertDialog(
                   shape: RoundedRectangleBorder(
@@ -331,8 +318,19 @@ class _NotificationCard extends StatelessWidget {
     return Icons.notifications_active_outlined;
   }
 
+  AppStatusChipTone _toneForType(String type) {
+    final value = type.toLowerCase();
+
+    if (value.contains('order')) return AppStatusChipTone.info;
+    if (value.contains('delivery')) return AppStatusChipTone.success;
+    if (value.contains('ride')) return AppStatusChipTone.warning;
+    if (value.contains('escalation')) return AppStatusChipTone.error;
+    if (value.contains('admin')) return AppStatusChipTone.primary;
+    return AppStatusChipTone.neutral;
+  }
+
   Color _iconBgForType(BuildContext context, String type) {
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
     final value = type.toLowerCase();
 
     if (value.contains('order')) return colors.paleBlue;
@@ -356,35 +354,20 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
     final unread = !notification.isRead;
     final isAdminNotice =
         notification.recipientCollection == AppConstants.adminsCollection;
 
     return Material(
-      color: colors.card,
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Container(
+        child: AppSurfaceCard(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: unread
-                  ? colors.brandPrimary.withOpacity(0.32)
-                  : colors.border,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.shadow,
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            color: colors.card,
-          ),
+          borderRadius: BorderRadius.circular(20),
+          color: colors.card,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -441,31 +424,25 @@ class _NotificationCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        AppStatusChip(
+                          label: notification.type.replaceAll('_', ' '),
+                          tone: _toneForType(notification.type),
+                        ),
+                        if (isAdminNotice)
+                          const AppStatusChip(
+                            label: 'Admin',
+                            tone: AppStatusChipTone.primary,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
-                        if (isAdminNotice)
-                          Container(
-                            margin:
-                                const EdgeInsets.only(right: 8),
-                            padding:
-                                const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.palePurple,
-                              borderRadius:
-                                  BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              'Admin',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: colors.purple,
-                              ),
-                            ),
-                          ),
                         Expanded(
                           child: Text(
                             _formatTime(notification.createdAt),
@@ -480,8 +457,7 @@ class _NotificationCard extends StatelessWidget {
                           '← swipe to delete',
                           style: GoogleFonts.poppins(
                             fontSize: 9,
-                            color: colors.textSecondary
-                                .withOpacity(0.6),
+                            color: colors.textSecondary.withOpacity(0.6),
                           ),
                         ),
                         const SizedBox(width: 4),

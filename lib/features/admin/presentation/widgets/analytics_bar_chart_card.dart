@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class AnalyticsBarChartCard extends StatelessWidget {
   final String title;
@@ -17,6 +19,7 @@ class AnalyticsBarChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final entries = data.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -27,20 +30,14 @@ class AnalyticsBarChartCard extends StatelessWidget {
             .map((e) => e.value.toDouble())
             .reduce((a, b) => a > b ? a : b);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171A21),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: GoogleFonts.poppins(
-              color: Colors.white,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
@@ -50,13 +47,15 @@ class AnalyticsBarChartCard extends StatelessWidget {
             Text(
               emptyLabel,
               style: GoogleFonts.poppins(
-                color: Colors.white70,
+                color: colors.textSecondary,
                 fontSize: 12,
               ),
             )
           else
             ...topEntries.map((entry) {
-              final ratio = maxValue == 0 ? 0.0 : entry.value.toDouble() / maxValue;
+              final ratio = maxValue == 0
+                  ? 0.0
+                  : entry.value.toDouble() / maxValue;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Column(
@@ -70,7 +69,7 @@ class AnalyticsBarChartCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(
-                              color: Colors.white,
+                              color: colors.textPrimary,
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
                             ),
@@ -82,7 +81,7 @@ class AnalyticsBarChartCard extends StatelessWidget {
                               ? '₦${entry.value.toStringAsFixed(0)}'
                               : '${entry.value}',
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFFC29B40),
+                            color: colors.brandPrimary,
                             fontWeight: FontWeight.w700,
                             fontSize: 12,
                           ),
@@ -95,9 +94,9 @@ class AnalyticsBarChartCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: ratio.clamp(0.0, 1.0),
                         minHeight: 10,
-                        backgroundColor: Colors.white10,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFFC29B40),
+                        backgroundColor: colors.borderSoft,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colors.brandPrimary,
                         ),
                       ),
                     ),

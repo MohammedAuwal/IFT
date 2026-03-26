@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class ManageCategoriesScreen extends StatefulWidget {
   const ManageCategoriesScreen({super.key});
@@ -31,16 +33,16 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   Future<void> _removeCategory(String category) async {
     final confirmed = await showDialog<bool>(
           context: context,
-          builder: (_) => AlertDialog(
+          builder: (dialogContext) => AlertDialog(
             title: const Text('Remove Category'),
             content: Text('Remove "$category"?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () => Navigator.pop(dialogContext, false),
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () => Navigator.pop(dialogContext, true),
                 child: const Text('Remove'),
               ),
             ],
@@ -66,89 +68,24 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeScope.of(context);
-    const bg = Color(0xFF0F1115);
-    const card = Color(0xFF171A21);
-    const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF7C1820);
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                color: gold,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: wine,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Manage Categories',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Toggle theme',
-            onPressed: () =>
-                themeController.toggleDarkMode(!themeController.isDarkMode),
-            icon: Icon(
-              themeController.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return AppPageScaffold(
+      title: 'Manage Categories',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: card,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white10),
-            ),
+          AppSurfaceCard(
             child: Column(
               children: [
                 TextField(
                   controller: _categoryCtrl,
-                  style: GoogleFonts.poppins(color: Colors.white),
+                  style: GoogleFonts.poppins(color: colors.textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Category name',
-                    hintStyle: GoogleFonts.poppins(color: Colors.white54),
+                    hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
                     filled: true,
-                    fillColor: const Color(0xFF11141A),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
+                    fillColor: colors.surfaceAlt,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -156,10 +93,6 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _addCategory,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: gold,
-                      foregroundColor: Colors.black,
-                    ),
                     child: const Text('Add Category'),
                   ),
                 ),
@@ -175,7 +108,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               if (categories.isEmpty) {
                 return Text(
                   'No categories yet',
-                  style: GoogleFonts.poppins(color: Colors.white70),
+                  style: GoogleFonts.poppins(color: colors.textSecondary),
                 );
               }
 
@@ -187,23 +120,19 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     'Featured',
                   ].contains(category);
 
-                  return Container(
+                  return AppSurfaceCard(
                     margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: card,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white10),
-                    ),
+                    padding: EdgeInsets.zero,
                     child: ListTile(
                       title: Text(
                         category,
-                        style: GoogleFonts.poppins(color: Colors.white),
+                        style: GoogleFonts.poppins(color: colors.textPrimary),
                       ),
                       subtitle: isProtected
                           ? Text(
                               'Default category',
                               style: GoogleFonts.poppins(
-                                color: Colors.white54,
+                                color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             )
@@ -217,8 +146,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                         icon: Icon(
                           Icons.delete_outline,
                           color: isProtected
-                              ? Colors.white24
-                              : Colors.redAccent,
+                              ? colors.textSecondary.withOpacity(0.4)
+                              : colors.error,
                         ),
                       ),
                     ),

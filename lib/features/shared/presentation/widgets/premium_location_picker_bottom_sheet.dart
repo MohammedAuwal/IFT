@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/features/rider/presentation/widgets/location_search_field.dart';
 import 'package:mix/models/place_suggestion_model.dart';
 import 'package:mix/services/location_service.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class PremiumLocationPickerBottomSheet extends StatefulWidget {
   final String title;
@@ -94,6 +95,7 @@ class _PremiumLocationPickerBottomSheetState
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final colors = context.appColors;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
@@ -102,9 +104,9 @@ class _PremiumLocationPickerBottomSheetState
         top: false,
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -113,7 +115,7 @@ class _PremiumLocationPickerBottomSheetState
                 width: 42,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: colors.border,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -126,7 +128,7 @@ class _PremiumLocationPickerBottomSheetState
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1D1D1F),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -154,7 +156,7 @@ class _PremiumLocationPickerBottomSheetState
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.grey.shade600,
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -166,13 +168,6 @@ class _PremiumLocationPickerBottomSheetState
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _confirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC29B40),
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
                   child: Text(
                     'Use This Location',
                     style: GoogleFonts.poppins(

@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class AdminReassignmentScreen extends StatelessWidget {
   final RideModel? ride;
@@ -48,7 +52,6 @@ class AdminReassignmentScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Request reassigned successfully'),
-        behavior: SnackBarBehavior.floating,
       ),
     );
     Navigator.of(context).pop();
@@ -56,9 +59,7 @@ class AdminReassignmentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF0F1115);
-    const card = Color(0xFF171A21);
-    const gold = Color(0xFFC29B40);
+    final colors = context.appColors;
 
     final title = ride != null
         ? (ride!.type == 'delivery' ? 'Reassign Delivery' : 'Reassign Ride')
@@ -68,20 +69,8 @@ class AdminReassignmentScreen extends StatelessWidget {
         ? '${ride!.pickup} → ${ride!.destination}'
         : order!.deliveryAddress;
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+    return AppPageScaffold(
+      title: title,
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _firebaseService.watchAdmins(),
         builder: (context, snapshot) {
@@ -91,7 +80,7 @@ class AdminReassignmentScreen extends StatelessWidget {
             return Center(
               child: Text(
                 'No admins available',
-                style: GoogleFonts.poppins(color: Colors.white70),
+                style: GoogleFonts.poppins(color: colors.textSecondary),
               ),
             );
           }
@@ -99,43 +88,28 @@ class AdminReassignmentScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
+              AppSurfaceCard(
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: card,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white10),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Request Details',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    const AppSectionTitle(
+                      title: 'Request Details',
+                      spacingBottom: 8,
                     ),
-                    const SizedBox(height: 8),
                     Text(
                       subtitle,
                       style: GoogleFonts.poppins(
-                        color: Colors.white70,
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              Text(
-                'Choose Admin',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
+              AppSectionTitle(
+                title: 'Choose Admin',
+                spacingBottom: 12,
               ),
-              const SizedBox(height: 12),
               ...admins.map((admin) {
                 final displayName =
                     (admin['displayName'] ?? admin['email'] ?? '').toString();
@@ -145,19 +119,15 @@ class AdminReassignmentScreen extends StatelessWidget {
                 final maxLoad =
                     ((admin['maxActiveAssignments'] ?? 20) as num).toInt();
 
-                return Container(
+                return AppSurfaceCard(
                   margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: card,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white10),
-                  ),
+                  padding: EdgeInsets.zero,
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(14),
                     title: Text(
                       displayName,
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -168,7 +138,7 @@ class AdminReassignmentScreen extends StatelessWidget {
                         Text(
                           email,
                           style: GoogleFonts.poppins(
-                            color: Colors.white60,
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -178,7 +148,7 @@ class AdminReassignmentScreen extends StatelessWidget {
                             child: Text(
                               baseAddress,
                               style: GoogleFonts.poppins(
-                                color: Colors.white54,
+                                color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -191,8 +161,8 @@ class AdminReassignmentScreen extends StatelessWidget {
                                 : 'Paused • Max load: $maxLoad',
                             style: GoogleFonts.poppins(
                               color: isActive
-                                  ? Colors.greenAccent
-                                  : Colors.orangeAccent,
+                                  ? colors.success
+                                  : colors.warning,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -202,10 +172,6 @@ class AdminReassignmentScreen extends StatelessWidget {
                     ),
                     trailing: ElevatedButton(
                       onPressed: () => _reassignTo(context, admin),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: gold,
-                        foregroundColor: Colors.black,
-                      ),
                       child: Text(
                         'Assign',
                         style: GoogleFonts.poppins(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class ComparisonDuelCard extends StatelessWidget {
   final String title;
@@ -19,20 +21,16 @@ class ComparisonDuelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171A21),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
+    final colors = context.appColors;
+
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: GoogleFonts.poppins(
-              color: Colors.white,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 15,
             ),
@@ -45,20 +43,20 @@ class ComparisonDuelCard extends StatelessWidget {
                   label: 'Best',
                   name: bestLabel,
                   value: bestValue,
-                  color: Colors.greenAccent,
+                  color: colors.success,
                 ),
               ),
               Container(
                 width: 1,
                 height: 70,
-                color: Colors.white10,
+                color: colors.borderSoft,
               ),
               Expanded(
                 child: _Side(
                   label: 'Needs Attention',
                   name: worstLabel,
                   value: worstValue,
-                  color: Colors.orangeAccent,
+                  color: colors.warning,
                 ),
               ),
             ],
@@ -84,6 +82,8 @@ class _Side extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
@@ -103,7 +103,7 @@ class _Side extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
-              color: Colors.white,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
@@ -112,7 +112,7 @@ class _Side extends StatelessWidget {
           Text(
             value,
             style: GoogleFonts.poppins(
-              color: const Color(0xFFC29B40),
+              color: colors.brandPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),

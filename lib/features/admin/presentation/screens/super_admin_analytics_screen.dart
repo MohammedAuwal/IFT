@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/widgets/analytics_bar_chart_card.dart';
 import 'package:mix/features/admin/presentation/widgets/comparison_duel_card.dart';
 import 'package:mix/features/admin/presentation/widgets/performance_status_card.dart';
@@ -9,6 +8,10 @@ import 'package:mix/features/admin/presentation/widgets/top_rank_card.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 enum AnalyticsRange {
   today,
@@ -191,17 +194,6 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
     return series;
   }
 
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.poppins(
-        color: Colors.white,
-        fontWeight: FontWeight.w700,
-        fontSize: 18,
-      ),
-    );
-  }
-
   Future<void> _pickCustomRange() async {
     final now = DateTime.now();
     final result = await showDateRangePicker(
@@ -225,22 +217,24 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final colors = context.appColors;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF171A21),
+          color: colors.card,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(color: colors.borderSoft),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: value,
-            dropdownColor: const Color(0xFF171A21),
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
-            iconEnabledColor: Colors.white,
+            dropdownColor: colors.surfaceAlt,
+            style: GoogleFonts.poppins(color: colors.textPrimary, fontSize: 12),
+            iconEnabledColor: colors.iconPrimary,
             isExpanded: true,
-            hint: Text(label, style: GoogleFonts.poppins(color: Colors.white70)),
+            hint: Text(label, style: GoogleFonts.poppins(color: colors.textSecondary)),
             items: items
                 .map(
                   (e) => DropdownMenuItem<String>(
@@ -277,70 +271,17 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeScope.of(context);
+    final colors = context.appColors;
     final isSuperAdmin =
         _firebaseService.currentUser?.uid == AppConstants.superAdminUid;
-    const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF7C1820);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F1115),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F1115),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                color: gold,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: wine,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Super Admin Analytics',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Toggle theme',
-            onPressed: () =>
-                themeController.toggleDarkMode(!themeController.isDarkMode),
-            icon: Icon(
-              themeController.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return AppPageScaffold(
+      title: 'Super Admin Analytics',
       body: !isSuperAdmin
           ? Center(
               child: Text(
                 'Only super admin can view analytics',
-                style: GoogleFonts.poppins(color: Colors.white70),
+                style: GoogleFonts.poppins(color: colors.textSecondary),
               ),
             )
           : StreamBuilder<List<OrderModel>>(
@@ -533,17 +474,9 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                         return ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
-                            Container(
+                            AppSurfaceCard(
                               margin: const EdgeInsets.only(bottom: 18),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFC29B40).withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color:
-                                      const Color(0xFFC29B40).withOpacity(0.25),
-                                ),
-                              ),
+                              color: colors.brandPrimary.withOpacity(0.10),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -553,7 +486,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                         child: Text(
                                           'Analytics range: $_rangeLabel',
                                           style: GoogleFonts.poppins(
-                                            color: Colors.white,
+                                            color: colors.textPrimary,
                                             fontWeight: FontWeight.w600,
                                             fontSize: 13,
                                           ),
@@ -562,12 +495,11 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                       DropdownButtonHideUnderline(
                                         child: DropdownButton<AnalyticsRange>(
                                           value: _range,
-                                          dropdownColor:
-                                              const Color(0xFF171A21),
+                                          dropdownColor: colors.surfaceAlt,
                                           style: GoogleFonts.poppins(
-                                            color: Colors.white,
+                                            color: colors.textPrimary,
                                           ),
-                                          iconEnabledColor: Colors.white,
+                                          iconEnabledColor: colors.iconPrimary,
                                           items: const [
                                             DropdownMenuItem(
                                               value: AnalyticsRange.today,
@@ -737,8 +669,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               ],
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Performance Health'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Performance Health'),
                             Row(
                               children: [
                                 Expanded(
@@ -746,7 +677,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                     title: 'Order Completion Rate',
                                     value: '${orderCompletionRate.toStringAsFixed(1)}%',
                                     subtitle: 'Delivered orders / total orders',
-                                    accentColor: Colors.greenAccent,
+                                    accentColor: colors.success,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -755,7 +686,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                     title: 'Order Cancellation Rate',
                                     value: '${orderCancellationRate.toStringAsFixed(1)}%',
                                     subtitle: 'Cancelled orders / total orders',
-                                    accentColor: Colors.redAccent,
+                                    accentColor: colors.error,
                                   ),
                                 ),
                               ],
@@ -768,7 +699,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                     title: 'Ride Completion Rate',
                                     value: '${rideCompletionRate.toStringAsFixed(1)}%',
                                     subtitle: 'Completed rides / total movement',
-                                    accentColor: Colors.greenAccent,
+                                    accentColor: colors.success,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -777,14 +708,13 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                     title: 'Ride Cancellation Rate',
                                     value: '${rideCancellationRate.toStringAsFixed(1)}%',
                                     subtitle: 'Cancelled rides / total movement',
-                                    accentColor: Colors.orangeAccent,
+                                    accentColor: colors.warning,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Top Performers'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Top Performers'),
                             Row(
                               children: [
                                 Expanded(
@@ -825,8 +755,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               ],
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Best vs Needs Attention'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Best vs Needs Attention'),
                             ComparisonDuelCard(
                               title: 'Admin Sales Comparison',
                               bestLabel: topAdminEntry?.key ?? 'N/A',
@@ -863,8 +792,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                   : '₦${worstAreaEntry.value.toStringAsFixed(2)}',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Sales Trend'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Sales Trend'),
                             AnalyticsBarChartCard(
                               title: 'Daily Sales',
                               data: salesSeries,
@@ -872,8 +800,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No sales trend data yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Order Trend'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Order Trend'),
                             AnalyticsBarChartCard(
                               title: 'Daily Orders',
                               data: orderSeries,
@@ -881,8 +808,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No order trend data yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Ride & Delivery Trend'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Ride & Delivery Trend'),
                             AnalyticsBarChartCard(
                               title: 'Daily Movement',
                               data: rideSeries,
@@ -890,8 +816,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No ride trend data yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Sales by Admin'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Sales by Admin'),
                             AnalyticsBarChartCard(
                               title: 'Top Admin Sales',
                               data: salesByAdmin,
@@ -899,8 +824,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No sales data yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Sales by State'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Sales by State'),
                             AnalyticsBarChartCard(
                               title: 'Top State Sales',
                               data: salesByState,
@@ -908,8 +832,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No state sales data yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Sales by Area'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Sales by Area'),
                             AnalyticsBarChartCard(
                               title: 'Top Area Sales',
                               data: salesByArea,
@@ -917,8 +840,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No area sales data yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Orders by Admin'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Orders by Admin'),
                             AnalyticsBarChartCard(
                               title: 'Admin Order Count',
                               data: ordersByAdmin,
@@ -926,8 +848,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No admin order activity yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Rides by Admin'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Rides by Admin'),
                             AnalyticsBarChartCard(
                               title: 'Admin Ride Count',
                               data: ridesByAdmin,
@@ -935,8 +856,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No ride activity yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Deliveries by Admin'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Deliveries by Admin'),
                             AnalyticsBarChartCard(
                               title: 'Admin Delivery Count',
                               data: deliveriesByAdmin,
@@ -944,8 +864,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                               emptyLabel: 'No delivery activity yet',
                             ),
                             const SizedBox(height: 20),
-                            _sectionTitle('Manual Reassignments by Admin'),
-                            const SizedBox(height: 12),
+                            const AppSectionTitle(title: 'Manual Reassignments by Admin'),
                             AnalyticsBarChartCard(
                               title: 'Reassignment Count',
                               data: reassignmentsByAdmin,
@@ -976,19 +895,15 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171A21),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
+    final colors = context.appColors;
+
+    return AppSurfaceCard(
       child: Column(
         children: [
           Text(
             value,
             style: GoogleFonts.poppins(
-              color: const Color(0xFFC29B40),
+              color: colors.brandPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 19,
             ),
@@ -998,7 +913,7 @@ class _MetricCard extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              color: Colors.white70,
+              color: colors.textSecondary,
               fontSize: 12,
             ),
           ),

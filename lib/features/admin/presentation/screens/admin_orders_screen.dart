@@ -2,12 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/core/theme/app_theme.dart';
-import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/admin/presentation/screens/admin_reassignment_screen.dart';
 import 'package:mix/models/order_model.dart';
 import 'package:mix/models/ride_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_status_chip.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class AdminOrdersScreen extends StatelessWidget {
   AdminOrdersScreen({super.key});
@@ -26,35 +28,12 @@ class AdminOrdersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeScope.of(context);
-    final colors = AppTheme.colorsOf(context);
+    final colors = context.appColors;
     final isSuperAdmin =
         FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
 
-    return Scaffold(
-      backgroundColor: colors.scaffold,
-      appBar: AppBar(
-        title: Text(
-          isSuperAdmin ? 'Manage All Orders' : 'My Assigned Orders',
-          style: GoogleFonts.poppins(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Toggle theme',
-            onPressed: () =>
-                themeController.toggleDarkMode(!themeController.isDarkMode),
-            icon: Icon(
-              themeController.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: colors.iconPrimary,
-            ),
-          ),
-        ],
-      ),
+    return AppPageScaffold(
+      title: isSuperAdmin ? 'Manage All Orders' : 'My Assigned Orders',
       body: FutureBuilder<bool>(
         future: firebaseService.isAdmin(),
         builder: (context, adminSnapshot) {
@@ -109,21 +88,8 @@ class AdminOrdersScreen extends StatelessWidget {
                       final order = orders[i];
                       final deliveryRide = _findDeliveryRide(rides, order);
 
-                      return Container(
+                      return AppSurfaceCard(
                         margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colors.card,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: colors.borderSoft),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.shadow,
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -139,23 +105,9 @@ class AdminOrdersScreen extends StatelessWidget {
                                   ),
                                 ),
                                 if (order.escalatedToSuperAdmin)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.error.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      'Escalated',
-                                      style: GoogleFonts.poppins(
-                                        color: colors.error,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
+                                  const AppStatusChip(
+                                    label: 'Escalated',
+                                    tone: AppStatusChipTone.error,
                                   ),
                               ],
                             ),

@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/features/shared/presentation/widgets/premium_location_picker_bottom_sheet.dart';
 import 'package:mix/models/place_suggestion_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class ManageAdminLocationsScreen extends StatefulWidget {
   const ManageAdminLocationsScreen({super.key});
@@ -41,7 +44,6 @@ class _ManageAdminLocationsScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Vendor pickup location updated'),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -92,7 +94,6 @@ class _ManageAdminLocationsScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Your admin coverage location has been updated'),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -113,9 +114,10 @@ class _ManageAdminLocationsScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          value ? 'Admin is now active for assignments' : 'Admin paused from assignments',
+          value
+              ? 'Admin is now active for assignments'
+              : 'Admin paused from assignments',
         ),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -136,7 +138,6 @@ class _ManageAdminLocationsScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Workload settings updated'),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -157,67 +158,11 @@ class _ManageAdminLocationsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeScope.of(context);
-    const bg = Color(0xFF0F1115);
-    const card = Color(0xFF171A21);
-    const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF7C1820);
-
+    final colors = context.appColors;
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                color: gold,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: wine,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Admin Locations',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Toggle theme',
-            onPressed: () =>
-                themeController.toggleDarkMode(!themeController.isDarkMode),
-            icon: Icon(
-              themeController.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return AppPageScaffold(
+      title: 'Admin Locations',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -226,45 +171,28 @@ class _ManageAdminLocationsScreenState
             builder: (context, snapshot) {
               final vendorAddress = snapshot.data ?? 'Nigeria';
 
-              return Container(
-                padding: const EdgeInsets.all(18),
+              return AppSurfaceCard(
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: card,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white10),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Vendor Pickup Location',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 17,
-                      ),
+                    const AppSectionTitle(
+                      title: 'Vendor Pickup Location',
+                      subtitle:
+                          'This is the pickup point used by the delivery engine for all customer orders.',
+                      spacingBottom: 14,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'This is the pickup point used by the delivery engine for all customer orders.',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white70,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF11141A),
+                        color: colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         vendorAddress,
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color: colors.textPrimary,
                           height: 1.4,
                         ),
                       ),
@@ -274,13 +202,6 @@ class _ManageAdminLocationsScreenState
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () => _changeVendorAddress(vendorAddress),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: gold,
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
                         icon: const Icon(Icons.edit_location_alt_rounded),
                         label: Text(
                           'Change Pickup Location',
@@ -330,40 +251,23 @@ class _ManageAdminLocationsScreenState
                   _maxLoadCtrl.text = myMaxLoad.toString();
                 }
 
-                return Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: card,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white10),
-                  ),
+                return AppSurfaceCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'My Admin Coverage',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 17,
-                        ),
+                      const AppSectionTitle(
+                        title: 'My Admin Coverage',
+                        subtitle:
+                            'Set your operating base so nearby users and orders can be assigned to you first.',
+                        spacingBottom: 14,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Set your operating base so nearby users and orders can be assigned to you first.',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white70,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
                       if (myBaseAddress.isNotEmpty)
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF11141A),
+                            color: colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
@@ -372,7 +276,7 @@ class _ManageAdminLocationsScreenState
                               Text(
                                 'Base: $myBaseAddress',
                                 style: GoogleFonts.poppins(
-                                  color: Colors.white,
+                                  color: colors.textPrimary,
                                   height: 1.4,
                                 ),
                               ),
@@ -381,7 +285,7 @@ class _ManageAdminLocationsScreenState
                                 Text(
                                   'States: ${myStates.join(', ')}',
                                   style: GoogleFonts.poppins(
-                                    color: Colors.white70,
+                                    color: colors.textSecondary,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -390,7 +294,7 @@ class _ManageAdminLocationsScreenState
                                 Text(
                                   'Areas: ${myAreas.join(', ')}',
                                   style: GoogleFonts.poppins(
-                                    color: Colors.white70,
+                                    color: colors.textSecondary,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -399,68 +303,38 @@ class _ManageAdminLocationsScreenState
                         ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        activeColor: gold,
+                        activeColor: colors.brandPrimary,
                         value: myActive,
                         onChanged: _toggleAdminActive,
                         title: Text(
                           'Active for assignments',
-                          style: GoogleFonts.poppins(color: Colors.white),
+                          style: GoogleFonts.poppins(color: colors.textPrimary),
                         ),
                         subtitle: Text(
                           'Turn off if you do not want to receive nearby requests now.',
                           style: GoogleFonts.poppins(
-                            color: Colors.white54,
+                            color: colors.textSecondary,
                             fontSize: 11,
                           ),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      TextField(
+                      _Field(
                         controller: _radiusCtrl,
+                        hint: 'Service radius in km',
                         keyboardType: TextInputType.number,
-                        style: GoogleFonts.poppins(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Service radius in km',
-                          hintStyle: GoogleFonts.poppins(color: Colors.white54),
-                          filled: true,
-                          fillColor: const Color(0xFF11141A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 12),
-                      TextField(
+                      _Field(
                         controller: _areasCtrl,
-                        style: GoogleFonts.poppins(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText:
-                              'Coverage areas (comma separated, e.g. Ikeja, Yaba, Lekki)',
-                          hintStyle: GoogleFonts.poppins(color: Colors.white54),
-                          filled: true,
-                          fillColor: const Color(0xFF11141A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
+                        hint:
+                            'Coverage areas (comma separated, e.g. Ikeja, Yaba, Lekki)',
                       ),
                       const SizedBox(height: 12),
-                      TextField(
+                      _Field(
                         controller: _maxLoadCtrl,
+                        hint: 'Maximum active assignments',
                         keyboardType: TextInputType.number,
-                        style: GoogleFonts.poppins(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Maximum active assignments',
-                          hintStyle: GoogleFonts.poppins(color: Colors.white54),
-                          filled: true,
-                          fillColor: const Color(0xFF11141A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -468,13 +342,6 @@ class _ManageAdminLocationsScreenState
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () => _setMyAdminBase(myStates, myActive),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: gold,
-                                foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
                               icon: const Icon(Icons.my_location_rounded),
                               label: Text(
                                 'Set My Base Location',
@@ -499,6 +366,35 @@ class _ManageAdminLocationsScreenState
               },
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _Field extends StatelessWidget {
+  const _Field({
+    required this.controller,
+    required this.hint,
+    this.keyboardType,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: GoogleFonts.poppins(color: colors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
+        filled: true,
+        fillColor: colors.surfaceAlt,
       ),
     );
   }

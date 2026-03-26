@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class EmptyStateCard extends StatelessWidget {
   final IconData icon;
@@ -19,25 +21,17 @@ class EmptyStateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Center(
-      child: Container(
+      child: AppSurfaceCard(
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 42, color: const Color(0xFFC29B40)),
+            Icon(icon, size: 42, color: colors.brandPrimary),
             const SizedBox(height: 12),
             Text(
               title,
@@ -45,6 +39,7 @@ class EmptyStateCard extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -53,7 +48,7 @@ class EmptyStateCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: Colors.black54,
+                color: colors.textSecondary,
               ),
             ),
             if (buttonText != null && onPressed != null) ...[

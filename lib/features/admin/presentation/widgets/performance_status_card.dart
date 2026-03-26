@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class PerformanceStatusCard extends StatelessWidget {
   final String title;
@@ -17,20 +19,16 @@ class PerformanceStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171A21),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
+    final colors = context.appColors;
+
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: GoogleFonts.poppins(
-              color: Colors.white70,
+              color: colors.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -48,7 +46,7 @@ class PerformanceStatusCard extends StatelessWidget {
           Text(
             subtitle,
             style: GoogleFonts.poppins(
-              color: Colors.white54,
+              color: colors.textSecondary.withOpacity(0.85),
               fontSize: 11,
             ),
           ),

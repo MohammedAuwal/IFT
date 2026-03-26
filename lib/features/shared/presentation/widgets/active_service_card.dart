@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mix/shared/widgets/app_status_chip.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class ActiveServiceCard extends StatelessWidget {
   final IconData icon;
@@ -21,28 +24,37 @@ class ActiveServiceCard extends StatelessWidget {
     this.onTap,
   });
 
+  AppStatusChipTone _statusTone(String? value) {
+    final status = (value ?? '').toLowerCase();
+
+    if (status.contains('completed') || status.contains('delivered')) {
+      return AppStatusChipTone.success;
+    }
+    if (status.contains('cancelled')) {
+      return AppStatusChipTone.error;
+    }
+    if (status.contains('progress')) {
+      return AppStatusChipTone.info;
+    }
+    if (status.contains('way') || status.contains('searching')) {
+      return AppStatusChipTone.warning;
+    }
+    return AppStatusChipTone.primary;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
+      child: AppSurfaceCard(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(18),
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: const Color(0xFFC29B40),
+              backgroundColor: colors.brandPrimary,
               child: Icon(icon, color: Colors.white),
             ),
             const SizedBox(width: 12),
@@ -55,25 +67,22 @@ class ActiveServiceCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: GoogleFonts.poppins(
-                      color: Colors.black54,
+                      color: colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
                   if (status != null) ...[
                     const SizedBox(height: 6),
-                    Text(
-                      status!,
-                      style: GoogleFonts.poppins(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
+                    AppStatusChip(
+                      label: status!,
+                      tone: _statusTone(status),
                     ),
                   ],
                 ],
@@ -86,7 +95,7 @@ class ActiveServiceCard extends StatelessWidget {
                   Text(
                     eta!,
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFFC29B40),
+                      color: colors.brandPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -94,7 +103,7 @@ class ActiveServiceCard extends StatelessWidget {
                   Text(
                     trailingText!,
                     style: GoogleFonts.poppins(
-                      color: Colors.black54,
+                      color: colors.textSecondary,
                       fontSize: 11,
                     ),
                   ),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/core/theme/theme_scope.dart';
 import 'package:mix/models/payment_config_model.dart';
 import 'package:mix/services/payment_service.dart';
+import 'package:mix/shared/widgets/app_page_scaffold.dart';
+import 'package:mix/shared/widgets/app_section_title.dart';
+import 'package:mix/shared/widgets/app_surface_card.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 
 class PaymentSettingsScreen extends StatefulWidget {
   const PaymentSettingsScreen({super.key});
@@ -46,7 +49,6 @@ class _PaymentSettingsScreenState extends State<PaymentSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter valid numeric pricing values'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -70,7 +72,6 @@ class _PaymentSettingsScreenState extends State<PaymentSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Payment and pricing settings updated'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
@@ -78,7 +79,6 @@ class _PaymentSettingsScreenState extends State<PaymentSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update settings: $e'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -98,65 +98,10 @@ class _PaymentSettingsScreenState extends State<PaymentSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeScope.of(context);
-    const bg = Color(0xFF0F1115);
-    const card = Color(0xFF171A21);
-    const gold = Color(0xFFC29B40);
-    const wine = Color(0xFF7C1820);
+    final colors = context.appColors;
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                color: gold,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: wine,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Payment & Pricing Settings',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Toggle theme',
-            onPressed: () =>
-                themeController.toggleDarkMode(!themeController.isDarkMode),
-            icon: Icon(
-              themeController.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return AppPageScaffold(
+      title: 'Payment & Pricing Settings',
       body: StreamBuilder<PaymentConfigModel>(
         stream: _paymentService.watchPaymentConfig(),
         builder: (context, snapshot) {
@@ -177,44 +122,28 @@ class _PaymentSettingsScreenState extends State<PaymentSettingsScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Container(
+              AppSurfaceCard(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: card,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: Colors.white10),
-                ),
+                borderRadius: BorderRadius.circular(22),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Live Pricing & Payment Control',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
+                    const AppSectionTitle(
+                      title: 'Live Pricing & Payment Control',
+                      subtitle:
+                          'Update payment gateway behavior and pricing from one place. Users will use the latest values without requiring a full app update.',
+                      spacingBottom: 16,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Update payment gateway behavior and pricing from one place. Users will use the latest values without requiring a full app update.',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white70,
-                        fontSize: 12.5,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      activeColor: gold,
+                      activeColor: colors.brandPrimary,
                       value: _paystackEnabled,
                       onChanged: (value) {
                         setState(() => _paystackEnabled = value);
                       },
                       title: Text(
                         'Enable Paystack',
-                        style: GoogleFonts.poppins(color: Colors.white),
+                        style: GoogleFonts.poppins(color: colors.textPrimary),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -267,11 +196,6 @@ class _PaymentSettingsScreenState extends State<PaymentSettingsScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _loading ? null : _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: gold,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
                         child: _loading
                             ? const SizedBox(
                                 width: 22,
@@ -310,19 +234,17 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: Colors.white),
+      style: GoogleFonts.poppins(color: colors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(color: Colors.white54),
+        hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
         filled: true,
-        fillColor: const Color(0xFF11141A),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
+        fillColor: colors.surfaceAlt,
       ),
     );
   }
