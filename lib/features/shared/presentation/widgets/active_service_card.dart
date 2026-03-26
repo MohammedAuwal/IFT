@@ -55,7 +55,10 @@ class ActiveServiceCard extends StatelessWidget {
           children: [
             CircleAvatar(
               backgroundColor: colors.brandPrimary,
-              child: Icon(icon, color: Colors.white),
+              child: Icon(
+                icon,
+                color: colors.iconOnDarkTint,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

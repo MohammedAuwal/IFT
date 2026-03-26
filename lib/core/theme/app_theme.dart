@@ -12,7 +12,6 @@ class AppPalette {
   static const Color error = Color(0xFFE53935);
   static const Color info = Color(0xFF2196F3);
 
-  // Light
   static const Color lightScaffold = Color(0xFFF8F5EF);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightSurfaceAlt = Color(0xFFF8F5EF);
@@ -24,7 +23,6 @@ class AppPalette {
   static const Color lightIcon = Color(0xFF1D1D1F);
   static const Color lightShadow = Color(0x14000000);
 
-  // Dark
   static const Color darkScaffold = Color(0xFF0F1115);
   static const Color darkSurface = Color(0xFF171A21);
   static const Color darkSurfaceAlt = Color(0xFF11141A);
@@ -36,7 +34,6 @@ class AppPalette {
   static const Color darkIcon = Color(0xFFF5F5F5);
   static const Color darkShadow = Color(0x33000000);
 
-  // Shared chips / accents
   static const Color orange = Color(0xFFFF7A00);
   static const Color cream = Color(0xFFF1E4BE);
   static const Color brown = Color(0xFF7A5A12);
@@ -69,11 +66,20 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   final Color cream;
   final Color brown;
   final Color darkBrown;
+  final Color purple;
   final Color palePurple;
   final Color paleBlue;
   final Color paleGreen;
   final Color paleOrange;
   final Color paleRed;
+
+  // Contrast helpers
+  final Color iconOnTint;
+  final Color iconOnLightTint;
+  final Color iconOnDarkTint;
+  final Color textOnTint;
+  final Color textOnLightTint;
+  final Color textOnDarkTint;
 
   const AppThemeColors({
     required this.brandPrimary,
@@ -95,11 +101,18 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     required this.cream,
     required this.brown,
     required this.darkBrown,
+    required this.purple,
     required this.palePurple,
     required this.paleBlue,
     required this.paleGreen,
     required this.paleOrange,
     required this.paleRed,
+    required this.iconOnTint,
+    required this.iconOnLightTint,
+    required this.iconOnDarkTint,
+    required this.textOnTint,
+    required this.textOnLightTint,
+    required this.textOnDarkTint,
   });
 
   factory AppThemeColors.light() {
@@ -123,11 +136,18 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       cream: AppPalette.cream,
       brown: AppPalette.brown,
       darkBrown: AppPalette.darkBrown,
+      purple: AppPalette.purple,
       palePurple: AppPalette.palePurple,
       paleBlue: AppPalette.paleBlue,
       paleGreen: AppPalette.paleGreen,
       paleOrange: AppPalette.paleOrange,
       paleRed: AppPalette.paleRed,
+      iconOnTint: AppPalette.lightText,
+      iconOnLightTint: AppPalette.lightText,
+      iconOnDarkTint: AppPalette.darkText,
+      textOnTint: AppPalette.lightText,
+      textOnLightTint: AppPalette.lightText,
+      textOnDarkTint: AppPalette.darkText,
     );
   }
 
@@ -152,11 +172,18 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       cream: AppPalette.cream,
       brown: AppPalette.brown,
       darkBrown: AppPalette.darkBrown,
+      purple: AppPalette.purple,
       palePurple: AppPalette.palePurple,
       paleBlue: AppPalette.paleBlue,
       paleGreen: AppPalette.paleGreen,
       paleOrange: AppPalette.paleOrange,
       paleRed: AppPalette.paleRed,
+      iconOnTint: AppPalette.primary,
+      iconOnLightTint: AppPalette.primary,
+      iconOnDarkTint: AppPalette.darkText,
+      textOnTint: AppPalette.darkText,
+      textOnLightTint: AppPalette.primary,
+      textOnDarkTint: AppPalette.darkText,
     );
   }
 
@@ -181,11 +208,18 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
     Color? cream,
     Color? brown,
     Color? darkBrown,
+    Color? purple,
     Color? palePurple,
     Color? paleBlue,
     Color? paleGreen,
     Color? paleOrange,
     Color? paleRed,
+    Color? iconOnTint,
+    Color? iconOnLightTint,
+    Color? iconOnDarkTint,
+    Color? textOnTint,
+    Color? textOnLightTint,
+    Color? textOnDarkTint,
   }) {
     return AppThemeColors(
       brandPrimary: brandPrimary ?? this.brandPrimary,
@@ -207,11 +241,18 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       cream: cream ?? this.cream,
       brown: brown ?? this.brown,
       darkBrown: darkBrown ?? this.darkBrown,
+      purple: purple ?? this.purple,
       palePurple: palePurple ?? this.palePurple,
       paleBlue: paleBlue ?? this.paleBlue,
       paleGreen: paleGreen ?? this.paleGreen,
       paleOrange: paleOrange ?? this.paleOrange,
       paleRed: paleRed ?? this.paleRed,
+      iconOnTint: iconOnTint ?? this.iconOnTint,
+      iconOnLightTint: iconOnLightTint ?? this.iconOnLightTint,
+      iconOnDarkTint: iconOnDarkTint ?? this.iconOnDarkTint,
+      textOnTint: textOnTint ?? this.textOnTint,
+      textOnLightTint: textOnLightTint ?? this.textOnLightTint,
+      textOnDarkTint: textOnDarkTint ?? this.textOnDarkTint,
     );
   }
 
@@ -244,11 +285,18 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
       cream: l(cream, other.cream),
       brown: l(brown, other.brown),
       darkBrown: l(darkBrown, other.darkBrown),
+      purple: l(purple, other.purple),
       palePurple: l(palePurple, other.palePurple),
       paleBlue: l(paleBlue, other.paleBlue),
       paleGreen: l(paleGreen, other.paleGreen),
       paleOrange: l(paleOrange, other.paleOrange),
       paleRed: l(paleRed, other.paleRed),
+      iconOnTint: l(iconOnTint, other.iconOnTint),
+      iconOnLightTint: l(iconOnLightTint, other.iconOnLightTint),
+      iconOnDarkTint: l(iconOnDarkTint, other.iconOnDarkTint),
+      textOnTint: l(textOnTint, other.textOnTint),
+      textOnLightTint: l(textOnLightTint, other.textOnLightTint),
+      textOnDarkTint: l(textOnDarkTint, other.textOnDarkTint),
     );
   }
 }
@@ -281,11 +329,18 @@ class AppTheme {
       cream: AppPalette.cream,
       brown: AppPalette.brown,
       darkBrown: AppPalette.darkBrown,
+      purple: AppPalette.purple,
       palePurple: AppPalette.palePurple,
       paleBlue: AppPalette.paleBlue,
       paleGreen: AppPalette.paleGreen,
       paleOrange: AppPalette.paleOrange,
       paleRed: AppPalette.paleRed,
+      iconOnTint: AppPalette.lightText,
+      iconOnLightTint: AppPalette.lightText,
+      iconOnDarkTint: AppPalette.darkText,
+      textOnTint: AppPalette.lightText,
+      textOnLightTint: AppPalette.lightText,
+      textOnDarkTint: AppPalette.darkText,
     );
 
     final colorScheme = ColorScheme.light(
@@ -461,11 +516,18 @@ class AppTheme {
       cream: AppPalette.cream,
       brown: AppPalette.brown,
       darkBrown: AppPalette.darkBrown,
+      purple: AppPalette.purple,
       palePurple: AppPalette.palePurple,
       paleBlue: AppPalette.paleBlue,
       paleGreen: AppPalette.paleGreen,
       paleOrange: AppPalette.paleOrange,
       paleRed: AppPalette.paleRed,
+      iconOnTint: AppPalette.primary,
+      iconOnLightTint: AppPalette.primary,
+      iconOnDarkTint: AppPalette.darkText,
+      textOnTint: AppPalette.darkText,
+      textOnLightTint: AppPalette.primary,
+      textOnDarkTint: AppPalette.darkText,
     );
 
     final colorScheme = ColorScheme.dark(

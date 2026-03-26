@@ -436,7 +436,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                               ),
                                               child: Icon(
                                                 Icons.notifications_none_rounded,
-                                                color: colors.iconPrimary,
+                                                color: colors.iconOnLightTint,
                                               ),
                                             ),
                                             if (showBadge)
@@ -1474,7 +1474,7 @@ class _MainActionCard extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color: colors.iconPrimary,
+                    color: colors.iconOnLightTint,
                     size: 28,
                   ),
                 ),
@@ -1536,7 +1536,7 @@ class _QuickActionItem extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: colors.iconPrimary,
+                color: colors.iconOnLightTint,
               ),
             ),
             const SizedBox(height: 8),

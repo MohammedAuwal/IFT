@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/features/shared/presentation/widgets/premium_location_picker_bottom_sheet.dart';
 import 'package:mix/models/place_suggestion_model.dart';
 import 'package:mix/services/firebase_service.dart';
+import 'package:mix/shared/widgets/app_bottom_sheets.dart';
+import 'package:mix/shared/widgets/app_form_field.dart';
 import 'package:mix/shared/widgets/app_page_scaffold.dart';
 import 'package:mix/shared/widgets/app_section_title.dart';
 import 'package:mix/shared/widgets/app_surface_card.dart';
@@ -25,11 +27,10 @@ class _ManageAdminLocationsScreenState
   final _maxLoadCtrl = TextEditingController(text: '20');
 
   Future<void> _changeVendorAddress(String currentAddress) async {
-    final result = await showModalBottomSheet<PlaceSuggestionModel>(
+    final result = await AppBottomSheets.showSheet<PlaceSuggestionModel>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => PremiumLocationPickerBottomSheet(
+      child: PremiumLocationPickerBottomSheet(
         title: 'Set Vendor Pickup Address',
         hintText: 'Search vendor/shop pickup location in Nigeria',
         initialValue: currentAddress,
@@ -52,11 +53,10 @@ class _ManageAdminLocationsScreenState
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final result = await showModalBottomSheet<PlaceSuggestionModel>(
+    final result = await AppBottomSheets.showSheet<PlaceSuggestionModel>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const PremiumLocationPickerBottomSheet(
+      child: const PremiumLocationPickerBottomSheet(
         title: 'Set My Admin Base Location',
         hintText: 'Search your admin operating location in Nigeria',
       ),
@@ -319,21 +319,21 @@ class _ManageAdminLocationsScreenState
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _Field(
+                      AppFormField(
                         controller: _radiusCtrl,
-                        hint: 'Service radius in km',
+                        hintText: 'Service radius in km',
                         keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 12),
-                      _Field(
+                      AppFormField(
                         controller: _areasCtrl,
-                        hint:
+                        hintText:
                             'Coverage areas (comma separated, e.g. Ikeja, Yaba, Lekki)',
                       ),
                       const SizedBox(height: 12),
-                      _Field(
+                      AppFormField(
                         controller: _maxLoadCtrl,
-                        hint: 'Maximum active assignments',
+                        hintText: 'Maximum active assignments',
                         keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 12),
@@ -366,35 +366,6 @@ class _ManageAdminLocationsScreenState
               },
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({
-    required this.controller,
-    required this.hint,
-    this.keyboardType,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: colors.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
-        filled: true,
-        fillColor: colors.surfaceAlt,
       ),
     );
   }

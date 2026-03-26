@@ -8,6 +8,8 @@ import 'package:mix/models/product_model.dart';
 import 'package:mix/services/cloudinary_service.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
+import 'package:mix/shared/widgets/app_dialogs.dart';
+import 'package:mix/shared/widgets/app_form_field.dart';
 import 'package:mix/shared/widgets/app_page_scaffold.dart';
 import 'package:mix/shared/widgets/app_section_title.dart';
 import 'package:mix/shared/widgets/app_surface_card.dart';
@@ -259,22 +261,22 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   title: 'Edit product details',
                   spacingBottom: 12,
                 ),
-                _Field(
+                AppFormField(
                   controller: _nameCtrl,
-                  hint: 'Product name',
+                  hintText: 'Product name',
                   enabled: _canEdit,
                 ),
                 const SizedBox(height: 12),
-                _Field(
+                AppFormField(
                   controller: _descCtrl,
-                  hint: 'Description',
+                  hintText: 'Description',
                   maxLines: 4,
                   enabled: _canEdit,
                 ),
                 const SizedBox(height: 12),
-                _Field(
+                AppFormField(
                   controller: _priceCtrl,
-                  hint: 'Price',
+                  hintText: 'Price',
                   enabled: _canEdit,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -313,7 +315,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                           side: BorderSide(
-                            color: selected ? colors.brandPrimary : colors.borderSoft,
+                            color: selected
+                                ? colors.brandPrimary
+                                : colors.borderSoft,
                           ),
                         );
                       }).toList(),
@@ -321,28 +325,28 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                _Field(
+                AppFormField(
                   controller: _stockQtyCtrl,
-                  hint: 'Stock quantity',
+                  hintText: 'Stock quantity',
                   enabled: _canEdit,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
-                _Field(
+                AppFormField(
                   controller: _variantsCtrl,
-                  hint: 'Variants comma separated',
+                  hintText: 'Variants comma separated',
                   enabled: _canEdit,
                 ),
                 const SizedBox(height: 12),
-                _Field(
+                AppFormField(
                   controller: _promoTextCtrl,
-                  hint: 'Promo text',
+                  hintText: 'Promo text',
                   enabled: _canEdit,
                 ),
                 const SizedBox(height: 12),
-                _Field(
+                AppFormField(
                   controller: _promoDiscountCtrl,
-                  hint: 'Promo discount %',
+                  hintText: 'Promo discount %',
                   enabled: _canEdit,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -445,43 +449,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({
-    required this.controller,
-    required this.hint,
-    this.maxLines = 1,
-    this.keyboardType,
-    this.enabled = true,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final int maxLines;
-  final TextInputType? keyboardType;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return TextField(
-      controller: controller,
-      enabled: enabled,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      style: GoogleFonts.poppins(
-        color: enabled ? colors.textPrimary : colors.textSecondary,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
-        filled: true,
-        fillColor: colors.surfaceAlt,
       ),
     );
   }

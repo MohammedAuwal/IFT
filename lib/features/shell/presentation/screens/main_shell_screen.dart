@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mix/config/routes/route_names.dart';
 import 'package:mix/core/routing/app_router.dart';
+import 'package:mix/core/theme/build_context_theme_x.dart';
 import 'package:mix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:mix/features/orders/presentation/screens/order_screen.dart';
 import 'package:mix/features/products/presentation/screens/product_list_screen.dart';
@@ -27,7 +28,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   late final List<Widget> _screens = [
     const ProductListScreen(showBottomNav: false),
-    CartScreen(showScaffold: false),
+    const CartScreen(showScaffold: false),
     OrderScreen(showScaffold: false),
     const ProfileScreen(showScaffold: false),
   ];
@@ -78,10 +79,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
     _saveTab(index);
   }
 
+  bool _hasValidImage(String? url) {
+    if (url == null) return false;
+    final value = url.trim();
+    return value.isNotEmpty &&
+        (value.startsWith('http://') || value.startsWith('https://'));
+  }
+
   @override
   Widget build(BuildContext context) {
     final previewController = AdminPreviewScope.of(context);
     final isPreviewMode = previewController.isPreviewMode;
+    final colors = context.appColors;
 
     return StreamBuilder<int>(
       stream: _firebaseService.watchCartCount(),
@@ -96,10 +105,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
             return StreamBuilder<Map<String, dynamic>?>(
               stream: _firebaseService.watchUserProfile(),
               builder: (context, userSnapshot) {
-                final photoUrl = userSnapshot.data?['photoUrl'] as String? ?? '';
+                final photoUrl =
+                    (userSnapshot.data?['photoUrl'] ?? '').toString();
 
                 return Scaffold(
-                  backgroundColor: const Color(0xFFF8F5EF),
+                  backgroundColor: colors.scaffold,
                   body: Column(
                     children: [
                       if (!_loadingRole && _isAdmin && isPreviewMode)
@@ -109,11 +119,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             horizontal: 16,
                             vertical: 12,
                           ),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Color(0xFFC29B40),
-                                Color(0xFFE0B95A),
+                                colors.brandPrimary,
+                                colors.brandPrimary.withOpacity(0.75),
                               ],
                             ),
                           ),
@@ -167,10 +177,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   ),
                   bottomNavigationBar: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colors.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
+                          color: colors.shadow,
                           blurRadius: 18,
                           offset: const Offset(0, -4),
                         ),
@@ -184,9 +194,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       child: BottomNavigationBar(
                         currentIndex: _currentIndex,
                         type: BottomNavigationBarType.fixed,
-                        backgroundColor: Colors.white,
-                        selectedItemColor: const Color(0xFFC29B40),
-                        unselectedItemColor: Colors.black45,
+                        backgroundColor: colors.surface,
+                        selectedItemColor: colors.brandPrimary,
+                        unselectedItemColor: colors.textSecondary,
                         selectedLabelStyle: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
                           fontSize: 11,
@@ -252,25 +262,37 @@ class _BadgeIcon extends StatelessWidget {
     this.photoUrl,
   });
 
+  bool _hasValidImage(String? url) {
+    if (url == null) return false;
+    final value = url.trim();
+    return value.isNotEmpty &&
+        (value.startsWith('http://') || value.startsWith('https://'));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Widget mainContent = (photoUrl != null && photoUrl!.isNotEmpty)
+    final colors = context.appColors;
+
+    final Widget mainContent = _hasValidImage(photoUrl)
         ? Container(
             width: 24,
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               image: DecorationImage(
-                image: NetworkImage(photoUrl!),
+                image: NetworkImage(photoUrl!.trim()),
                 fit: BoxFit.cover,
               ),
               border: Border.all(
-                color: Colors.grey.shade200,
+                color: colors.borderSoft,
                 width: 1,
               ),
             ),
           )
-        : Icon(icon);
+        : Icon(
+            icon,
+            color: colors.iconPrimary,
+          );
 
     return Stack(
       clipBehavior: Clip.none,
@@ -287,8 +309,12 @@ class _BadgeIcon extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.redAccent,
+                color: colors.error,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colors.surface,
+                  width: 1.2,
+                ),
               ),
               constraints: const BoxConstraints(minWidth: 18),
               child: Text(

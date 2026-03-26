@@ -13,6 +13,10 @@ import 'package:mix/services/firebase_auth_service.dart';
 import 'package:mix/services/firebase_service.dart';
 import 'package:mix/services/image_pick_service.dart';
 import 'package:mix/services/local_notification_service.dart';
+import 'package:mix/shared/widgets/app_bottom_sheets.dart';
+import 'package:mix/shared/widgets/app_dialogs.dart';
+import 'package:mix/shared/widgets/app_list_tile_card.dart';
+import 'package:mix/shared/widgets/app_metric_card.dart';
 import 'package:mix/shared/widgets/app_page_scaffold.dart';
 import 'package:mix/shared/widgets/app_section_title.dart';
 import 'package:mix/shared/widgets/app_surface_card.dart';
@@ -102,11 +106,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final controller = TextEditingController(text: currentName);
+    final colors = context.appColors;
 
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        final colors = ctx.appColors;
+        final c = ctx.appColors;
 
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -114,17 +119,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Edit name',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w700,
-              color: colors.textPrimary,
+              color: c.textPrimary,
             ),
           ),
           content: TextField(
             controller: controller,
             textCapitalization: TextCapitalization.words,
             autofocus: true,
-            style: GoogleFonts.poppins(color: colors.textPrimary),
+            style: GoogleFonts.poppins(color: c.textPrimary),
             decoration: InputDecoration(
               hintText: 'Enter your full name',
-              hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
+              hintStyle: GoogleFonts.poppins(color: c.textSecondary),
             ),
           ),
           actions: [
@@ -160,7 +165,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update name: $e')),
+        SnackBar(
+          content: Text('Failed to update name: $e'),
+          backgroundColor: colors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _savingName = false);
@@ -207,51 +215,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final confirm = await showDialog<bool>(
+    final confirm = await AppDialogs.confirm(
       context: context,
-      builder: (ctx) {
-        final colors = ctx.appColors;
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Text(
-            'Remove address',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              color: colors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to remove this address?',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: colors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                'Remove',
-                style: GoogleFonts.poppins(
-                  color: colors.error,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+      title: 'Remove address',
+      message: 'Are you sure you want to remove this address?',
+      confirmText: 'Remove',
+      destructive: true,
+      icon: Icons.delete_outline_rounded,
     );
 
-    if (confirm != true) return;
+    if (!confirm) return;
 
     try {
       await _firebaseService.removeAddress(address);
@@ -309,54 +282,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showAboutDialog() async {
-    showDialog(
+    await AppDialogs.info(
       context: context,
-      builder: (ctx) {
-        final colors = ctx.appColors;
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Text(
-            "Maamah's Mix",
-            style: GoogleFonts.playfairDisplay(
-              fontWeight: FontWeight.w800,
-              fontSize: 22,
-              color: colors.textPrimary,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Premium African spices, flours & traditional foods delivered to your doorstep.',
-                style: GoogleFonts.poppins(
-                  fontSize: 13.5,
-                  height: 1.5,
-                  color: colors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Version 1.0.0',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'Close',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        );
-      },
+      title: "Maamah's Mix",
+      message:
+          'Premium African spices, flours & traditional foods delivered to your doorstep.\n\nVersion 1.0.0',
+      icon: Icons.info_outline_rounded,
     );
   }
 
@@ -368,51 +299,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (_loggingOut) return;
 
-    final confirm = await showDialog<bool>(
+    final confirm = await AppDialogs.confirm(
       context: context,
-      builder: (ctx) {
-        final colors = ctx.appColors;
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Text(
-            'Log out',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              color: colors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to log out?',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: colors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                'Log out',
-                style: GoogleFonts.poppins(
-                  color: colors.error,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+      title: 'Log out',
+      message: 'Are you sure you want to log out?',
+      confirmText: 'Log out',
+      destructive: true,
+      icon: Icons.logout_rounded,
     );
 
-    if (confirm != true || !mounted) return;
+    if (!confirm || !mounted) return;
 
     setState(() => _loggingOut = true);
 
@@ -431,50 +327,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showNotificationSoundPicker() {
     final sounds = LocalNotificationService.instance.availableSounds;
-    final colors = context.appColors;
 
-    showModalBottomSheet<void>(
+    AppBottomSheets.showSheet<void>(
       context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final sheetColors = ctx.appColors;
+      child: Builder(
+        builder: (ctx) {
+          final sheetColors = ctx.appColors;
 
-        return SafeArea(
-          child: Padding(
+          return Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: sheetColors.border,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Notification Sound',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    color: sheetColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Choose how notification alerts sound',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5,
-                    color: sheetColors.textSecondary,
-                  ),
+                AppBottomSheets.sheetHeader(
+                  ctx,
+                  title: 'Notification Sound',
+                  subtitle: 'Choose how notification alerts sound',
                 ),
                 const SizedBox(height: 16),
                 ...sounds.map((sound) {
@@ -526,9 +395,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }),
               ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -861,14 +730,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _StatBox(
+                          child: AppMetricCard(
                             title: 'Favorites',
                             value: '${favorites.length}',
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _StatBox(
+                          child: AppMetricCard(
                             title: 'Cart Items',
                             value: '${cart.length}',
                           ),
@@ -879,8 +748,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileTile(
                       icon: Icons.dark_mode_rounded,
                       title: 'Dark mode',
-                      subtitle:
-                          'Switch between light and dark theme',
+                      subtitle: 'Switch between light and dark theme',
                       trailing: Switch(
                         value: themeController.isDarkMode,
                         onChanged: themeController.toggleDarkMode,
@@ -1096,8 +964,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileTile(
                       icon: Icons.info_outline_rounded,
                       title: 'About Mix',
-                      subtitle:
-                          "Learn more about Maamah's Mix",
+                      subtitle: "Learn more about Maamah's Mix",
                       onTap: _showAboutDialog,
                     ),
                     const SizedBox(height: 18),
@@ -1189,44 +1056,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _StatBox extends StatelessWidget {
-  const _StatBox({
-    required this.title,
-    required this.value,
-  });
-
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return AppSurfaceCard(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
-              color: colors.brandPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: colors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ProfileTile extends StatelessWidget {
   const _ProfileTile({
     required this.icon,
@@ -1246,38 +1075,32 @@ class _ProfileTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return AppSurfaceCard(
+    return AppListTileCard(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+      leading: CircleAvatar(
+        backgroundColor: colors.brandPrimary.withOpacity(0.15),
+        child: Icon(icon, color: colors.brandPrimary),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w600,
+          color: colors.textPrimary,
         ),
-        leading: CircleAvatar(
-          backgroundColor: colors.brandPrimary.withOpacity(0.15),
-          child: Icon(icon, color: colors.brandPrimary),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          color: colors.textSecondary,
         ),
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: colors.textPrimary,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
+      ),
+      trailing: trailing ??
+          Icon(
+            Icons.chevron_right_rounded,
             color: colors.textSecondary,
           ),
-        ),
-        trailing: trailing ??
-            Icon(
-              Icons.chevron_right_rounded,
-              color: colors.textSecondary,
-            ),
-      ),
+      onTap: onTap,
     );
   }
 }
