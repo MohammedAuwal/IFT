@@ -47,8 +47,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late List<String> _selectedCategories;
   bool _loading = false;
 
-  bool get _isSuperAdmin =>
-      FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+  bool get _isSuperAdmin => AppConstants.isSuperAdminUid(
+        FirebaseAuth.instance.currentUser?.uid,
+      );
 
   bool get _canEdit {
     final uid = FirebaseAuth.instance.currentUser?.uid;

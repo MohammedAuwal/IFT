@@ -38,8 +38,9 @@ class AdminEscalationDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isSuperAdmin =
-        _firebaseService.currentUser?.uid == AppConstants.superAdminUid;
+    final isSuperAdmin = AppConstants.isSuperAdminUid(
+      _firebaseService.currentUser?.uid,
+    );
 
     return AppPageScaffold(
       title: 'Escalation Dashboard',

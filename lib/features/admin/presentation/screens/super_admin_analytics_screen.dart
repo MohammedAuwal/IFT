@@ -272,8 +272,9 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isSuperAdmin =
-        _firebaseService.currentUser?.uid == AppConstants.superAdminUid;
+    final isSuperAdmin = AppConstants.isSuperAdminUid(
+      _firebaseService.currentUser?.uid,
+    );
 
     return AppPageScaffold(
       title: 'Super Admin Analytics',
@@ -627,7 +628,7 @@ class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
                                 Expanded(
                                   child: _MetricCard(
                                     title: 'Admins',
-                                    value: '${admins.length + 1}',
+                                    value: '${admins.length + AppConstants.superAdminUids.length}',
                                   ),
                                 ),
                               ],

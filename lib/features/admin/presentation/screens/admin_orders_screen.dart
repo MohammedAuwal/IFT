@@ -29,8 +29,9 @@ class AdminOrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isSuperAdmin =
-        FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+    final isSuperAdmin = AppConstants.isSuperAdminUid(
+      FirebaseAuth.instance.currentUser?.uid,
+    );
 
     return AppPageScaffold(
       title: isSuperAdmin ? 'Manage All Orders' : 'My Assigned Orders',

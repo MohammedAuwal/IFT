@@ -15,8 +15,9 @@ class ManageProductsScreen extends StatelessWidget {
 
   final FirebaseService _firebaseService = FirebaseService();
 
-  bool get _isSuperAdmin =>
-      FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+  bool get _isSuperAdmin => AppConstants.isSuperAdminUid(
+        FirebaseAuth.instance.currentUser?.uid,
+      );
 
   bool _hasValidImage(String url) {
     final value = url.trim();

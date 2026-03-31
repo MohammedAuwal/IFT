@@ -50,8 +50,9 @@ class AdminRidesScreen extends StatelessWidget {
         }
 
         final isAdmin = adminSnapshot.data ?? false;
-        final isSuperAdmin =
-            FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+        final isSuperAdmin = AppConstants.isSuperAdminUid(
+          FirebaseAuth.instance.currentUser?.uid,
+        );
 
         if (!isAdmin && !isSuperAdmin) {
           return AppPageScaffold(
