@@ -14,6 +14,7 @@ class LocalNotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  Future<void>? _initializing;
 
   static const String _soundPrefKey = 'mix_notification_sound';
 
@@ -36,6 +37,21 @@ class LocalNotificationService {
   );
 
   Future<void> initialize() async {
+    if (_initialized) return;
+    if (_initializing != null) {
+      await _initializing;
+      return;
+    }
+
+    _initializing = _doInitialize();
+    try {
+      await _initializing;
+    } finally {
+      _initializing = null;
+    }
+  }
+
+  Future<void> _doInitialize() async {
     if (_initialized) return;
 
     const androidSettings =
@@ -114,20 +130,16 @@ class LocalNotificationService {
     _initialized = true;
   }
 
-  /// Get current sound preference.
-  /// Returns 'default', 'silent', or a custom name.
   Future<String> getNotificationSound() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_soundPrefKey) ?? 'default';
   }
 
-  /// Set notification sound preference.
   Future<void> setNotificationSound(String sound) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_soundPrefKey, sound);
   }
 
-  /// Get available sound options.
   List<String> get availableSounds => const [
         'default',
         'silent',
@@ -138,14 +150,13 @@ class LocalNotificationService {
     required String body,
     String? payload,
   }) async {
-    final soundPref = await getNotificationSound();
+    await initialize();
 
+    final soundPref = await getNotificationSound();
     final bool isSilent = soundPref == 'silent';
 
-    final channelId =
-        isSilent ? _silentChannel.id : _defaultChannel.id;
-    final channelName =
-        isSilent ? _silentChannel.name : _defaultChannel.name;
+    final channelId = isSilent ? _silentChannel.id : _defaultChannel.id;
+    final channelName = isSilent ? _silentChannel.name : _defaultChannel.name;
     final channelDesc =
         isSilent ? _silentChannel.description : _defaultChannel.description;
 

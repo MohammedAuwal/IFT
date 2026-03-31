@@ -90,12 +90,44 @@ class FirebaseService {
       firestore.collection('app_settings').doc('general');
 
   List<String> get nigerianStates => const [
-        'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa',
-        'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti',
-        'Enugu', 'FCT', 'Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano',
-        'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger',
-        'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto',
-        'Taraba', 'Yobe', 'Zamfara',
+        'Abia',
+        'Adamawa',
+        'Akwa Ibom',
+        'Anambra',
+        'Bauchi',
+        'Bayelsa',
+        'Benue',
+        'Borno',
+        'Cross River',
+        'Delta',
+        'Ebonyi',
+        'Edo',
+        'Ekiti',
+        'Enugu',
+        'FCT',
+        'Abuja',
+        'Gombe',
+        'Imo',
+        'Jigawa',
+        'Kaduna',
+        'Kano',
+        'Katsina',
+        'Kebbi',
+        'Kogi',
+        'Kwara',
+        'Lagos',
+        'Nasarawa',
+        'Niger',
+        'Ogun',
+        'Ondo',
+        'Osun',
+        'Oyo',
+        'Plateau',
+        'Rivers',
+        'Sokoto',
+        'Taraba',
+        'Yobe',
+        'Zamfara',
       ];
 
   String _inferStateFromAddress(String address) {
@@ -121,6 +153,30 @@ class FirebaseService {
         .get();
     final data = doc.data() ?? {};
     return List<String>.from(data['fcmTokens'] ?? []);
+  }
+
+  Future<void> seedDefaultAppSettingsSafely() async {
+    try {
+      await seedDefaultAppSettings();
+    } catch (_) {}
+  }
+
+  Future<void> seedDefaultCategoriesIfMissingSafely() async {
+    try {
+      await seedDefaultCategoriesIfMissing();
+    } catch (_) {}
+  }
+
+  Future<void> ensureUserProfileSafely() async {
+    try {
+      await ensureUserProfile();
+    } catch (_) {}
+  }
+
+  Future<void> syncLocalCartToFirestoreSafely() async {
+    try {
+      await syncLocalCartToFirestore();
+    } catch (_) {}
   }
 
   // ---------------------------------------------------------------------------
@@ -230,47 +286,57 @@ class FirebaseService {
       controller.add(merged);
     }
 
-    Future<void> start() async {
-      userSub = _userNotifications(user.uid)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .listen(
-        (snapshot) {
-          userNotifications = _mapNotificationDocs(
-            snapshot: snapshot,
-            recipientCollection: AppConstants.usersCollection,
+    controller.onListen = () {
+      () async {
+        try {
+          userSub = _userNotifications(user.uid)
+              .orderBy('createdAt', descending: true)
+              .snapshots()
+              .listen(
+            (snapshot) {
+              userNotifications = _mapNotificationDocs(
+                snapshot: snapshot,
+                recipientCollection: AppConstants.usersCollection,
+              );
+              emit();
+            },
+            onError: (error, stackTrace) {
+              if (!controller.isClosed) {
+                controller.addError(error, stackTrace);
+              }
+            },
           );
-          emit();
-        },
-        onError: (error, stackTrace) {
-          if (!controller.isClosed) controller.addError(error, stackTrace);
-        },
-      );
 
-      final hasAdminInbox = await _hasAdminNotificationInbox(user.uid);
-      if (!hasAdminInbox) {
-        emit();
-        return;
-      }
+          final hasAdminInbox = await _hasAdminNotificationInbox(user.uid);
+          if (!hasAdminInbox) {
+            emit();
+            return;
+          }
 
-      adminSub = _adminNotifications(user.uid)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .listen(
-        (snapshot) {
-          adminNotifications = _mapNotificationDocs(
-            snapshot: snapshot,
-            recipientCollection: AppConstants.adminsCollection,
+          adminSub = _adminNotifications(user.uid)
+              .orderBy('createdAt', descending: true)
+              .snapshots()
+              .listen(
+            (snapshot) {
+              adminNotifications = _mapNotificationDocs(
+                snapshot: snapshot,
+                recipientCollection: AppConstants.adminsCollection,
+              );
+              emit();
+            },
+            onError: (error, stackTrace) {
+              if (!controller.isClosed) {
+                controller.addError(error, stackTrace);
+              }
+            },
           );
-          emit();
-        },
-        onError: (error, stackTrace) {
-          if (!controller.isClosed) controller.addError(error, stackTrace);
-        },
-      );
-    }
-
-    start();
+        } catch (error, stackTrace) {
+          if (!controller.isClosed) {
+            controller.addError(error, stackTrace);
+          }
+        }
+      }();
+    };
 
     controller.onCancel = () async {
       await userSub?.cancel();
@@ -280,7 +346,6 @@ class FirebaseService {
     return controller.stream;
   }
 
-  /// Watch only admin notifications (for admin dashboard panel).
   Stream<List<AppNotificationModel>> watchAdminNotifications() {
     final user = currentUser;
     if (user == null) return Stream.value(const <AppNotificationModel>[]);
@@ -389,7 +454,6 @@ class FirebaseService {
     } catch (_) {}
   }
 
-  /// Deletes notifications older than [days] days for the current user.
   Future<int> cleanupOldNotifications({int days = 30}) async {
     final user = currentUser;
     if (user == null) return 0;
@@ -568,10 +632,6 @@ class FirebaseService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Admin check
-  // ---------------------------------------------------------------------------
-
   Future<bool> isAdmin() async {
     final user = currentUser;
     if (user == null) return false;
@@ -664,10 +724,6 @@ class FirebaseService {
     }, SetOptions(merge: true));
   }
 
-  // ---------------------------------------------------------------------------
-  // Vendor pickup address
-  // ---------------------------------------------------------------------------
-
   Future<String> getVendorPickupAddress() async {
     final doc = await _settingsDoc.get();
     final data = doc.data() ?? {};
@@ -687,7 +743,9 @@ class FirebaseService {
 
   Future<void> updateVendorPickupAddress(String address) async {
     final trimmed = address.trim();
-    if (trimmed.isEmpty) throw Exception('Vendor pickup address cannot be empty');
+    if (trimmed.isEmpty) {
+      throw Exception('Vendor pickup address cannot be empty');
+    }
     await _settingsDoc.set({
       'vendorPickupAddress': trimmed,
       'updatedAt': DateTime.now().toIso8601String(),
@@ -713,34 +771,33 @@ class FirebaseService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Geo helpers
-  // ---------------------------------------------------------------------------
-
   double _toRadians(double degree) => degree * (math.pi / 180);
 
   double _distanceKm({
-    required double lat1, required double lng1,
-    required double lat2, required double lng2,
+    required double lat1,
+    required double lng1,
+    required double lat2,
+    required double lng2,
   }) {
     const earthRadiusKm = 6371.0;
     final dLat = _toRadians(lat2 - lat1);
     final dLng = _toRadians(lng2 - lng1);
     final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
-            math.sin(dLng / 2) * math.sin(dLng / 2);
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
     final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return earthRadiusKm * c;
   }
 
-  // ---------------------------------------------------------------------------
-  // Admin coverage
-  // ---------------------------------------------------------------------------
-
   Future<void> updateAdminCoverage({
-    required String adminUid, required String email,
-    required String displayName, required String baseAddress,
-    required double baseLat, required double baseLng,
+    required String adminUid,
+    required String email,
+    required String displayName,
+    required String baseAddress,
+    required double baseLat,
+    required double baseLng,
     required double serviceRadiusKm,
     List<String> coverageStates = const [],
     List<String> coverageAreas = const [],
@@ -752,19 +809,26 @@ class FirebaseService {
     }.toList();
 
     await firestore.collection(AppConstants.adminsCollection).doc(adminUid).set({
-      'uid': adminUid, 'email': email, 'displayName': displayName,
-      'role': 'admin', 'baseAddress': baseAddress,
-      'baseLat': baseLat, 'baseLng': baseLng,
+      'uid': adminUid,
+      'email': email,
+      'displayName': displayName,
+      'role': 'admin',
+      'baseAddress': baseAddress,
+      'baseLat': baseLat,
+      'baseLng': baseLng,
       'serviceRadiusKm': serviceRadiusKm,
-      'coverageStates': finalStates, 'coverageAreas': coverageAreas,
-      'isActive': true, 'maxActiveAssignments': 20,
+      'coverageStates': finalStates,
+      'coverageAreas': coverageAreas,
+      'isActive': true,
+      'maxActiveAssignments': 20,
       'updatedAt': DateTime.now().toIso8601String(),
       'createdAt': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
   }
 
   Future<void> updateAdminWorkloadConfig({
-    required String adminUid, required bool isActive,
+    required String adminUid,
+    required bool isActive,
     required int maxActiveAssignments,
   }) async {
     await firestore.collection(AppConstants.adminsCollection).doc(adminUid).set({
@@ -774,59 +838,70 @@ class FirebaseService {
     }, SetOptions(merge: true));
   }
 
-  // ---------------------------------------------------------------------------
-  // Admin / driver watch
-  // ---------------------------------------------------------------------------
-
   Stream<List<Map<String, dynamic>>> watchAdmins() {
     return firestore.collection(AppConstants.adminsCollection).snapshots().map(
-        (snapshot) => snapshot.docs.map((e) => e.data()).toList()
-          ..sort((a, b) => (b['createdAt'] ?? '').toString()
-              .compareTo((a['createdAt'] ?? '').toString())));
+          (snapshot) => snapshot.docs.map((e) => e.data()).toList()
+            ..sort(
+              (a, b) => (b['createdAt'] ?? '')
+                  .toString()
+                  .compareTo((a['createdAt'] ?? '').toString()),
+            ),
+        );
   }
 
   Stream<List<Map<String, dynamic>>> watchDrivers() {
-    return firestore.collection('drivers').orderBy('createdAt', descending: true)
-        .snapshots().map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
+    return firestore
+        .collection('drivers')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
   }
 
-  // ---------------------------------------------------------------------------
-  // Dashboard counts
-  // ---------------------------------------------------------------------------
-
   Stream<int> watchProductsCount() {
-    return firestore.collection(AppConstants.productsCollection).snapshots()
+    return firestore
+        .collection(AppConstants.productsCollection)
+        .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
 
   Stream<int> watchOrdersCount() {
-    return firestore.collection(AppConstants.ordersCollection).snapshots()
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
 
   Stream<int> watchAssignedOrdersCount() {
     final user = currentUser;
     if (user == null) return Stream.value(0);
-    return firestore.collection(AppConstants.ordersCollection)
-        .where('assignedAdminUid', isEqualTo: user.uid).snapshots()
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
 
   Stream<int> watchRidesCount() {
-    return firestore.collection(AppConstants.ridesCollection).snapshots()
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
 
   Stream<int> watchAssignedRidesCount() {
     final user = currentUser;
     if (user == null) return Stream.value(0);
-    return firestore.collection(AppConstants.ridesCollection)
-        .where('assignedAdminUid', isEqualTo: user.uid).snapshots()
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
 
   Stream<int> watchAdminsCount() {
-    return firestore.collection(AppConstants.adminsCollection).snapshots()
+    return firestore
+        .collection(AppConstants.adminsCollection)
+        .snapshots()
         .map((snapshot) => snapshot.docs.length + 1);
   }
 
@@ -834,16 +909,22 @@ class FirebaseService {
     final user = currentUser;
     if (user == null) return Stream.value(0);
 
-    final ridesStream = firestore.collection(AppConstants.ridesCollection)
-        .where('assignedAdminUid', isEqualTo: user.uid).snapshots().map((s) {
+    final ridesStream = firestore
+        .collection(AppConstants.ridesCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
+        .map((s) {
       return s.docs.where((doc) {
         final status = (doc.data()['status'] ?? '').toString();
         return status != 'completed' && status != 'cancelled';
       }).length;
     });
 
-    final ordersStream = firestore.collection(AppConstants.ordersCollection)
-        .where('assignedAdminUid', isEqualTo: user.uid).snapshots().map((s) {
+    final ordersStream = firestore
+        .collection(AppConstants.ordersCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
+        .map((s) {
       return s.docs.where((doc) {
         final status = (doc.data()['status'] ?? '').toString();
         return status != 'delivered' && status != 'cancelled';
@@ -859,69 +940,96 @@ class FirebaseService {
   Stream<int> watchActiveRideCount() {
     final user = currentUser;
     if (user == null) return Stream.value(0);
-    return firestore.collection(AppConstants.ridesCollection)
-        .where('userId', isEqualTo: user.uid).snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data()))
-          .where((ride) => ride.isActive).length;
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => RideModel.fromMap(doc.id, doc.data()))
+          .where((ride) => ride.isActive)
+          .length;
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Recent admin activity
-  // ---------------------------------------------------------------------------
-
   Stream<List<Map<String, dynamic>>> watchRecentAdminActivity() {
-    final productStream = firestore.collection(AppConstants.productsCollection)
-        .snapshots().map((s) => s.docs.map((doc) {
-      final data = doc.data();
-      return {'type': 'product', 'title': 'Product: ${data['name'] ?? 'Unnamed'}',
-        'subtitle': '₦${data['price'] ?? 0}', 'createdAt': data['createdAt'] ?? ''};
-    }).toList());
+    final productStream = firestore
+        .collection(AppConstants.productsCollection)
+        .snapshots()
+        .map((s) => s.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'type': 'product',
+                'title': 'Product: ${data['name'] ?? 'Unnamed'}',
+                'subtitle': '₦${data['price'] ?? 0}',
+                'createdAt': data['createdAt'] ?? '',
+              };
+            }).toList());
 
-    final orderStream = firestore.collection(AppConstants.ordersCollection)
-        .snapshots().map((s) => s.docs.map((doc) {
-      final data = doc.data();
-      return {'type': 'order', 'title': 'Order: ${doc.id}',
-        'subtitle': 'Status: ${data['status'] ?? 'pending'}', 'createdAt': data['createdAt'] ?? ''};
-    }).toList());
+    final orderStream = firestore
+        .collection(AppConstants.ordersCollection)
+        .snapshots()
+        .map((s) => s.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'type': 'order',
+                'title': 'Order: ${doc.id}',
+                'subtitle': 'Status: ${data['status'] ?? 'pending'}',
+                'createdAt': data['createdAt'] ?? '',
+              };
+            }).toList());
 
-    final rideStream = firestore.collection(AppConstants.ridesCollection)
-        .snapshots().map((s) => s.docs.map((doc) {
-      final data = doc.data();
-      return {'type': 'ride', 'title': 'Ride: ${doc.id}',
-        'subtitle': '${data['pickup'] ?? ''} → ${data['destination'] ?? ''}',
-        'createdAt': data['createdAt'] ?? ''};
-    }).toList());
+    final rideStream = firestore
+        .collection(AppConstants.ridesCollection)
+        .snapshots()
+        .map((s) => s.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'type': 'ride',
+                'title': 'Ride: ${doc.id}',
+                'subtitle': '${data['pickup'] ?? ''} → ${data['destination'] ?? ''}',
+                'createdAt': data['createdAt'] ?? '',
+              };
+            }).toList());
 
     return productStream.asyncMap((products) async {
       final orders = await orderStream.first;
       final rides = await rideStream.first;
       final merged = [...products, ...orders, ...rides];
-      merged.sort((a, b) => (b['createdAt'] ?? '').toString()
+      merged.sort((a, b) => (b['createdAt'] ?? '')
+          .toString()
           .compareTo((a['createdAt'] ?? '').toString()));
       return merged.take(8).toList();
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Categories
-  // ---------------------------------------------------------------------------
-
   Stream<List<String>> watchCategories() {
-    return firestore.collection('categories').orderBy('name').snapshots().map((snapshot) {
-      final dbCategories = snapshot.docs
-          .map((doc) => (doc.data()['name'] ?? '').toString().trim())
-          .where((e) => e.isNotEmpty).toList();
-      final defaults = <String>['General', 'Spices', 'Flours', 'Foods', 'Oils', 'Trending', 'Featured'];
-      return {...defaults, ...dbCategories}.toList()..sort();
-    });
+    return firestore.collection('categories').orderBy('name').snapshots().map(
+      (snapshot) {
+        final dbCategories = snapshot.docs
+            .map((doc) => (doc.data()['name'] ?? '').toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+        final defaults = <String>[
+          'General',
+          'Spices',
+          'Flours',
+          'Foods',
+          'Oils',
+          'Trending',
+          'Featured',
+        ];
+        return {...defaults, ...dbCategories}.toList()..sort();
+      },
+    );
   }
 
   Future<void> addCategory(String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
     await firestore.collection('categories').doc(trimmed.toLowerCase()).set({
-      'name': trimmed, 'createdAt': DateTime.now().toIso8601String(),
+      'name': trimmed,
+      'createdAt': DateTime.now().toIso8601String(),
     });
   }
 
@@ -930,10 +1038,6 @@ class FirebaseService {
     if (trimmed.isEmpty) return;
     await firestore.collection('categories').doc(trimmed).delete();
   }
-
-  // ---------------------------------------------------------------------------
-  // User profile
-  // ---------------------------------------------------------------------------
 
   DocumentReference<Map<String, dynamic>> _userDoc(String uid) {
     return firestore.collection(AppConstants.usersCollection).doc(uid);
@@ -948,27 +1052,37 @@ class FirebaseService {
       final snap = await ref.get();
       if (!snap.exists) {
         await ref.set({
-          'uid': user.uid, 'email': user.email ?? '',
-          'displayName': user.displayName ?? '', 'photoUrl': user.photoURL ?? '',
-          'favorites': [], 'cart': [], 'addresses': [], 'selectedAddress': '',
+          'uid': user.uid,
+          'email': user.email ?? '',
+          'displayName': user.displayName ?? '',
+          'photoUrl': user.photoURL ?? '',
+          'favorites': [],
+          'cart': [],
+          'addresses': [],
+          'selectedAddress': '',
           'createdAt': DateTime.now().toIso8601String(),
         });
       } else {
         final data = snap.data() ?? {};
         final updates = <String, dynamic>{};
-        if (user.displayName != null && user.displayName!.isNotEmpty &&
+        if (user.displayName != null &&
+            user.displayName!.isNotEmpty &&
             data['displayName'] != user.displayName) {
           updates['displayName'] = user.displayName;
         }
-        if (user.photoURL != null && user.photoURL!.isNotEmpty &&
+        if (user.photoURL != null &&
+            user.photoURL!.isNotEmpty &&
             data['photoUrl'] != user.photoURL) {
           updates['photoUrl'] = user.photoURL;
         }
-        if (user.email != null && user.email!.isNotEmpty &&
+        if (user.email != null &&
+            user.email!.isNotEmpty &&
             data['email'] != user.email) {
           updates['email'] = user.email;
         }
-        if (updates.isNotEmpty) await ref.set(updates, SetOptions(merge: true));
+        if (updates.isNotEmpty) {
+          await ref.set(updates, SetOptions(merge: true));
+        }
       }
     } catch (_) {}
   }
@@ -980,7 +1094,8 @@ class FirebaseService {
     if (trimmed.isEmpty) return;
     await user.updateDisplayName(trimmed);
     await user.reload();
-    await _userDoc(user.uid).set({'displayName': trimmed}, SetOptions(merge: true));
+    await _userDoc(user.uid)
+        .set({'displayName': trimmed}, SetOptions(merge: true));
   }
 
   Stream<Map<String, dynamic>?> watchUserProfile() {
@@ -994,16 +1109,17 @@ class FirebaseService {
     if (user == null) return;
     final trimmed = photoUrl.trim();
     if (trimmed.isEmpty) return;
-    try { await user.updatePhotoURL(trimmed); await user.reload(); } catch (_) {}
+    try {
+      await user.updatePhotoURL(trimmed);
+      await user.reload();
+    } catch (_) {}
     await _userDoc(user.uid).set({
-      'uid': user.uid, 'email': user.email ?? '',
-      'displayName': user.displayName ?? '', 'photoUrl': trimmed,
+      'uid': user.uid,
+      'email': user.email ?? '',
+      'displayName': user.displayName ?? '',
+      'photoUrl': trimmed,
     }, SetOptions(merge: true));
   }
-
-  // ---------------------------------------------------------------------------
-  // Addresses
-  // ---------------------------------------------------------------------------
 
   Future<void> addAddress(String address) async {
     final user = currentUser;
@@ -1014,7 +1130,8 @@ class FirebaseService {
     final addresses = List<String>.from(data['addresses'] ?? []);
     addresses.add(address.trim());
     await ref.set({
-      'addresses': addresses, 'selectedAddress': address.trim(),
+      'addresses': addresses,
+      'selectedAddress': address.trim(),
     }, SetOptions(merge: true));
   }
 
@@ -1030,14 +1147,16 @@ class FirebaseService {
     await ref.set({
       'addresses': addresses,
       'selectedAddress': selectedAddress == address
-          ? (addresses.isNotEmpty ? addresses.first : '') : selectedAddress,
+          ? (addresses.isNotEmpty ? addresses.first : '')
+          : selectedAddress,
     }, SetOptions(merge: true));
   }
 
   Future<void> setSelectedAddress(String address) async {
     final user = currentUser;
     if (user == null) return;
-    await _userDoc(user.uid).set({'selectedAddress': address.trim()}, SetOptions(merge: true));
+    await _userDoc(user.uid)
+        .set({'selectedAddress': address.trim()}, SetOptions(merge: true));
   }
 
   Stream<String> watchSelectedAddress() {
@@ -1049,10 +1168,6 @@ class FirebaseService {
       return (data['selectedAddress'] ?? '').toString();
     });
   }
-
-  // ---------------------------------------------------------------------------
-  // Favorites
-  // ---------------------------------------------------------------------------
 
   Stream<List<String>> watchFavorites() {
     final user = currentUser;
@@ -1071,9 +1186,12 @@ class FirebaseService {
       final data = doc.data();
       final ids = List<String>.from(data?['favorites'] ?? []);
       if (ids.isEmpty) return <ProductModel>[];
-      final snapshot = await firestore.collection(AppConstants.productsCollection).get();
-      return snapshot.docs.where((doc) => ids.contains(doc.id))
-          .map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList();
+      final snapshot =
+          await firestore.collection(AppConstants.productsCollection).get();
+      return snapshot.docs
+          .where((doc) => ids.contains(doc.id))
+          .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
+          .toList();
     });
   }
 
@@ -1091,10 +1209,6 @@ class FirebaseService {
     }
     await ref.set({'favorites': favorites}, SetOptions(merge: true));
   }
-
-  // ---------------------------------------------------------------------------
-  // Cart
-  // ---------------------------------------------------------------------------
 
   Stream<List<Map<String, dynamic>>> watchCart() {
     final user = currentUser;
@@ -1135,18 +1249,28 @@ class FirebaseService {
   }
 
   Future<void> addToCart({
-    required String productId, required String name,
-    required double price, required String imageUrl,
+    required String productId,
+    required String name,
+    required double price,
+    required String imageUrl,
   }) async {
     final user = currentUser;
     if (user == null) {
       final local = await getLocalCart();
       final index = local.indexWhere((e) => e['productId'] == productId);
       if (index >= 0) {
-        local[index] = {...local[index], 'qty': ((local[index]['qty'] ?? 1) as int) + 1};
+        local[index] = {
+          ...local[index],
+          'qty': ((local[index]['qty'] ?? 1) as int) + 1,
+        };
       } else {
-        local.add({'productId': productId, 'name': name, 'price': price,
-          'imageUrl': imageUrl, 'qty': 1});
+        local.add({
+          'productId': productId,
+          'name': name,
+          'price': price,
+          'imageUrl': imageUrl,
+          'qty': 1,
+        });
       }
       await _saveLocalCart(local);
       return;
@@ -1160,19 +1284,29 @@ class FirebaseService {
       final currentQty = (cart[index]['qty'] ?? 1) as int;
       cart[index] = {...cart[index], 'qty': currentQty + 1};
     } else {
-      cart.add({'productId': productId, 'name': name, 'price': price,
-        'imageUrl': imageUrl, 'qty': 1});
+      cart.add({
+        'productId': productId,
+        'name': name,
+        'price': price,
+        'imageUrl': imageUrl,
+        'qty': 1,
+      });
     }
     await ref.set({'cart': cart}, SetOptions(merge: true));
   }
 
-  Future<void> updateCartQty({required String productId, required int qty}) async {
+  Future<void> updateCartQty({
+    required String productId,
+    required int qty,
+  }) async {
     final user = currentUser;
     if (user == null) {
       final local = await getLocalCart();
       final index = local.indexWhere((e) => e['productId'] == productId);
       if (index < 0) return;
-      if (qty <= 0) { local.removeAt(index); } else {
+      if (qty <= 0) {
+        local.removeAt(index);
+      } else {
         local[index] = {...local[index], 'qty': qty};
       }
       await _saveLocalCart(local);
@@ -1184,7 +1318,9 @@ class FirebaseService {
     final cart = List<Map<String, dynamic>>.from(data['cart'] ?? []);
     final index = cart.indexWhere((e) => e['productId'] == productId);
     if (index < 0) return;
-    if (qty <= 0) { cart.removeAt(index); } else {
+    if (qty <= 0) {
+      cart.removeAt(index);
+    } else {
       cart[index] = {...cart[index], 'qty': qty};
     }
     await ref.set({'cart': cart}, SetOptions(merge: true));
@@ -1192,104 +1328,144 @@ class FirebaseService {
 
   Future<void> clearCart() async {
     final user = currentUser;
-    if (user == null) { await _saveLocalCart([]); return; }
+    if (user == null) {
+      await _saveLocalCart([]);
+      return;
+    }
     await _userDoc(user.uid).set({'cart': []}, SetOptions(merge: true));
   }
-
-  // ---------------------------------------------------------------------------
-  // Orders
-  // ---------------------------------------------------------------------------
 
   Stream<List<OrderModel>> watchOrders() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
-    return firestore.collection(AppConstants.ordersCollection)
-        .where('userId', isEqualTo: user.uid).snapshots()
-        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<OrderModel>> watchAllOrders() {
-    return firestore.collection(AppConstants.ordersCollection)
-        .orderBy('createdAt', descending: true).snapshots()
-        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<OrderModel>> watchAssignedOrdersForAdmin() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
-    return firestore.collection(AppConstants.ordersCollection)
-        .where('assignedAdminUid', isEqualTo: user.uid).snapshots()
-        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<OrderModel>> watchEscalatedOrders() {
     final user = currentUser;
-    if (user == null || user.uid != AppConstants.superAdminUid) return Stream.value([]);
-    return firestore.collection(AppConstants.ordersCollection)
-        .where('escalatedToSuperAdmin', isEqualTo: true).snapshots()
-        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
+    if (user == null || user.uid != AppConstants.superAdminUid) {
+      return Stream.value([]);
+    }
+    return firestore
+        .collection(AppConstants.ordersCollection)
+        .where('escalatedToSuperAdmin', isEqualTo: true)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
   }
 
-  // ---------------------------------------------------------------------------
-  // Reassignment
-  // ---------------------------------------------------------------------------
-
   Future<void> reassignRideToAdmin({
-    required String rideId, required String adminUid,
-    required String adminName, required String adminEmail,
+    required String rideId,
+    required String adminUid,
+    required String adminName,
+    required String adminEmail,
   }) async {
     await firestore.collection(AppConstants.ridesCollection).doc(rideId).set({
-      'assignedAdminUid': adminUid, 'assignedAdminName': adminName,
-      'assignedAdminEmail': adminEmail, 'assignedAdminState': '',
-      'assignedAdminArea': '', 'assignmentMethod': 'manual_reassignment',
+      'assignedAdminUid': adminUid,
+      'assignedAdminName': adminName,
+      'assignedAdminEmail': adminEmail,
+      'assignedAdminState': '',
+      'assignedAdminArea': '',
+      'assignmentMethod': 'manual_reassignment',
       'activeAdminLoad': await _countAdminActiveAssignments(adminUid),
-      'escalatedToSuperAdmin': false, 'updatedAt': DateTime.now().toIso8601String(),
+      'escalatedToSuperAdmin': false,
+      'updatedAt': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
 
     try {
-      await _notifyAdmin(adminUid: adminUid, title: 'Request Reassigned',
+      await _notifyAdmin(
+        adminUid: adminUid,
+        title: 'Request Reassigned',
         body: 'A ride/delivery has been reassigned to you',
-        type: 'admin_request_reassigned', targetScreen: 'admin_rides', targetId: rideId);
+        type: 'admin_request_reassigned',
+        targetScreen: 'admin_rides',
+        targetId: rideId,
+      );
     } catch (_) {}
   }
 
   Future<void> reassignOrderToAdmin({
-    required String orderId, required String adminUid,
-    required String adminName, required String adminEmail,
+    required String orderId,
+    required String adminUid,
+    required String adminName,
+    required String adminEmail,
   }) async {
     await firestore.collection(AppConstants.ordersCollection).doc(orderId).set({
-      'assignedAdminUid': adminUid, 'assignedAdminName': adminName,
-      'assignedAdminEmail': adminEmail, 'assignedAdminState': '',
-      'assignedAdminArea': '', 'assignmentMethod': 'manual_reassignment',
+      'assignedAdminUid': adminUid,
+      'assignedAdminName': adminName,
+      'assignedAdminEmail': adminEmail,
+      'assignedAdminState': '',
+      'assignedAdminArea': '',
+      'assignmentMethod': 'manual_reassignment',
       'activeAdminLoad': await _countAdminActiveAssignments(adminUid),
-      'escalatedToSuperAdmin': false, 'updatedAt': DateTime.now().toIso8601String(),
+      'escalatedToSuperAdmin': false,
+      'updatedAt': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
 
     try {
-      await _notifyAdmin(adminUid: adminUid, title: 'Order Reassigned',
+      await _notifyAdmin(
+        adminUid: adminUid,
+        title: 'Order Reassigned',
         body: 'An order has been reassigned to you',
-        type: 'admin_request_reassigned', targetScreen: 'admin_orders', targetId: orderId);
+        type: 'admin_request_reassigned',
+        targetScreen: 'admin_orders',
+        targetId: orderId,
+      );
     } catch (_) {}
   }
 
-  Future<void> updateOrderStatus({required String orderId, required String status}) async {
-    await firestore.collection(AppConstants.ordersCollection).doc(orderId)
+  Future<void> updateOrderStatus({
+    required String orderId,
+    required String status,
+  }) async {
+    await firestore
+        .collection(AppConstants.ordersCollection)
+        .doc(orderId)
         .set({'status': status}, SetOptions(merge: true));
     try {
-      final orderDoc = await firestore.collection(AppConstants.ordersCollection).doc(orderId).get();
+      final orderDoc = await firestore
+          .collection(AppConstants.ordersCollection)
+          .doc(orderId)
+          .get();
       final data = orderDoc.data() ?? {};
       final userId = (data['userId'] ?? '').toString();
       if (userId.isNotEmpty) {
-        await _notifyUser(userUid: userId, title: 'Order Update',
-          body: 'Your order status is now $status', type: 'order_status_update',
-          targetScreen: 'order_detail', targetId: orderId);
+        await _notifyUser(
+          userUid: userId,
+          title: 'Order Update',
+          body: 'Your order status is now $status',
+          type: 'order_status_update',
+          targetScreen: 'order_detail',
+          targetId: orderId,
+        );
       }
     } catch (_) {}
   }
-
-  // ---------------------------------------------------------------------------
-  // Delivery address resolver
-  // ---------------------------------------------------------------------------
 
   Future<String> _resolveDeliveryAddress() async {
     final user = currentUser;
@@ -1303,12 +1479,10 @@ class FirebaseService {
     throw Exception('Please save/select a delivery address before checkout');
   }
 
-  // ---------------------------------------------------------------------------
-  // Movement estimate
-  // ---------------------------------------------------------------------------
-
   Future<MovementEstimate> estimateMovement({
-    required String type, required String pickup, required String destination,
+    required String type,
+    required String pickup,
+    required String destination,
   }) async {
     final pickupText = pickup.trim();
     final destinationText = destination.trim();
@@ -1316,35 +1490,44 @@ class FirebaseService {
       throw Exception('Pickup and destination are required');
     }
     final pickupLocation = await _geocodingService.searchLocation(pickupText);
-    final destinationLocation = await _geocodingService.searchLocation(destinationText);
+    final destinationLocation =
+        await _geocodingService.searchLocation(destinationText);
     final route = await _routingService.getRoute(
-      pickupLat: pickupLocation.latitude, pickupLng: pickupLocation.longitude,
-      destinationLat: destinationLocation.latitude, destinationLng: destinationLocation.longitude,
+      pickupLat: pickupLocation.latitude,
+      pickupLng: pickupLocation.longitude,
+      destinationLat: destinationLocation.latitude,
+      destinationLng: destinationLocation.longitude,
     );
-    final price = _pricingService.calculateFare(type: type, distanceKm: route.distanceKm);
+    final price =
+        _pricingService.calculateFare(type: type, distanceKm: route.distanceKm);
     return MovementEstimate(
-      pickupLabel: pickupLocation.displayName, destinationLabel: destinationLocation.displayName,
-      pickupLat: pickupLocation.latitude, pickupLng: pickupLocation.longitude,
-      destinationLat: destinationLocation.latitude, destinationLng: destinationLocation.longitude,
-      distanceKm: route.distanceKm, durationMin: route.durationMin,
-      price: price, eta: _pricingService.formatEta(route.durationMin),
+      pickupLabel: pickupLocation.displayName,
+      destinationLabel: destinationLocation.displayName,
+      pickupLat: pickupLocation.latitude,
+      pickupLng: pickupLocation.longitude,
+      destinationLat: destinationLocation.latitude,
+      destinationLng: destinationLocation.longitude,
+      distanceKm: route.distanceKm,
+      durationMin: route.durationMin,
+      price: price,
+      eta: _pricingService.formatEta(route.durationMin),
       routeGeometry: route.geometry,
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Admin assignment
-  // ---------------------------------------------------------------------------
-
   Future<int> _countAdminActiveAssignments(String adminUid) async {
-    final ridesSnapshot = await firestore.collection(AppConstants.ridesCollection)
-        .where('assignedAdminUid', isEqualTo: adminUid).get();
+    final ridesSnapshot = await firestore
+        .collection(AppConstants.ridesCollection)
+        .where('assignedAdminUid', isEqualTo: adminUid)
+        .get();
     final activeRideCount = ridesSnapshot.docs.where((doc) {
       final status = (doc.data()['status'] ?? '').toString();
       return status != 'completed' && status != 'cancelled';
     }).length;
-    final ordersSnapshot = await firestore.collection(AppConstants.ordersCollection)
-        .where('assignedAdminUid', isEqualTo: adminUid).get();
+    final ordersSnapshot = await firestore
+        .collection(AppConstants.ordersCollection)
+        .where('assignedAdminUid', isEqualTo: adminUid)
+        .get();
     final activeOrderCount = ordersSnapshot.docs.where((doc) {
       final status = (doc.data()['status'] ?? '').toString();
       return status != 'delivered' && status != 'cancelled';
@@ -1352,9 +1535,13 @@ class FirebaseService {
     return activeRideCount + activeOrderCount;
   }
 
-  Future<AdminAssignmentResult> _superAdminFallback({required String destinationState}) async {
-    final superAdminDoc = await firestore.collection(AppConstants.adminsCollection)
-        .doc(AppConstants.superAdminUid).get();
+  Future<AdminAssignmentResult> _superAdminFallback({
+    required String destinationState,
+  }) async {
+    final superAdminDoc = await firestore
+        .collection(AppConstants.adminsCollection)
+        .doc(AppConstants.superAdminUid)
+        .get();
     final data = superAdminDoc.data();
     if (data != null) {
       return AdminAssignmentResult(
@@ -1363,25 +1550,36 @@ class FirebaseService {
         adminName: (data['displayName'] ?? 'Super Admin').toString(),
         adminLat: (data['baseLat'] as num?)?.toDouble(),
         adminLng: (data['baseLng'] as num?)?.toDouble(),
-        distanceKm: null, matchedState: destinationState, matchedArea: '',
-        assignmentMethod: 'super_admin_fallback', activeLoad: 0,
+        distanceKm: null,
+        matchedState: destinationState,
+        matchedArea: '',
+        assignmentMethod: 'super_admin_fallback',
+        activeLoad: 0,
         escalatedToSuperAdmin: true,
       );
     }
     return AdminAssignmentResult(
-      adminUid: AppConstants.superAdminUid, adminEmail: '', adminName: 'Super Admin',
-      adminLat: null, adminLng: null, distanceKm: null,
-      matchedState: destinationState, matchedArea: '',
-      assignmentMethod: 'super_admin_fallback', activeLoad: 0,
+      adminUid: AppConstants.superAdminUid,
+      adminEmail: '',
+      adminName: 'Super Admin',
+      adminLat: null,
+      adminLng: null,
+      distanceKm: null,
+      matchedState: destinationState,
+      matchedArea: '',
+      assignmentMethod: 'super_admin_fallback',
+      activeLoad: 0,
       escalatedToSuperAdmin: true,
     );
   }
 
   Future<AdminAssignmentResult> findNearestAdmin({
-    required double targetLat, required double targetLng,
+    required double targetLat,
+    required double targetLng,
     required String destinationAddress,
   }) async {
-    final snapshot = await firestore.collection(AppConstants.adminsCollection).get();
+    final snapshot =
+        await firestore.collection(AppConstants.adminsCollection).get();
     final destinationState = _inferStateFromAddress(destinationAddress);
     final destinationLower = destinationAddress.toLowerCase();
 
@@ -1389,7 +1587,9 @@ class FirebaseService {
       final data = doc.data();
       final states = List<String>.from(data['coverageStates'] ?? []);
       return destinationState.isNotEmpty &&
-          states.map((e) => e.toLowerCase()).contains(destinationState.toLowerCase());
+          states
+              .map((e) => e.toLowerCase())
+              .contains(destinationState.toLowerCase());
     }).toList();
 
     final areaMatchedDocs = snapshot.docs.where((doc) {
@@ -1400,9 +1600,16 @@ class FirebaseService {
 
     List<QueryDocumentSnapshot<Map<String, dynamic>>> candidates;
     String method = 'radius';
-    if (areaMatchedDocs.isNotEmpty) { candidates = areaMatchedDocs; method = 'area'; }
-    else if (stateMatchedDocs.isNotEmpty) { candidates = stateMatchedDocs; method = 'state'; }
-    else { candidates = snapshot.docs; method = 'radius'; }
+    if (areaMatchedDocs.isNotEmpty) {
+      candidates = areaMatchedDocs;
+      method = 'area';
+    } else if (stateMatchedDocs.isNotEmpty) {
+      candidates = stateMatchedDocs;
+      method = 'state';
+    } else {
+      candidates = snapshot.docs;
+      method = 'radius';
+    }
 
     AdminAssignmentResult? best;
     double? bestScore;
@@ -1415,18 +1622,25 @@ class FirebaseService {
       final lat = (data['baseLat'] as num?)?.toDouble();
       final lng = (data['baseLng'] as num?)?.toDouble();
       final radius = ((data['serviceRadiusKm'] ?? 30) as num).toDouble();
-      final maxActiveAssignments = ((data['maxActiveAssignments'] ?? 20) as num).toInt();
+      final maxActiveAssignments =
+          ((data['maxActiveAssignments'] ?? 20) as num).toInt();
       if (lat == null || lng == null) continue;
 
-      final distance = _distanceKm(lat1: targetLat, lng1: targetLng, lat2: lat, lng2: lng);
+      final distance =
+          _distanceKm(lat1: targetLat, lng1: targetLng, lat2: lat, lng2: lng);
       final states = List<String>.from(data['coverageStates'] ?? []);
       final areas = List<String>.from(data['coverageAreas'] ?? []);
       final stateMatch = destinationState.isNotEmpty &&
-          states.map((e) => e.toLowerCase()).contains(destinationState.toLowerCase());
+          states
+              .map((e) => e.toLowerCase())
+              .contains(destinationState.toLowerCase());
       final matchedArea = areas.firstWhere(
-          (area) => destinationLower.contains(area.toLowerCase()), orElse: () => '');
+        (area) => destinationLower.contains(area.toLowerCase()),
+        orElse: () => '',
+      );
 
-      final allowed = method == 'radius' ? distance <= radius
+      final allowed = method == 'radius'
+          ? distance <= radius
           : (stateMatch || matchedArea.isNotEmpty || distance <= radius);
       if (!allowed) continue;
 
@@ -1434,7 +1648,11 @@ class FirebaseService {
       if (activeLoad >= maxActiveAssignments) continue;
 
       double score = distance + (activeLoad * 3);
-      if (matchedArea.isNotEmpty) { score -= 8; } else if (stateMatch) { score -= 4; }
+      if (matchedArea.isNotEmpty) {
+        score -= 8;
+      } else if (stateMatch) {
+        score -= 4;
+      }
 
       if (bestScore == null || score < bestScore) {
         bestScore = score;
@@ -1442,10 +1660,15 @@ class FirebaseService {
           adminUid: doc.id,
           adminEmail: (data['email'] ?? '').toString(),
           adminName: (data['displayName'] ?? data['email'] ?? '').toString(),
-          adminLat: lat, adminLng: lng, distanceKm: distance,
-          matchedState: stateMatch ? destinationState : '', matchedArea: matchedArea,
-          assignmentMethod: method == 'radius' && activeLoad > 0 ? 'workload_radius' : method,
-          activeLoad: activeLoad, escalatedToSuperAdmin: false,
+          adminLat: lat,
+          adminLng: lng,
+          distanceKm: distance,
+          matchedState: stateMatch ? destinationState : '',
+          matchedArea: matchedArea,
+          assignmentMethod:
+              method == 'radius' && activeLoad > 0 ? 'workload_radius' : method,
+          activeLoad: activeLoad,
+          escalatedToSuperAdmin: false,
         );
       }
     }
@@ -1454,71 +1677,105 @@ class FirebaseService {
     return _superAdminFallback(destinationState: destinationState);
   }
 
-  // ---------------------------------------------------------------------------
-  // Build movement ride
-  // ---------------------------------------------------------------------------
-
   Future<RideModel> _buildMovementRide({
-    required String type, required String pickup, required String destination,
-    required String rideType, required String note,
-    String? productId, String? orderId, String? addressLabel,
+    required String type,
+    required String pickup,
+    required String destination,
+    required String rideType,
+    required String note,
+    String? productId,
+    String? orderId,
+    String? addressLabel,
   }) async {
     final user = currentUser;
     if (user == null) throw Exception('You need to be signed in');
 
-    final estimate = await estimateMovement(type: type, pickup: pickup, destination: destination);
+    final estimate = await estimateMovement(
+      type: type,
+      pickup: pickup,
+      destination: destination,
+    );
     final nearestAdmin = await findNearestAdmin(
-      targetLat: estimate.destinationLat, targetLng: estimate.destinationLng,
+      targetLat: estimate.destinationLat,
+      targetLng: estimate.destinationLng,
       destinationAddress: estimate.destinationLabel,
     );
     final id = DateTime.now().millisecondsSinceEpoch.toString();
 
     return RideModel(
-      id: id, type: type, userId: user.uid,
-      pickup: estimate.pickupLabel, destination: estimate.destinationLabel,
-      rideType: rideType, status: 'searching', driver: null, price: estimate.price,
-      note: note, eta: estimate.eta,
-      pickupLat: estimate.pickupLat, pickupLng: estimate.pickupLng,
-      destinationLat: estimate.destinationLat, destinationLng: estimate.destinationLng,
-      driverLat: null, driverLng: null,
-      distanceKm: estimate.distanceKm, durationMin: estimate.durationMin,
+      id: id,
+      type: type,
+      userId: user.uid,
+      pickup: estimate.pickupLabel,
+      destination: estimate.destinationLabel,
+      rideType: rideType,
+      status: 'searching',
+      driver: null,
+      price: estimate.price,
+      note: note,
+      eta: estimate.eta,
+      pickupLat: estimate.pickupLat,
+      pickupLng: estimate.pickupLng,
+      destinationLat: estimate.destinationLat,
+      destinationLng: estimate.destinationLng,
+      driverLat: null,
+      driverLng: null,
+      distanceKm: estimate.distanceKm,
+      durationMin: estimate.durationMin,
       routeGeometry: estimate.routeGeometry,
-      productId: productId, orderId: orderId, addressLabel: addressLabel,
-      assignedAdminUid: nearestAdmin.adminUid, assignedAdminEmail: nearestAdmin.adminEmail,
+      productId: productId,
+      orderId: orderId,
+      addressLabel: addressLabel,
+      assignedAdminUid: nearestAdmin.adminUid,
+      assignedAdminEmail: nearestAdmin.adminEmail,
       assignedAdminName: nearestAdmin.adminName,
       assignedAdminDistanceKm: nearestAdmin.distanceKm,
-      assignedAdminState: nearestAdmin.matchedState, assignedAdminArea: nearestAdmin.matchedArea,
-      assignmentMethod: nearestAdmin.assignmentMethod, activeAdminLoad: nearestAdmin.activeLoad,
-      escalatedToSuperAdmin: nearestAdmin.escalatedToSuperAdmin, createdAt: DateTime.now(),
+      assignedAdminState: nearestAdmin.matchedState,
+      assignedAdminArea: nearestAdmin.matchedArea,
+      assignmentMethod: nearestAdmin.assignmentMethod,
+      activeAdminLoad: nearestAdmin.activeLoad,
+      escalatedToSuperAdmin: nearestAdmin.escalatedToSuperAdmin,
+      createdAt: DateTime.now(),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Place order
-  // ---------------------------------------------------------------------------
 
   Future<void> placeOrder(List<Map<String, dynamic>> cart) async {
     final user = currentUser;
     if (user == null || cart.isEmpty) return;
 
-    final total = cart.fold<double>(0, (sum, item) =>
-        sum + (((item['price'] ?? 0) as num).toDouble() * ((item['qty'] ?? 1) as int)));
+    final total = cart.fold<double>(
+      0,
+      (sum, item) =>
+          sum +
+          (((item['price'] ?? 0) as num).toDouble() *
+              ((item['qty'] ?? 1) as int)),
+    );
 
     final deliveryAddress = await _resolveDeliveryAddress();
     final vendorPickupAddress = await getVendorPickupAddress();
     final orderId = DateTime.now().millisecondsSinceEpoch.toString();
 
     final deliveryRide = await _buildMovementRide(
-      type: 'delivery', pickup: vendorPickupAddress, destination: deliveryAddress,
-      rideType: 'delivery', note: 'Auto-created from order $orderId', orderId: orderId,
-      productId: cart.isNotEmpty ? (cart.first['productId'] ?? '').toString() : null,
+      type: 'delivery',
+      pickup: vendorPickupAddress,
+      destination: deliveryAddress,
+      rideType: 'delivery',
+      note: 'Auto-created from order $orderId',
+      orderId: orderId,
+      productId:
+          cart.isNotEmpty ? (cart.first['productId'] ?? '').toString() : null,
       addressLabel: deliveryAddress,
     );
 
     final orderMap = {
-      'userId': user.uid, 'items': cart, 'totalAmount': total, 'status': 'pending',
-      'createdAt': DateTime.now().toIso8601String(), 'deliveryRideId': deliveryRide.id,
-      'deliveryAddress': deliveryAddress, 'assignedAdminUid': deliveryRide.assignedAdminUid,
+      'userId': user.uid,
+      'items': cart,
+      'totalAmount': total,
+      'status': 'pending',
+      'createdAt': DateTime.now().toIso8601String(),
+      'deliveryRideId': deliveryRide.id,
+      'deliveryAddress': deliveryAddress,
+      'assignedAdminUid': deliveryRide.assignedAdminUid,
       'assignedAdminEmail': deliveryRide.assignedAdminEmail,
       'assignedAdminName': deliveryRide.assignedAdminName,
       'assignedAdminDistanceKm': deliveryRide.assignedAdminDistanceKm,
@@ -1529,88 +1786,129 @@ class FirebaseService {
       'escalatedToSuperAdmin': deliveryRide.escalatedToSuperAdmin,
     };
 
-    await firestore.collection(AppConstants.ordersCollection).doc(orderId).set(orderMap);
-    await firestore.collection(AppConstants.ridesCollection).doc(deliveryRide.id).set(deliveryRide.toMap());
+    await firestore
+        .collection(AppConstants.ordersCollection)
+        .doc(orderId)
+        .set(orderMap);
+    await firestore
+        .collection(AppConstants.ridesCollection)
+        .doc(deliveryRide.id)
+        .set(deliveryRide.toMap());
     await clearCart();
 
     try {
-      await _notifyUser(userUid: user.uid, title: 'Order Placed Successfully',
+      await _notifyUser(
+        userUid: user.uid,
+        title: 'Order Placed Successfully',
         body: 'Your order has been placed and delivery is being arranged',
-        type: 'order_created', targetScreen: 'order_detail', targetId: orderId);
+        type: 'order_created',
+        targetScreen: 'order_detail',
+        targetId: orderId,
+      );
     } catch (_) {}
 
     if ((deliveryRide.assignedAdminUid ?? '').isNotEmpty) {
       try {
-        await _notifyAdmin(adminUid: deliveryRide.assignedAdminUid!,
-          title: 'New Order Assigned', body: 'A new order has been assigned to your operational area',
-          type: 'admin_assignment_order', targetScreen: 'admin_orders', targetId: orderId);
+        await _notifyAdmin(
+          adminUid: deliveryRide.assignedAdminUid!,
+          title: 'New Order Assigned',
+          body: 'A new order has been assigned to your operational area',
+          type: 'admin_assignment_order',
+          targetScreen: 'admin_orders',
+          targetId: orderId,
+        );
       } catch (_) {}
     }
 
     if (deliveryRide.escalatedToSuperAdmin) {
       try {
-        await _notifySuperAdminEscalation(title: 'Escalated Order',
+        await _notifySuperAdminEscalation(
+          title: 'Escalated Order',
           body: 'A new order could not be assigned automatically',
-          targetId: orderId, type: 'escalation_created');
+          targetId: orderId,
+          type: 'escalation_created',
+        );
       } catch (_) {}
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Rides
-  // ---------------------------------------------------------------------------
-
   Stream<List<RideModel>> watchUserRides() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
-    return firestore.collection(AppConstants.ridesCollection)
-        .where('userId', isEqualTo: user.uid).snapshots()
-        .map((s) => s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList()
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((s) => s.docs
+            .map((doc) => RideModel.fromMap(doc.id, doc.data()))
+            .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
   }
 
   Stream<List<RideModel>> watchAllRides() {
-    return firestore.collection(AppConstants.ridesCollection)
-        .orderBy('createdAt', descending: true).snapshots()
-        .map((s) => s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<RideModel>> watchAssignedRidesForAdmin() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
-    return firestore.collection(AppConstants.ridesCollection)
-        .where('assignedAdminUid', isEqualTo: user.uid).snapshots()
-        .map((s) => s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('assignedAdminUid', isEqualTo: user.uid)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<RideModel>> watchEscalatedRides() {
     final user = currentUser;
-    if (user == null || user.uid != AppConstants.superAdminUid) return Stream.value([]);
-    return firestore.collection(AppConstants.ridesCollection)
-        .where('escalatedToSuperAdmin', isEqualTo: true).snapshots()
-        .map((s) => s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+    if (user == null || user.uid != AppConstants.superAdminUid) {
+      return Stream.value([]);
+    }
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('escalatedToSuperAdmin', isEqualTo: true)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<RideModel>> watchDriverAssignedRides(String driverName) {
-    return firestore.collection(AppConstants.ridesCollection)
-        .where('driver', isEqualTo: driverName).snapshots()
-        .map((s) => s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.ridesCollection)
+        .where('driver', isEqualTo: driverName)
+        .snapshots()
+        .map((s) =>
+            s.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Future<bool> hasActiveRide() async {
     final user = currentUser;
     if (user == null) return false;
-    final snapshot = await firestore.collection(AppConstants.ridesCollection)
-        .where('userId', isEqualTo: user.uid).get();
-    final rides = snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList();
+    final snapshot = await firestore
+        .collection(AppConstants.ridesCollection)
+        .where('userId', isEqualTo: user.uid)
+        .get();
+    final rides =
+        snapshot.docs.map((doc) => RideModel.fromMap(doc.id, doc.data())).toList();
     return rides.any((r) => r.isActive && r.type == 'ride');
   }
 
   Future<void> createRide({
-    required String pickup, required String destination,
-    required String rideType, required double price,
-    String note = '', double? pickupLat, double? pickupLng,
-    double? destinationLat, double? destinationLng,
+    required String pickup,
+    required String destination,
+    required String rideType,
+    required double price,
+    String note = '',
+    double? pickupLat,
+    double? pickupLng,
+    double? destinationLat,
+    double? destinationLng,
   }) async {
     final user = currentUser;
     if (user == null) return;
@@ -1618,38 +1916,62 @@ class FirebaseService {
     if (active) throw Exception('You already have an active ride');
 
     final ride = await _buildMovementRide(
-      type: 'ride', pickup: pickup, destination: destination,
-      rideType: rideType, note: note,
+      type: 'ride',
+      pickup: pickup,
+      destination: destination,
+      rideType: rideType,
+      note: note,
     );
 
-    await firestore.collection(AppConstants.ridesCollection).doc(ride.id).set(ride.toMap());
+    await firestore
+        .collection(AppConstants.ridesCollection)
+        .doc(ride.id)
+        .set(ride.toMap());
 
     try {
-      await _notifyUser(userUid: user.uid, title: 'Ride Request Created',
+      await _notifyUser(
+        userUid: user.uid,
+        title: 'Ride Request Created',
         body: 'Your ride request has been created successfully',
-        type: 'ride_created', targetScreen: 'ride_detail', targetId: ride.id);
+        type: 'ride_created',
+        targetScreen: 'ride_detail',
+        targetId: ride.id,
+      );
     } catch (_) {}
 
     if ((ride.assignedAdminUid ?? '').isNotEmpty) {
       try {
-        await _notifyAdmin(adminUid: ride.assignedAdminUid!,
-          title: 'New Ride Assigned', body: 'A new ride request has been assigned to your operational area',
-          type: 'admin_assignment_ride', targetScreen: 'admin_rides', targetId: ride.id);
+        await _notifyAdmin(
+          adminUid: ride.assignedAdminUid!,
+          title: 'New Ride Assigned',
+          body:
+              'A new ride request has been assigned to your operational area',
+          type: 'admin_assignment_ride',
+          targetScreen: 'admin_rides',
+          targetId: ride.id,
+        );
       } catch (_) {}
     }
 
     if (ride.escalatedToSuperAdmin) {
       try {
-        await _notifySuperAdminEscalation(title: 'Escalated Ride',
+        await _notifySuperAdminEscalation(
+          title: 'Escalated Ride',
           body: 'A ride request could not be assigned automatically',
-          targetId: ride.id, type: 'escalation_created');
+          targetId: ride.id,
+          type: 'escalation_created',
+        );
       } catch (_) {}
     }
   }
 
   Future<void> updateRideStatus({
-    required String rideId, required String status,
-    String? driver, String? eta, double? driverLat, double? driverLng,
+    required String rideId,
+    required String status,
+    String? driver,
+    String? eta,
+    double? driverLat,
+    double? driverLng,
   }) async {
     await firestore.collection(AppConstants.ridesCollection).doc(rideId).set({
       'status': status,
@@ -1660,95 +1982,130 @@ class FirebaseService {
     }, SetOptions(merge: true));
 
     try {
-      final rideDoc = await firestore.collection(AppConstants.ridesCollection).doc(rideId).get();
+      final rideDoc = await firestore
+          .collection(AppConstants.ridesCollection)
+          .doc(rideId)
+          .get();
       final data = rideDoc.data() ?? {};
       final userId = (data['userId'] ?? '').toString();
       if (userId.isNotEmpty) {
-        await _notifyUser(userUid: userId, title: 'Ride Update',
-          body: 'Your ${data['type'] == 'delivery' ? 'delivery' : 'ride'} status is now $status',
-          type: data['type'] == 'delivery' ? 'delivery_status_update' : 'ride_status_update',
-          targetScreen: 'ride_detail', targetId: rideId);
+        await _notifyUser(
+          userUid: userId,
+          title: 'Ride Update',
+          body:
+              'Your ${data['type'] == 'delivery' ? 'delivery' : 'ride'} status is now $status',
+          type: data['type'] == 'delivery'
+              ? 'delivery_status_update'
+              : 'ride_status_update',
+          targetScreen: 'ride_detail',
+          targetId: rideId,
+        );
       }
     } catch (_) {}
   }
 
   Future<void> cancelRide(String rideId) async {
-    await firestore.collection(AppConstants.ridesCollection).doc(rideId)
+    await firestore
+        .collection(AppConstants.ridesCollection)
+        .doc(rideId)
         .set({'status': 'cancelled'}, SetOptions(merge: true));
   }
 
-  // ---------------------------------------------------------------------------
-  // Products
-  // ---------------------------------------------------------------------------
-
   Future<void> updateProduct(ProductModel product) async {
-    await firestore.collection(AppConstants.productsCollection).doc(product.id)
+    await firestore
+        .collection(AppConstants.productsCollection)
+        .doc(product.id)
         .set(product.toMap(), SetOptions(merge: true));
   }
 
   Stream<List<ProductModel>> watchAllProducts() {
-    return firestore.collection(AppConstants.productsCollection)
-        .orderBy('createdAt', descending: true).snapshots()
-        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.productsCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((s) => s.docs
+            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
+            .toList());
   }
 
   Stream<List<ProductModel>> watchTrendingProducts() {
-    return watchAllProducts().map((items) => items.where((item) => item.isTrending).toList());
+    return watchAllProducts()
+        .map((items) => items.where((item) => item.isTrending).toList());
   }
 
   Stream<List<ProductModel>> watchMyUploadedProducts() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
-    return firestore.collection(AppConstants.productsCollection)
-        .where('createdBy', isEqualTo: user.uid).snapshots()
-        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
+    return firestore
+        .collection(AppConstants.productsCollection)
+        .where('createdBy', isEqualTo: user.uid)
+        .snapshots()
+        .map((s) => s.docs
+            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
+            .toList());
   }
 
   Future<void> deleteProduct(String productId) async {
     await firestore.collection(AppConstants.productsCollection).doc(productId).delete();
   }
 
-  // ---------------------------------------------------------------------------
-  // Escalation queue
-  // ---------------------------------------------------------------------------
-
   Stream<List<Map<String, dynamic>>> watchEscalationQueue() {
     final user = currentUser;
-    if (user == null || user.uid != AppConstants.superAdminUid) return Stream.value([]);
+    if (user == null || user.uid != AppConstants.superAdminUid) {
+      return Stream.value([]);
+    }
 
-    final ridesStream = watchEscalatedRides().map((rides) => rides.map((ride) => {
-      'type': 'ride', 'id': ride.id,
-      'title': ride.type == 'delivery' ? 'Escalated Delivery' : 'Escalated Ride',
-      'subtitle': '${ride.pickup} → ${ride.destination}',
-      'status': ride.status, 'createdAt': ride.createdAt.toIso8601String(),
-    }).toList());
+    final ridesStream = watchEscalatedRides().map((rides) => rides
+        .map((ride) => {
+              'type': 'ride',
+              'id': ride.id,
+              'title':
+                  ride.type == 'delivery' ? 'Escalated Delivery' : 'Escalated Ride',
+              'subtitle': '${ride.pickup} → ${ride.destination}',
+              'status': ride.status,
+              'createdAt': ride.createdAt.toIso8601String(),
+            })
+        .toList());
 
-    final ordersStream = watchEscalatedOrders().map((orders) => orders.map((order) => {
-      'type': 'order', 'id': order.id, 'title': 'Escalated Order',
-      'subtitle': order.deliveryAddress, 'status': order.status,
-      'createdAt': order.createdAt.toIso8601String(),
-    }).toList());
+    final ordersStream = watchEscalatedOrders().map((orders) => orders
+        .map((order) => {
+              'type': 'order',
+              'id': order.id,
+              'title': 'Escalated Order',
+              'subtitle': order.deliveryAddress,
+              'status': order.status,
+              'createdAt': order.createdAt.toIso8601String(),
+            })
+        .toList());
 
     return ridesStream.asyncMap((rides) async {
       final orders = await ordersStream.first;
       final all = [...rides, ...orders];
-      all.sort((a, b) => (b['createdAt'] ?? '').toString()
+      all.sort((a, b) => (b['createdAt'] ?? '')
+          .toString()
           .compareTo((a['createdAt'] ?? '').toString()));
       return all;
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Seed categories
-  // ---------------------------------------------------------------------------
-
   Future<void> seedDefaultCategoriesIfMissing() async {
-    final defaults = ['General', 'Spices', 'Flours', 'Foods', 'Oils', 'Trending', 'Featured'];
+    final defaults = [
+      'General',
+      'Spices',
+      'Flours',
+      'Foods',
+      'Oils',
+      'Trending',
+      'Featured',
+    ];
     for (final category in defaults) {
       final ref = firestore.collection('categories').doc(category.toLowerCase());
       final snap = await ref.get();
       if (!snap.exists) {
-        await ref.set({'name': category, 'createdAt': DateTime.now().toIso8601String()});
+        await ref.set({
+          'name': category,
+          'createdAt': DateTime.now().toIso8601String(),
+        });
       }
     }
   }

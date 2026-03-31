@@ -91,7 +91,9 @@ class _SplashScreenState extends State<SplashScreen>
       await Future.any([
         _bootstrap(),
         Future.delayed(const Duration(seconds: 12), () {
-          throw Exception('App startup timed out. Please try again.');
+          throw Exception(
+            'App startup timed out. Please check your internet and try again.',
+          );
         }),
       ]);
     } catch (e) {
@@ -125,16 +127,24 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _bootstrap() async {
     final firebaseService = FirebaseService();
 
-    await firebaseService.seedDefaultAppSettings();
-    await firebaseService.seedDefaultCategoriesIfMissing();
+    unawaited(firebaseService.seedDefaultAppSettingsSafely());
+    unawaited(firebaseService.seedDefaultCategoriesIfMissingSafely());
 
     final user = firebaseService.currentUser;
 
     if (user != null) {
-      await firebaseService.ensureUserProfile();
-      await firebaseService.syncLocalCartToFirestore();
+      unawaited(firebaseService.ensureUserProfileSafely());
+      unawaited(firebaseService.syncLocalCartToFirestoreSafely());
 
-      final isAdmin = await firebaseService.isAdmin();
+      bool isAdmin = false;
+      try {
+        isAdmin = await firebaseService.isAdmin().timeout(
+          const Duration(seconds: 6),
+        );
+      } catch (_) {
+        isAdmin = false;
+      }
+
       if (isAdmin) {
         await _safeNavigate(RouteNames.admin);
         return;
