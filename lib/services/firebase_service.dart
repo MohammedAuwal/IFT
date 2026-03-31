@@ -84,7 +84,7 @@ class FirebaseService {
 
   User? get currentUser => auth.currentUser;
 
-  bool get isSuperAdmin => currentUser?.uid == AppConstants.superAdminUid;
+  bool get isSuperAdmin => AppConstants.isSuperAdminUid(currentUser?.uid);
 
   DocumentReference<Map<String, dynamic>> get _settingsDoc =>
       firestore.collection('app_settings').doc('general');
@@ -179,10 +179,6 @@ class FirebaseService {
     } catch (_) {}
   }
 
-  // ---------------------------------------------------------------------------
-  // Notification subcollection helpers
-  // ---------------------------------------------------------------------------
-
   CollectionReference<Map<String, dynamic>> _notificationSubcollection({
     required String rootCollection,
     required String uid,
@@ -208,7 +204,7 @@ class FirebaseService {
   }
 
   Future<bool> _hasAdminNotificationInbox(String uid) async {
-    if (uid == AppConstants.superAdminUid) return true;
+    if (AppConstants.isSuperAdminUid(uid)) return true;
     try {
       final doc = await firestore
           .collection(AppConstants.adminsCollection)
@@ -263,10 +259,6 @@ class FirebaseService {
 
     return ref.id;
   }
-
-  // ---------------------------------------------------------------------------
-  // Watch / read / mark / delete notifications
-  // ---------------------------------------------------------------------------
 
   Stream<List<AppNotificationModel>> watchNotifications() {
     final user = currentUser;
@@ -489,10 +481,6 @@ class FirebaseService {
     return deletedCount;
   }
 
-  // ---------------------------------------------------------------------------
-  // Notify helpers (persist + push)
-  // ---------------------------------------------------------------------------
-
   Future<void> _notifyUser({
     required String userUid,
     required String title,
@@ -573,38 +561,36 @@ class FirebaseService {
     required String targetId,
     required String type,
   }) async {
-    String? notificationId;
+    for (final superAdminUid in AppConstants.superAdminUids) {
+      String? notificationId;
 
-    try {
-      notificationId = await _createNotificationRecord(
-        rootCollection: AppConstants.adminsCollection,
-        recipientUid: AppConstants.superAdminUid,
-        title: title,
-        body: body,
-        type: type,
-        targetScreen: 'admin_escalation_dashboard',
-        targetId: targetId,
-      );
-    } catch (_) {}
+      try {
+        notificationId = await _createNotificationRecord(
+          rootCollection: AppConstants.adminsCollection,
+          recipientUid: superAdminUid,
+          title: title,
+          body: body,
+          type: type,
+          targetScreen: 'admin_escalation_dashboard',
+          targetId: targetId,
+        );
+      } catch (_) {}
 
-    try {
-      final tokens = await _readAdminTokens(AppConstants.superAdminUid);
-      await _notificationService.sendPush(
-        tokens: tokens,
-        title: title,
-        body: body,
-        type: type,
-        targetScreen: 'admin_escalation_dashboard',
-        targetId: targetId,
-        notificationId: notificationId,
-        notificationCollection: AppConstants.adminsCollection,
-      );
-    } catch (_) {}
+      try {
+        final tokens = await _readAdminTokens(superAdminUid);
+        await _notificationService.sendPush(
+          tokens: tokens,
+          title: title,
+          body: body,
+          type: type,
+          targetScreen: 'admin_escalation_dashboard',
+          targetId: targetId,
+          notificationId: notificationId,
+          notificationCollection: AppConstants.adminsCollection,
+        );
+      } catch (_) {}
+    }
   }
-
-  // ---------------------------------------------------------------------------
-  // Deep link helpers: get single order / ride by ID
-  // ---------------------------------------------------------------------------
 
   Future<OrderModel?> getOrderById(String orderId) async {
     try {
@@ -635,7 +621,7 @@ class FirebaseService {
   Future<bool> isAdmin() async {
     final user = currentUser;
     if (user == null) return false;
-    if (user.uid == AppConstants.superAdminUid) return true;
+    if (AppConstants.isSuperAdminUid(user.uid)) return true;
 
     try {
       final uidDoc = await firestore
@@ -902,7 +888,7 @@ class FirebaseService {
     return firestore
         .collection(AppConstants.adminsCollection)
         .snapshots()
-        .map((snapshot) => snapshot.docs.length + 1);
+        .map((snapshot) => snapshot.docs.length + AppConstants.superAdminUids.length);
   }
 
   Stream<int> watchAssignedActiveWorkloadCount() {
@@ -1368,7 +1354,7 @@ class FirebaseService {
 
   Stream<List<OrderModel>> watchEscalatedOrders() {
     final user = currentUser;
-    if (user == null || user.uid != AppConstants.superAdminUid) {
+    if (user == null || !AppConstants.isSuperAdminUid(user.uid)) {
       return Stream.value([]);
     }
     return firestore
@@ -1538,14 +1524,15 @@ class FirebaseService {
   Future<AdminAssignmentResult> _superAdminFallback({
     required String destinationState,
   }) async {
+    final fallbackUid = AppConstants.primarySuperAdminUid;
     final superAdminDoc = await firestore
         .collection(AppConstants.adminsCollection)
-        .doc(AppConstants.superAdminUid)
+        .doc(fallbackUid)
         .get();
     final data = superAdminDoc.data();
     if (data != null) {
       return AdminAssignmentResult(
-        adminUid: AppConstants.superAdminUid,
+        adminUid: fallbackUid,
         adminEmail: (data['email'] ?? '').toString(),
         adminName: (data['displayName'] ?? 'Super Admin').toString(),
         adminLat: (data['baseLat'] as num?)?.toDouble(),
@@ -1559,7 +1546,7 @@ class FirebaseService {
       );
     }
     return AdminAssignmentResult(
-      adminUid: AppConstants.superAdminUid,
+      adminUid: fallbackUid,
       adminEmail: '',
       adminName: 'Super Admin',
       adminLat: null,
@@ -1615,7 +1602,7 @@ class FirebaseService {
     double? bestScore;
 
     for (final doc in candidates) {
-      if (doc.id == AppConstants.superAdminUid) continue;
+      if (AppConstants.isSuperAdminUid(doc.id)) continue;
       final data = doc.data();
       final isActive = (data['isActive'] ?? true) == true;
       if (!isActive) continue;
@@ -1867,7 +1854,7 @@ class FirebaseService {
 
   Stream<List<RideModel>> watchEscalatedRides() {
     final user = currentUser;
-    if (user == null || user.uid != AppConstants.superAdminUid) {
+    if (user == null || !AppConstants.isSuperAdminUid(user.uid)) {
       return Stream.value([]);
     }
     return firestore
@@ -2036,6 +2023,9 @@ class FirebaseService {
   Stream<List<ProductModel>> watchMyUploadedProducts() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
+    if (AppConstants.isSuperAdminUid(user.uid)) {
+      return watchAllProducts();
+    }
     return firestore
         .collection(AppConstants.productsCollection)
         .where('createdBy', isEqualTo: user.uid)
@@ -2051,7 +2041,7 @@ class FirebaseService {
 
   Stream<List<Map<String, dynamic>>> watchEscalationQueue() {
     final user = currentUser;
-    if (user == null || user.uid != AppConstants.superAdminUid) {
+    if (user == null || !AppConstants.isSuperAdminUid(user.uid)) {
       return Stream.value([]);
     }
 

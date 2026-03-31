@@ -43,8 +43,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _addingAdmin = false;
   bool _loggingOut = false;
 
-  bool get _isSuperAdmin =>
-      FirebaseAuth.instance.currentUser?.uid == AppConstants.superAdminUid;
+  bool get _isSuperAdmin => AppConstants.isSuperAdminUid(
+        FirebaseAuth.instance.currentUser?.uid,
+      );
 
   bool _hasValidImage(String url) {
     final value = url.trim();
@@ -196,8 +197,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _firebaseService.seedDefaultCategoriesIfMissing();
-    _firebaseService.seedDefaultAppSettings();
+    _firebaseService.seedDefaultCategoriesIfMissingSafely();
+    _firebaseService.seedDefaultAppSettingsSafely();
   }
 
   @override
@@ -557,7 +558,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   _buildStatsSection(),
                   const SizedBox(height: 18),
-
                   Container(
                     margin: const EdgeInsets.only(bottom: 18),
                     padding: const EdgeInsets.all(16),
@@ -760,7 +760,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ],
                     ),
                   ),
-
                   Row(
                     children: [
                       Expanded(
