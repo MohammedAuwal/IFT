@@ -17,6 +17,7 @@ class LocalNotificationService {
   Future<void>? _initializing;
 
   static const String _soundPrefKey = 'mix_notification_sound';
+  static const String _androidNotificationIcon = '@mipmap/ic_launcher';
 
   static const AndroidNotificationChannel _defaultChannel =
       AndroidNotificationChannel(
@@ -55,7 +56,7 @@ class LocalNotificationService {
     if (_initialized) return;
 
     const androidSettings =
-        AndroidInitializationSettings('@drawable/ic_launcher_placeholder');
+        AndroidInitializationSettings(_androidNotificationIcon);
 
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -171,7 +172,7 @@ class LocalNotificationService {
           channelDescription: channelDesc,
           importance: Importance.max,
           priority: Priority.high,
-          icon: '@drawable/ic_launcher_placeholder',
+          icon: _androidNotificationIcon,
           playSound: !isSilent,
           enableVibration: !isSilent,
         ),
