@@ -1,41 +1,33 @@
 {
   "project_info": {
-    "project_number": "532487766810",
-    "project_id": "maamah-s",
-    "storage_bucket": "maamah-s.firebasestorage.app"
+    "project_number": "996231494835",
+    "project_id": "ift-1336f",
+    "storage_bucket": "ift-1336f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:532487766810:android:176de81b2d8d97091922a3",
+        "mobilesdk_app_id": "1:996231494835:android:88e9a06f5d51d8513884c6",
         "android_client_info": {
-          "package_name": "com.maamahsmix.app"
+          "package_name": "com.ift.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "532487766810-s9ujl86fchsngnlbcm23hnnbtrd8b4q9.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.maamahsmix.app",
-            "certificate_hash": "356ebfb6b1703e6cc5f832bcf9e0792d0a35d001"
-          }
-        },
-        {
-          "client_id": "532487766810-vn55nr9i2u1po47vqljbtnghn5r8loms.apps.googleusercontent.com",
+          "client_id": "996231494835-1ka75mcsn1h8fsrejum5jjr160akgakv.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDRN6iGyxOFCCl2CEaprdSt16bdUCpRuik"
+          "current_key": "AIzaSyCLYMSGU7Ep-LXdMPkj57L4Dc61slV-7C8"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "532487766810-vn55nr9i2u1po47vqljbtnghn5r8loms.apps.googleusercontent.com",
+              "client_id": "996231494835-1ka75mcsn1h8fsrejum5jjr160akgakv.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
