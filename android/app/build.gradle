@@ -1,6 +1,6 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
     id "com.google.gms.google-services"
 }
@@ -13,52 +13,60 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.ift.app"
-    compileSdk flutter.compileSdkVersion
-
-    // Fix for: "jni requires Android NDK 28.2.13676358"
+    compileSdk 36
     ndkVersion "28.2.13676358"
+
+    defaultConfig {
+        applicationId "com.ift.app"
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName "1.0.0"
+        multiDexEnabled true  // ✅ Required for desugaring
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true  // ✅ Must be here
     }
 
     kotlinOptions {
         jvmTarget = "17"
     }
 
-    defaultConfig {
-        applicationId "com.ift.app"
-        minSdk flutter.minSdkVersion
-        targetSdk flutter.targetSdkVersion
-        versionCode flutter.versionCode
-        versionName flutter.versionName
-    }
-
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties["storeFile"])
-                storePassword keystoreProperties["storePassword"]
                 keyAlias keystoreProperties["keyAlias"]
                 keyPassword keystoreProperties["keyPassword"]
+                storeFile file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
             }
         }
     }
 
     buildTypes {
-        release {
-            signingConfig signingConfigs.release
-        }
         debug {
-            // keep default debug signing
+            signingConfig signingConfigs.debug
+        }
+        release {
+            signingConfig keystorePropertiesFile.exists() ?
+                signingConfigs.release : signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
 
 flutter {
-    source "../.."
+    source '../..'
 }
 
 dependencies {
+    // ✅ Updated desugaring - fixes flutter_local_notifications error
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.5"
+
+    // ✅ Multidex support
+    implementation "androidx.multidex:multidex:2.0.1"
 }
