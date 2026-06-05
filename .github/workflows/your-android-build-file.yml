@@ -201,19 +201,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          if ! grep -q "flutter_launcher_icons:" pubspec.yaml; then
+          if ! grep -q "^flutter_launcher_icons:" pubspec.yaml; then
             echo "FATAL: pubspec.yaml missing flutter_launcher_icons configuration!"
             exit 1
           fi
 
-          if ! grep -q "flutter_launcher_icons" pubspec.yaml | head -1 && \
-             grep -q "adaptive_icon_background" pubspec.yaml && \
-             grep -q "adaptive_icon_foreground" pubspec.yaml; then
-            echo "flutter_launcher_icons configuration verified in pubspec.yaml"
-          fi
+          # Optional sanity check: these keys should exist for adaptive icons setups
+          grep -q "adaptive_icon_background" pubspec.yaml || echo "WARNING: adaptive_icon_background not found"
+          grep -q "adaptive_icon_foreground" pubspec.yaml || echo "WARNING: adaptive_icon_foreground not found"
 
           echo "=== pubspec.yaml launcher icons section ==="
-          sed -n '/flutter_launcher_icons:/,/^[a-z]/p' pubspec.yaml | head -20
+          sed -n '/flutter_launcher_icons:/,/^[a-z]/p' pubspec.yaml | head -30
 
       # ====================================================================
       # STEP 5: Flutter clean state
@@ -295,25 +293,27 @@ jobs:
       - name: Verify google-services.json exists
         run: test -f android/app/google-services.json
 
-      - name: Decode Android keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $KEYSTORE_PATH
-
-      - name: Verify keystore file exists
-        run: ls -l android/app/upload-keystore.jks
+      - name: Decode Android keystore (from repo secrets)
+        run: |
+          set -euo pipefail
+          mkdir -p android/app
+          printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$KEYSTORE_PATH"
+          test -s "$KEYSTORE_PATH"
+          ls -lh "$KEYSTORE_PATH"
 
       - name: Inspect keystore aliases
         run: |
           keytool -list -v \
-            -keystore android/app/upload-keystore.jks \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            -keystore "$KEYSTORE_PATH" \
+            -storepass "${{ secrets.KEY_STORE_PASSWORD }}"
 
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOT
           storeFile=upload-keystore.jks
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
           EOT
 
       - name: Install dependencies
