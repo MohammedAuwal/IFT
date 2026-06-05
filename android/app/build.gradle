@@ -1,6 +1,6 @@
 plugins {
     id "com.android.application"
-    id "org.jetbrains.kotlin.android"
+    id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
     id "com.google.gms.google-services"
 }
@@ -11,58 +11,54 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
-flutter {
-    source '../..'
-}
-
 android {
-    namespace "com.maamahsmix.app"
-    compileSdk 36
+    namespace "com.ift.app"
+    compileSdk flutter.compileSdkVersion
 
-    defaultConfig {
-        applicationId "com.maamahsmix.app"
-        minSdkVersion 26
-        targetSdkVersion 36
-        versionCode 1
-        versionName "1.0.0"
-    }
+    // Fix for: "jni requires Android NDK 28.2.13676358"
+    ndkVersion "28.2.13676358"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
         jvmTarget = "17"
     }
 
+    defaultConfig {
+        applicationId "com.ift.app"
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+    }
+
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties["keyAlias"]
-                keyPassword keystoreProperties["keyPassword"]
                 storeFile file(keystoreProperties["storeFile"])
                 storePassword keystoreProperties["storePassword"]
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
             }
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
-        }
-
         release {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig signingConfigs.release
-            }
-            minifyEnabled false
-            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            // keep default debug signing
         }
     }
 }
 
+flutter {
+    source "../.."
+}
+
 dependencies {
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.2"
 }
