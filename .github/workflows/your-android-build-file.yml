@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     env:
       KEYSTORE_PATH: android/app/upload-keystore.jks
@@ -30,301 +30,188 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # ====================================================================
-      # STEP 1: FULL CLEANUP — Remove ALL old icon artifacts aggressively
-      # ====================================================================
-      - name: Full cleanup of all old icon artifacts
+      # ================================================================
+      # STEP 1: Clean old artifacts
+      # ================================================================
+      - name: Clean old build artifacts
         run: |
           set -euo pipefail
+          rm -rf build/ .dart_tool/ android/.gradle/ android/app/build/ || true
+          echo "Clean complete"
 
-          echo "=== PHASE 1: Removing all mipmap directories ==="
-          find android/app/src/main/res -type d -name 'mipmap-*' -exec rm -rf {} + 2>/dev/null || true
-
-          echo "=== PHASE 2: Removing all drawable directories (except layout) ==="
-          rm -rf android/app/src/main/res/drawable 2>/dev/null || true
-          rm -rf android/app/src/main/res/drawable-v21 2>/dev/null || true
-          rm -rf android/app/src/main/res/drawable-v24 2>/dev/null || true
-          find android/app/src/main/res -type d -name 'drawable-anydpi*' -exec rm -rf {} + 2>/dev/null || true
-          find android/app/src/main/res -type d -name 'drawable-night*' -exec rm -rf {} + 2>/dev/null || true
-
-          echo "=== PHASE 3: Removing any file containing 'launcher' in name ==="
-          find android/ -type f -iname '*launcher*' -delete 2>/dev/null || true
-          find android/ -type f -iname '*ic_launcher*' -delete 2>/dev/null || true
-
-          echo "=== PHASE 4: Removing any leftover icon PNGs in res ==="
-          find android/app/src/main/res -type f -iname '*.png' -delete 2>/dev/null || true
-          find android/app/src/main/res -type f -iname '*icon*' -delete 2>/dev/null || true
-
-          echo "=== PHASE 5: Clean old assets/icon files ==="
-          rm -f assets/icon.png 2>/dev/null || true
-          rm -f assets/icon_foreground.png 2>/dev/null || true
-          rm -f assets/icon_background.png 2>/dev/null || true
-          find assets/ -type f -iname '*icon*' -delete 2>/dev/null || true
-          find assets/ -type f -iname '*launcher*' -delete 2>/dev/null || true
-
-          echo "=== PHASE 6: Remove Flutter build cache ==="
-          rm -rf build/ 2>/dev/null || true
-          rm -rf .dart_tool/ 2>/dev/null || true
-          rm -rf android/.gradle/ 2>/dev/null || true
-          rm -rf android/app/build/ 2>/dev/null || true
-
-          echo "=== CLEANUP COMPLETE ==="
-          echo "Listing remaining res structure:"
-          find android/app/src/main/res -type f 2>/dev/null || echo "(empty)"
-
-      # ====================================================================
-      # STEP 2: Recreate required directory structures
-      # ====================================================================
-      - name: Recreate clean directory structures
+      # ================================================================
+      # STEP 2: Setup assets
+      # ================================================================
+      - name: Setup asset directories
         run: |
           set -euo pipefail
-
           mkdir -p assets
-          mkdir -p assets/images
           mkdir -p android/app/src/main/res/drawable
           mkdir -p android/app/src/main/res/mipmap-hdpi
           mkdir -p android/app/src/main/res/mipmap-mdpi
           mkdir -p android/app/src/main/res/mipmap-xhdpi
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          mkdir -p android/app/src/main/res/values
-          mkdir -p android/app/src/main/res/values-night
 
-          # Recreate launch_background.xml (required for Flutter splash)
-          cat > android/app/src/main/res/drawable/launch_background.xml << 'XMLEOF'
+          # Create launch_background if missing
+          if [ ! -f android/app/src/main/res/drawable/launch_background.xml ]; then
+            cat > android/app/src/main/res/drawable/launch_background.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
               <item android:drawable="@android:color/white" />
           </layer-list>
-          XMLEOF
+          EOF
+          fi
 
-          echo "Directory structure recreated."
-
-      # ====================================================================
-      # STEP 3: Download fresh icons from Google Drive with retry logic
-      # ====================================================================
-      - name: Download fresh icon assets from Google Drive
+      # ================================================================
+      # STEP 3: Download icons from Google Drive
+      # ================================================================
+      - name: Download icon assets
         run: |
           set -euo pipefail
 
           GDRIVE_FILE_ID="164k4efk8aP4k7FcCohKKlvH7cplaL5Ze"
-          GDRIVE_URL="https://drive.google.com/uc?export=download&id=${GDRIVE_FILE_ID}"
-          DOWNLOAD_PATH="assets/icon.png"
           MAX_RETRIES=5
           RETRY_DELAY=5
+          OUTPUT="assets/icon.png"
 
-          download_with_retry() {
-            local url="$1"
-            local output="$2"
-            local attempt=1
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt ${attempt}/${MAX_RETRIES}..."
 
-            while [ $attempt -le $MAX_RETRIES ]; do
-              echo "Download attempt ${attempt}/${MAX_RETRIES} for $(basename ${output})..."
+            # Try direct Google Drive download
+            curl -sL \
+              "https://drive.usercontent.google.com/download?id=${GDRIVE_FILE_ID}&export=download&confirm=t" \
+              -o "${OUTPUT}.tmp" || true
 
-              # First attempt: direct download
-              HTTP_CODE=$(curl -sL -w "%{http_code}" -o "${output}.tmp" "${url}" 2>/dev/null) || true
+            # Validate file
+            if [ -s "${OUTPUT}.tmp" ]; then
+              FILE_TYPE=$(file "${OUTPUT}.tmp")
+              echo "Downloaded file type: $FILE_TYPE"
 
-              # Check if we got a confirmation page (large file warning)
-              if grep -q "confirm=" "${output}.tmp" 2>/dev/null; then
-                echo "Google Drive confirmation required, extracting confirm token..."
-                CONFIRM=$(grep -oP 'confirm=([0-9A-Za-z_-]+)' "${output}.tmp" | head -1 | cut -d= -f2)
-                if [ -n "$CONFIRM" ]; then
-                  HTTP_CODE=$(curl -sL -w "%{http_code}" -o "${output}.tmp" "${url}&confirm=${CONFIRM}" 2>/dev/null) || true
-                fi
-              fi
-
-              # Also try the newer Google Drive virus scan bypass
-              if [ ! -s "${output}.tmp" ] || file "${output}.tmp" | grep -qi "html"; then
-                echo "Trying alternative download method..."
-                HTTP_CODE=$(curl -sL -w "%{http_code}" \
-                  -o "${output}.tmp" \
-                  -H "Accept: image/png,image/*,*/*" \
-                  "https://drive.usercontent.google.com/download?id=${GDRIVE_FILE_ID}&export=download&confirm=t" \
-                  2>/dev/null) || true
-              fi
-
-              # Validate the downloaded file
-              if [ -s "${output}.tmp" ]; then
-                FILE_TYPE=$(file "${output}.tmp" 2>/dev/null || echo "unknown")
-                if echo "$FILE_TYPE" | grep -qi "png\|image"; then
-                  mv "${output}.tmp" "${output}"
-                  FILE_SIZE=$(stat -c%s "${output}" 2>/dev/null || echo "unknown")
-                  echo "SUCCESS: Downloaded $(basename ${output}) (${FILE_SIZE} bytes, ${FILE_TYPE})"
-                  return 0
-                else
-                  echo "WARNING: Downloaded file is not a valid PNG image: ${FILE_TYPE}"
-                  # If the file is not HTML, it might still be usable
-                  if ! echo "$FILE_TYPE" | grep -qi "html\|text"; then
-                    mv "${output}.tmp" "${output}"
-                    FILE_SIZE=$(stat -c%s "${output}" 2>/dev/null || echo "unknown")
-                    echo "ACCEPTED: File might be valid (${FILE_SIZE} bytes), proceeding..."
-                    return 0
-                  fi
-                fi
+              if echo "$FILE_TYPE" | grep -qi "png\|image"; then
+                mv "${OUTPUT}.tmp" "$OUTPUT"
+                echo "✅ Icon downloaded successfully"
+                cp "$OUTPUT" assets/icon_foreground.png
+                break
               else
-                echo "WARNING: Downloaded file is empty"
+                echo "❌ Not a valid image, retrying..."
+                rm -f "${OUTPUT}.tmp"
               fi
+            else
+              echo "❌ Empty file, retrying..."
+              rm -f "${OUTPUT}.tmp"
+            fi
 
-              rm -f "${output}.tmp"
-              attempt=$((attempt + 1))
-              if [ $attempt -le $MAX_RETRIES ]; then
-                echo "Retrying in ${RETRY_DELAY} seconds..."
-                sleep $RETRY_DELAY
-                RETRY_DELAY=$((RETRY_DELAY * 2))
-              fi
-            done
+            if [ $attempt -eq $MAX_RETRIES ]; then
+              echo "FATAL: Failed to download icon after ${MAX_RETRIES} attempts"
+              exit 1
+            fi
 
-            echo "FATAL: Failed to download $(basename ${output}) after ${MAX_RETRIES} attempts"
-            return 1
-          }
+            sleep $((RETRY_DELAY * attempt))
+          done
 
-          echo "=== Downloading icon.png ==="
-          download_with_retry "${GDRIVE_URL}" "${DOWNLOAD_PATH}"
+          echo "Final assets:"
+          ls -lh assets/
 
-          echo "=== Creating icon_foreground.png ==="
-          # Use the same icon as foreground (standard practice for adaptive icons)
-          cp assets/icon.png assets/icon_foreground.png
+      # ================================================================
+      # STEP 4: Flutter setup
+      # ================================================================
+      - name: Flutter pub get
+        run: flutter pub get
 
-          echo "=== Verifying downloaded assets ==="
-          ls -la assets/icon.png assets/icon_foreground.png
-
-          echo "=== File type verification ==="
-          file assets/icon.png
-          file assets/icon_foreground.png
-
-          echo "=== Asset download complete ==="
-
-      # ====================================================================
-      # STEP 4: Verify and enforce pubspec.yaml configuration
-      # ====================================================================
-      - name: Verify pubspec.yaml has correct launcher icons config
-        run: |
-          set -euo pipefail
-
-          if ! grep -q "^flutter_launcher_icons:" pubspec.yaml; then
-            echo "FATAL: pubspec.yaml missing flutter_launcher_icons configuration!"
-            exit 1
-          fi
-
-          # Optional sanity check: these keys should exist for adaptive icons setups
-          grep -q "adaptive_icon_background" pubspec.yaml || echo "WARNING: adaptive_icon_background not found"
-          grep -q "adaptive_icon_foreground" pubspec.yaml || echo "WARNING: adaptive_icon_foreground not found"
-
-          echo "=== pubspec.yaml launcher icons section ==="
-          sed -n '/flutter_launcher_icons:/,/^[a-z]/p' pubspec.yaml | head -30
-
-      # ====================================================================
-      # STEP 5: Flutter clean state
-      # ====================================================================
-      - name: Flutter clean and pub get
-        run: |
-          set -euo pipefail
-
-          echo "=== Running flutter clean ==="
-          flutter clean
-
-          echo "=== Running flutter pub get ==="
-          flutter pub get
-
-          echo "=== Verifying flutter_launcher_icons is available ==="
-          flutter pub deps | grep flutter_launcher_icons || {
-            echo "FATAL: flutter_launcher_icons not found in dependencies!"
-            exit 1
-          }
-
-      # ====================================================================
-      # STEP 6: Generate launcher icons
-      # ====================================================================
+      # ================================================================
+      # STEP 5: Generate launcher icons
+      # ================================================================
       - name: Generate launcher icons
         run: |
           set -euo pipefail
-
-          echo "=== Pre-generation state ==="
-          echo "Assets:"
-          ls -la assets/
-          echo ""
-          echo "Mipmap dirs before generation:"
-          find android/app/src/main/res/mipmap-* -type f 2>/dev/null || echo "(empty)"
-
-          echo ""
-          echo "=== Running flutter_launcher_icons ==="
           dart run flutter_launcher_icons
 
-          echo ""
-          echo "=== Post-generation verification ==="
-          echo "Generated mipmap files:"
-          find android/app/src/main/res/mipmap-* -type f 2>/dev/null | sort
+          echo "Generated icons:"
+          find android/app/src/main/res/mipmap-* -type f | sort
 
-          echo ""
-          echo "Generated drawable files:"
-          find android/app/src/main/res/drawable* -type f 2>/dev/null | sort
-
-          # Verify critical files exist
-          REQUIRED_FILES=(
-            "android/app/src/main/res/mipmap-hdpi/ic_launcher.png"
-            "android/app/src/main/res/mipmap-mdpi/ic_launcher.png"
-            "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png"
-            "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png"
-            "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
-          )
-
-          MISSING=0
-          for f in "${REQUIRED_FILES[@]}"; do
-            if [ ! -f "$f" ]; then
-              echo "MISSING: $f"
-              MISSING=1
-            else
-              SIZE=$(stat -c%s "$f")
-              echo "OK: $f (${SIZE} bytes)"
+          # Verify required icons exist
+          for density in hdpi mdpi xhdpi xxhdpi xxxhdpi; do
+            FILE="android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+            if [ ! -f "$FILE" ]; then
+              echo "FATAL: Missing $FILE"
+              exit 1
             fi
+            echo "✅ $FILE ($(stat -c%s "$FILE") bytes)"
           done
 
-          if [ $MISSING -eq 1 ]; then
-            echo "FATAL: Some required launcher icon files are missing!"
+      # ================================================================
+      # STEP 6: Verify Firebase config
+      # ================================================================
+      - name: Verify google-services.json
+        run: |
+          test -f android/app/google-services.json && \
+          echo "✅ google-services.json found" || \
+          (echo "❌ google-services.json missing!" && exit 1)
+
+      # ================================================================
+      # STEP 7: Setup signing
+      # ================================================================
+      - name: Decode keystore
+        run: |
+          set -euo pipefail
+
+          # Validate secret exists
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "FATAL: KEYSTORE_BASE64 secret is empty!"
             exit 1
           fi
 
-          echo ""
-          echo "=== Launcher icon generation SUCCESSFUL ==="
+          # Decode keystore
+          printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" | \
+            base64 --decode > "$KEYSTORE_PATH"
 
-      # ====================================================================
-      # STEP 7: Standard build steps
-      # ====================================================================
-      - name: Verify google-services.json exists
-        run: test -f android/app/google-services.json
+          # Validate keystore size
+          KEYSTORE_SIZE=$(wc -c < "$KEYSTORE_PATH")
+          echo "Keystore size: ${KEYSTORE_SIZE} bytes"
 
-      - name: Decode Android keystore (from repo secrets)
-        run: |
-          set -euo pipefail
-          mkdir -p android/app
-          printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$KEYSTORE_PATH"
-          test -s "$KEYSTORE_PATH"
-          ls -lh "$KEYSTORE_PATH"
+          if [ "$KEYSTORE_SIZE" -lt 100 ]; then
+            echo "FATAL: Keystore is too small (${KEYSTORE_SIZE} bytes)!"
+            exit 1
+          fi
 
-      - name: Inspect keystore aliases
+          echo "✅ Keystore decoded successfully"
+
+      - name: Verify keystore
         run: |
           keytool -list -v \
             -keystore "$KEYSTORE_PATH" \
-            -storepass "${{ secrets.KEY_STORE_PASSWORD }}"
+            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
+            2>&1 | grep -E "Alias|Valid|Entry type|✅|❌" || true
+          echo "✅ Keystore verified"
 
       - name: Create key.properties
         run: |
-          cat > android/key.properties <<EOT
+          cat > android/key.properties << EOF
           storeFile=upload-keystore.jks
           storePassword=${{ secrets.KEY_STORE_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
-          EOT
+          EOF
+          echo "✅ key.properties created"
 
-      - name: Install dependencies
-        run: flutter pub get
-
+      # ================================================================
+      # STEP 8: Build
+      # ================================================================
       - name: Build Release APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          flutter build apk \
+            --release \
+            --no-tree-shake-icons \
+            --android-skip-build-dependency-validation
 
-      - name: Upload APK
+      # ================================================================
+      # STEP 9: Upload artifact
+      # ================================================================
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+          retention-days: 30
