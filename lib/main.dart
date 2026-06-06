@@ -63,12 +63,101 @@ Future<void> main() async {
 
   runApp(
     startupError == null
-        ? const iftApp()
+        ? const IftApp()  // ✅ Fixed: was `iftApp()` (lowercase i), now `IftApp()` (uppercase I)
         : StartupErrorApp(
             error: startupError,
             stackTrace: startupStack,
           ),
   );
+
+  if (startupError == null) {
+    unawaited(_initializeFcmNonBlocking());
+  }
+}
+
+Future<void> _initializeFcmNonBlocking() async {
+  try {
+    await FcmService.instance.initialize().timeout(const Duration(seconds: 20));
+  } catch (_) {
+    // Do not block app startup if FCM initialization is slow or fails.
+  }
+}
+
+class StartupErrorApp extends StatelessWidget {
+  final Object error;
+  final StackTrace? stackTrace;
+
+  const StartupErrorApp({
+    super.key,
+    required this.error,
+    this.stackTrace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF2A0A12),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 56,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'App failed to start',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Startup error details:',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SelectableText(
+                      '$error',
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (stackTrace != null) ...[
+                      const SizedBox(height: 20),
+                      SelectableText(
+                        '$stackTrace',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}  );
 
   if (startupError == null) {
     unawaited(_initializeFcmNonBlocking());
