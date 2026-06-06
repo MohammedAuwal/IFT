@@ -116,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$e'),
+          backgroundColor: AppTheme.colorsOf(context).error.withOpacity(0.9),
         ),
       );
     } finally {
@@ -140,6 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$e'),
+          backgroundColor: AppTheme.colorsOf(context).error.withOpacity(0.9),
         ),
       );
     } finally {
@@ -165,6 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colorsOf(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
@@ -181,6 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Stack(
           children: [
+            // ── Background Glow Circles (Red brand theme) ───────────────
             Positioned(
               top: -90,
               left: -80,
@@ -208,10 +212,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 190,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: colors.warning.withOpacity(0.16),
+                  color: colors.brandPrimary.withOpacity(0.14),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.warning.withOpacity(0.14),
+                      color: colors.brandPrimary.withOpacity(0.10),
                       blurRadius: 80,
                       spreadRadius: 18,
                     ),
@@ -227,10 +231,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 250,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: colors.brandSecondary.withOpacity(0.22),
+                  color: colors.brandSecondary.withOpacity(0.18),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.brandSecondary.withOpacity(0.18),
+                      color: colors.brandSecondary.withOpacity(0.14),
                       blurRadius: 100,
                       spreadRadius: 20,
                     ),
@@ -249,28 +253,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Column(
                         children: [
-                          const SizedBox(height: 110),
-                          Text(
-                            "Maamah's Mix",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.playfairDisplay(
-                              color: colors.textPrimary,
-                              fontSize: 34,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Premium African spices, flours & traditional foods',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              color: colors.textSecondary,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
+                          const SizedBox(height: 60),
+
+                          // ── IsmailTex Brand Logo ───────────────────────
+                          _buildBrandLogo(colors, isDark),
+
                           const SizedBox(height: 26),
+
+                          // ── Login Card ─────────────────────────────────
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
@@ -300,7 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   widget.redirectTo == null
-                                      ? 'Sign in to continue your premium shopping experience.'
+                                      ? 'Sign in to continue your IsmailTex shopping experience.'
                                       : 'Sign in to continue where you stopped.',
                                   style: GoogleFonts.poppins(
                                     color: colors.textSecondary,
@@ -340,6 +330,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                   height: 58,
                                   child: ElevatedButton(
                                     onPressed: _loading ? null : _login,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: colors.brandPrimary,
+                                      foregroundColor: Colors.white,
+                                      elevation: 2,
+                                      shadowColor: colors.brandPrimary.withOpacity(0.35),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
                                     child: _loading
                                         ? const SizedBox(
                                             width: 22,
@@ -393,6 +392,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     onPressed: _googleLoading ? null : _loginWithGoogle,
                                     style: OutlinedButton.styleFrom(
                                       backgroundColor: colors.surface.withOpacity(0.5),
+                                      side: BorderSide(color: colors.border, width: 1.5),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
                                     child: _googleLoading
                                         ? SizedBox(
@@ -406,12 +409,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                         : Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Text(
-                                                'G',
-                                                style: GoogleFonts.poppins(
-                                                  color: colors.textPrimary,
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.w700,
+                                              // Google Logo
+                                              Image.network(
+                                                'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                                                width: 22,
+                                                height: 22,
+                                                errorBuilder: (_, __, ___) => Text(
+                                                  'G',
+                                                  style: GoogleFonts.poppins(
+                                                    color: colors.textPrimary,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
@@ -419,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 'Continue with Google',
                                                 style: GoogleFonts.poppins(
                                                   color: colors.textPrimary,
-                                                  fontWeight: FontWeight.w700,
+                                                  fontWeight: FontWeight.w600,
                                                   fontSize: 15,
                                                 ),
                                               ),
@@ -489,7 +498,129 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  // ── Brand Logo Widget ────────────────────────────────────────────────
+
+  Widget _buildBrandLogo(AppThemeColors colors, bool isDark) {
+    return Column(
+      children: [
+        // Logo Icon — Red gradient circle with 'iT'
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFCC2222), // primary red
+                Color(0xFFA61818), // primaryDark red
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFCC2222).withOpacity(0.40),
+                blurRadius: 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Text(
+                'iT',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1,
+                ),
+              ),
+              // Dot above 'i' — mirrors logo icon
+              Positioned(
+                top: 11,
+                right: 15,
+                child: Container(
+                  width: 5.5,
+                  height: 5.5,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // "ISMAIL" + "TEX" — mirrors actual logo typography
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'ISMAIL',
+                style: GoogleFonts.montserrat(
+                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              TextSpan(
+                text: 'TEX',
+                style: GoogleFonts.montserrat(
+                  color: const Color(0xFFCC2222), // brand red
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        // Red divider line — mirrors logo
+        Container(
+          width: 40,
+          height: 2.5,
+          decoration: BoxDecoration(
+            color: const Color(0xFFCC2222),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Tagline from logo
+        Text(
+          'We weave a better tomorrow.',
+          style: GoogleFonts.poppins(
+            color: colors.textSecondary,
+            fontSize: 13,
+            fontStyle: FontStyle.italic,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'A quality you can trust.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFFCC2222),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
 }
+
+// ── Glass Field Widget ───────────────────────────────────────────────────
 
 class _GlassField extends StatelessWidget {
   final TextEditingController controller;
