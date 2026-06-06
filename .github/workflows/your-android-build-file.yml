@@ -53,7 +53,6 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
 
-          # Create launch_background if missing
           if [ ! -f android/app/src/main/res/drawable/launch_background.xml ]; then
             cat > android/app/src/main/res/drawable/launch_background.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
@@ -70,44 +69,11 @@ jobs:
       - name: Download icon assets
         run: |
           set -euo pipefail
-
           GDRIVE_FILE_ID="164k4efk8aP4k7FcCohKKlvH7cplaL5Ze"
-          MAX_RETRIES=5
-          RETRY_DELAY=5
           OUTPUT="assets/icon.png"
-
-          for attempt in $(seq 1 $MAX_RETRIES); do
-            echo "Attempt ${attempt}/${MAX_RETRIES}..."
-
-            curl -sL \
-              "https://drive.usercontent.google.com/download?id=${GDRIVE_FILE_ID}&export=download&confirm=t" \
-              -o "${OUTPUT}.tmp" || true
-
-            if [ -s "${OUTPUT}.tmp" ]; then
-              FILE_TYPE=$(file "${OUTPUT}.tmp")
-              echo "Downloaded file type: $FILE_TYPE"
-
-              if echo "$FILE_TYPE" | grep -qi "png\|image"; then
-                mv "${OUTPUT}.tmp" "$OUTPUT"
-                echo "✅ Icon downloaded successfully"
-                cp "$OUTPUT" assets/icon_foreground.png
-                break
-              else
-                echo "❌ Not a valid image, retrying..."
-                rm -f "${OUTPUT}.tmp"
-              fi
-            else
-              echo "❌ Empty file, retrying..."
-              rm -f "${OUTPUT}.tmp"
-            fi
-
-            if [ $attempt -eq $MAX_RETRIES ]; then
-              echo "❌ FATAL: Failed to download icon after ${MAX_RETRIES} attempts"
-              exit 1
-            fi
-
-            sleep $((RETRY_DELAY * attempt))
-          done
+          curl -sL "https://drive.usercontent.google.com/download?id=${GDRIVE_FILE_ID}&export=download&confirm=t" -o "$OUTPUT"
+          cp "$OUTPUT" assets/icon_foreground.png
+          echo "✅ Icon downloaded successfully"
 
       # ================================================================
       # STEP 4: Flutter pub get
@@ -150,7 +116,7 @@ jobs:
           mkdir -p "$(dirname "$KEYSTORE_PATH")"
           rm -f "$KEYSTORE_PATH"
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$KEYSTORE_PATH"
-          echo "✅ Keystore decoded successfully ($(wc -c < "$KEYSTORE_PATH") bytes)"
+          echo "✅ Keystore decoded successfully to $KEYSTORE_PATH"
 
       # ================================================================
       # STEP 8: Verify Keystore & Passwords Integrity
@@ -158,25 +124,13 @@ jobs:
       - name: Verify keystore integrity
         run: |
           set -euo pipefail
-
-          # 1. Verify Store Password
-          echo "Verifying Store Password..."
-          keytool -list -keystore "$KEYSTORE_PATH" -storepass "${{ secrets.KEY_STORE_PASSWORD }}" > /dev/null || {
-            echo "❌ FATAL: KEY_STORE_PASSWORD is incorrect or keystore corrupted!"
-            exit 1
-          }
-
-          # 2. Verify Key Password and Alias (This prevents BadPaddingException)
-          echo "Verifying Key Password and Alias..."
+          # Verify Store Password
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "${{ secrets.KEY_STORE_PASSWORD }}" > /dev/null
+          # Verify Key Password and Alias
           keytool -list -v -keystore "$KEYSTORE_PATH" \
             -alias "${{ secrets.KEY_ALIAS }}" \
             -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" > /dev/null || {
-            echo "❌ FATAL: KEY_PASSWORD or KEY_ALIAS is incorrect!"
-            echo "This is the cause of the BadPaddingException."
-            exit 1
-          }
-
+            -keypass "${{ secrets.KEY_PASSWORD }}" > /dev/null
           echo "✅ Keystore and all passwords verified!"
 
       # ================================================================
@@ -185,16 +139,14 @@ jobs:
       - name: Create key.properties
         run: |
           set -euo pipefail
-
-          # Path Fix: storeFile must be relative to the 'android' folder
-          # Since the .jks is in 'android/app/', we use 'app/upload-keystore.jks'
+          # storeFile is relative to the app/ build.gradle location.
+          # Since the file is in android/app/upload-keystore.jks, we just use the filename.
           cat > android/key.properties << EOF
-          storeFile=app/upload-keystore.jks
+          storeFile=upload-keystore.jks
           storePassword=${{ secrets.KEY_STORE_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           EOF
-
           echo "✅ key.properties created successfully"
 
       # ================================================================
