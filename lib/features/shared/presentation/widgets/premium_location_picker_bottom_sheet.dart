@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/features/rider/presentation/widgets/location_search_field.dart';
-import 'package:mix/models/place_suggestion_model.dart';
-import 'package:mix/services/location_service.dart';
-import 'package:mix/core/theme/build_context_theme_x.dart';
+import 'package:ift/features/rider/presentation/widgets/location_search_field.dart';
+import 'package:ift/models/place_suggestion_model.dart';
+import 'package:ift/services/location_service.dart';
+import 'package:ift/core/theme/build_context_theme_x.dart';
 
 class PremiumLocationPickerBottomSheet extends StatefulWidget {
   final String title;
