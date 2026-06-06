@@ -3,9 +3,9 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/models/payment_config_model.dart';
-import 'package:mix/models/payment_session_model.dart';
+import 'package:ift/core/constants/app_constants.dart';
+import 'package:ift/models/payment_config_model.dart';
+import 'package:ift/models/payment_session_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PaymentResult {
