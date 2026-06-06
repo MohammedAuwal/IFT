@@ -224,6 +224,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         child: _StatCard(
                           title: 'Products',
                           value: '${pSnap.data ?? 0}',
+                          icon: Icons.inventory_2_rounded,
                           color: AppTheme.colorsOf(context).brandPrimary,
                         ),
                       ),
@@ -232,6 +233,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         child: _StatCard(
                           title: 'Orders',
                           value: '${oSnap.data ?? 0}',
+                          icon: Icons.receipt_long_rounded,
                           color: AppTheme.colorsOf(context).warning,
                         ),
                       ),
@@ -254,6 +256,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         child: _StatCard(
                           title: 'Rides',
                           value: '${rSnap.data ?? 0}',
+                          icon: Icons.local_taxi_rounded,
                           color: AppTheme.colorsOf(context).info,
                         ),
                       ),
@@ -262,6 +265,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         child: _StatCard(
                           title: 'Admins',
                           value: '${aSnap.data ?? 1}',
+                          icon: Icons.admin_panel_settings_rounded,
                           color: AppTheme.colorsOf(context).palePurple,
                         ),
                       ),
@@ -289,6 +293,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       child: _StatCard(
                         title: 'My Products',
                         value: '${productsSnap.data?.length ?? 0}',
+                        icon: Icons.inventory_2_rounded,
                         color: AppTheme.colorsOf(context).brandPrimary,
                       ),
                     ),
@@ -297,6 +302,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       child: _StatCard(
                         title: 'Assigned Orders',
                         value: '${ordersSnap.data ?? 0}',
+                        icon: Icons.receipt_long_rounded,
                         color: AppTheme.colorsOf(context).warning,
                       ),
                     ),
@@ -319,6 +325,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       child: _StatCard(
                         title: 'Assigned Rides',
                         value: '${ridesSnap.data ?? 0}',
+                        icon: Icons.local_taxi_rounded,
                         color: AppTheme.colorsOf(context).info,
                       ),
                     ),
@@ -327,6 +334,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       child: _StatCard(
                         title: 'Active Workload',
                         value: '${workloadSnap.data ?? 0}',
+                        icon: Icons.bolt_rounded,
                         color: AppTheme.colorsOf(context).palePurple,
                       ),
                     ),
@@ -348,24 +356,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Scaffold(
       backgroundColor: colors.scaffold,
       appBar: AppBar(
+        elevation: 0,
         title: Row(
           children: [
+            // ── ITEX Brand Logo Badge ──────────────────────────
             Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: colors.brandPrimary,
-                shape: BoxShape.circle,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
               ),
-              child: Center(
-                child: Text(
-                  'M',
-                  style: GoogleFonts.cinzel(
-                    color: colors.brandSecondary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    colors.brandPrimary,
+                    colors.brandPrimary.withOpacity(0.75),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.brandPrimary.withOpacity(0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
+                ],
+              ),
+              child: Text(
+                'ITEX',
+                style: GoogleFonts.cinzel(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
                 ),
               ),
             ),
@@ -381,16 +405,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     style: GoogleFonts.poppins(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.w700,
+                      fontSize: 14,
                     ),
                   ),
                   Text(
                     _isSuperAdmin
-                        ? 'Manage products, categories, rides, orders & admins'
-                        : 'Manage your products, categories and assigned requests',
+                        ? 'Full platform control — IsmailTex'
+                        : 'Manage your products & assigned requests',
                     style: GoogleFonts.poppins(
                       color: colors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -398,6 +424,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ],
         ),
         actions: [
+          // ── Notifications Bell ─────────────────────────────
           StreamBuilder<int>(
             stream: _firebaseService.watchUnreadNotificationCount(),
             builder: (context, snapshot) {
@@ -456,6 +483,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               );
             },
           ),
+          // ── Theme Toggle ───────────────────────────────────
           IconButton(
             tooltip: 'Toggle theme',
             onPressed: () =>
@@ -467,6 +495,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               color: colors.iconPrimary,
             ),
           ),
+          // ── User View Switch ───────────────────────────────
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: TextButton.icon(
@@ -486,6 +515,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
           ),
+          // ── Logout ─────────────────────────────────────────
           IconButton(
             onPressed: _loggingOut ? null : _logout,
             icon: _loggingOut
@@ -507,13 +537,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: colors.brandPrimary,
         foregroundColor: Colors.white,
+        elevation: 4,
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const AddProductScreen()),
           );
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Product'),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(
+          'Add Product',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
       ),
       body: CustomScrollView(
         slivers: [
@@ -522,6 +556,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             sliver: SliverList(
               delegate: SliverChildListDelegate(
                 [
+                  // ── Admin Mode Banner ──────────────────────────
                   Container(
                     margin: const EdgeInsets.only(bottom: 18),
                     padding: const EdgeInsets.symmetric(
@@ -529,35 +564,71 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: colors.brandPrimary.withOpacity(0.10),
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.brandPrimary.withOpacity(0.12),
+                          colors.brandPrimary.withOpacity(0.04),
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: colors.brandPrimary.withOpacity(0.25),
+                        color: colors.brandPrimary.withOpacity(0.3),
                       ),
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.admin_panel_settings_rounded,
-                          color: colors.brandPrimary,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colors.brandPrimary.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.admin_panel_settings_rounded,
+                            color: colors.brandPrimary,
+                            size: 20,
+                          ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            _isSuperAdmin
-                                ? 'You are in super admin mode. You can manage the full platform.'
-                                : 'You are in admin mode. You can manage your uploaded products, categories, and requests assigned to you.',
-                            style: GoogleFonts.poppins(
-                              color: colors.textPrimary,
-                              fontSize: 12.5,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _isSuperAdmin
+                                    ? 'Super Admin Mode'
+                                    : 'Admin Mode — IsmailTex',
+                                style: GoogleFonts.poppins(
+                                  color: colors.brandPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _isSuperAdmin
+                                    ? 'You have full control over the IsmailTex platform.'
+                                    : 'Manage your uploaded products, categories, and requests assigned to you.',
+                                style: GoogleFonts.poppins(
+                                  color: colors.textSecondary,
+                                  fontSize: 11.5,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  // ── Stats ──────────────────────────────────────
                   _buildStatsSection(),
                   const SizedBox(height: 18),
+
+                  // ── ITEX Notifications Panel ───────────────────
                   Container(
                     margin: const EdgeInsets.only(bottom: 18),
                     padding: const EdgeInsets.all(16),
@@ -565,24 +636,38 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       color: colors.card,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: colors.borderSoft),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.brandPrimary.withOpacity(0.04),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.notifications_active_rounded,
-                              color: colors.brandPrimary,
-                              size: 20,
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: colors.brandPrimary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.notifications_active_rounded,
+                                color: colors.brandPrimary,
+                                size: 18,
+                              ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 10),
                             Text(
-                              'Admin Notifications',
+                              'ITEX Notifications',
                               style: GoogleFonts.poppins(
                                 color: colors.textPrimary,
                                 fontWeight: FontWeight.w700,
-                                fontSize: 16,
+                                fontSize: 15,
                               ),
                             ),
                             const Spacer(),
@@ -606,31 +691,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         StreamBuilder<List<AppNotificationModel>>(
-                          stream:
-                              _firebaseService.watchAdminNotifications(),
+                          stream: _firebaseService.watchAdminNotifications(),
                           builder: (context, snapshot) {
-                            final notifications =
-                                snapshot.data ?? [];
+                            final notifications = snapshot.data ?? [];
                             if (notifications.isEmpty) {
                               return Padding(
                                 padding:
-                                    const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                child: Text(
-                                  'No admin notifications yet',
-                                  style: GoogleFonts.poppins(
-                                    color: colors.textSecondary,
-                                    fontSize: 12.5,
-                                  ),
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.inbox_rounded,
+                                      color: colors.textSecondary,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'No ITEX notifications yet',
+                                      style: GoogleFonts.poppins(
+                                        color: colors.textSecondary,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             }
 
-                            final recent =
-                                notifications.take(5).toList();
+                            final recent = notifications.take(5).toList();
 
                             return Column(
                               children: recent.map((n) {
@@ -646,40 +736,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                         .instance
                                         .handlePayload({
                                       'type': n.type,
-                                      'targetScreen':
-                                          n.targetScreen,
+                                      'targetScreen': n.targetScreen,
                                       'targetId': n.targetId,
                                       'notificationId': n.id,
                                       'notificationCollection':
                                           n.recipientCollection,
                                     });
                                   },
-                                  borderRadius:
-                                      BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    margin:
-                                        const EdgeInsets.only(
-                                      bottom: 8,
-                                    ),
-                                    padding:
-                                        const EdgeInsets.all(10),
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
                                       color: n.isRead
                                           ? colors.surfaceAlt
                                           : colors.brandPrimary
-                                              .withOpacity(
-                                                  0.08),
+                                              .withOpacity(0.08),
                                       borderRadius:
-                                          BorderRadius.circular(
-                                        12,
-                                      ),
+                                          BorderRadius.circular(12),
                                       border: Border.all(
                                         color: n.isRead
                                             ? colors.borderSoft
                                             : colors.brandPrimary
-                                                .withOpacity(
-                                              0.2,
-                                            ),
+                                                .withOpacity(0.25),
                                       ),
                                     ),
                                     child: Row(
@@ -688,54 +767,37 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                           Container(
                                             width: 8,
                                             height: 8,
-                                            margin:
-                                                const EdgeInsets
-                                                    .only(
+                                            margin: const EdgeInsets.only(
                                               right: 8,
                                             ),
-                                            decoration:
-                                                BoxDecoration(
-                                              color: colors
-                                                  .brandPrimary,
-                                              shape:
-                                                  BoxShape.circle,
+                                            decoration: BoxDecoration(
+                                              color: colors.brandPrimary,
+                                              shape: BoxShape.circle,
                                             ),
                                           ),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment:
-                                                CrossAxisAlignment
-                                                    .start,
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 n.title,
-                                                style:
-                                                    GoogleFonts
-                                                        .poppins(
-                                                  color: colors
-                                                      .textPrimary,
-                                                  fontWeight:
-                                                      n.isRead
-                                                          ? FontWeight
-                                                              .w500
-                                                          : FontWeight
-                                                              .w700,
+                                                style: GoogleFonts.poppins(
+                                                  color: colors.textPrimary,
+                                                  fontWeight: n.isRead
+                                                      ? FontWeight.w500
+                                                      : FontWeight.w700,
                                                   fontSize: 12.5,
                                                 ),
                                               ),
-                                              const SizedBox(
-                                                  height: 2),
+                                              const SizedBox(height: 2),
                                               Text(
                                                 n.body,
                                                 maxLines: 1,
                                                 overflow:
-                                                    TextOverflow
-                                                        .ellipsis,
-                                                style:
-                                                    GoogleFonts
-                                                        .poppins(
-                                                  color: colors
-                                                      .textSecondary,
+                                                    TextOverflow.ellipsis,
+                                                style: GoogleFonts.poppins(
+                                                  color: colors.textSecondary,
                                                   fontSize: 11,
                                                 ),
                                               ),
@@ -743,10 +805,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                           ),
                                         ),
                                         Icon(
-                                          Icons
-                                              .chevron_right_rounded,
-                                          color:
-                                              colors.textSecondary,
+                                          Icons.chevron_right_rounded,
+                                          color: colors.textSecondary,
                                           size: 18,
                                         ),
                                       ],
@@ -760,6 +820,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ],
                     ),
                   ),
+
+                  // ── Quick Action Cards ─────────────────────────
                   Row(
                     children: [
                       Expanded(
@@ -769,8 +831,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    const AddProductScreen(),
+                                builder: (_) => const AddProductScreen(),
                               ),
                             );
                           },
@@ -784,8 +845,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    ManageProductsScreen(),
+                                builder: (_) => ManageProductsScreen(),
                               ),
                             );
                           },
@@ -799,14 +859,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Expanded(
                         child: _ActionCard(
                           icon: Icons.receipt_long_rounded,
-                          title: _isSuperAdmin
-                              ? 'All Orders'
-                              : 'My Orders',
+                          title: _isSuperAdmin ? 'All Orders' : 'My Orders',
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    AdminOrdersScreen(),
+                                builder: (_) => AdminOrdersScreen(),
                               ),
                             );
                           },
@@ -822,8 +879,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    AdminRidesScreen(),
+                                builder: (_) => AdminRidesScreen(),
                               ),
                             );
                           },
@@ -876,8 +932,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ],
                     ],
                   ),
-                  if (_isSuperAdmin) const SizedBox(height: 12),
-                  if (_isSuperAdmin)
+                  if (_isSuperAdmin) ...[
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -904,8 +960,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                       ],
                     ),
-                  const SizedBox(height: 12),
-                  if (_isSuperAdmin)
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -939,22 +994,42 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                       ],
                     ),
+                  ],
                   const SizedBox(height: 18),
+
+                  // ── Add Admin Panel (Super Admin only) ─────────
                   if (_isSuperAdmin) ...[
                     _sectionCard(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Add Admin',
-                            style: GoogleFonts.poppins(
-                              color: colors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color:
+                                      colors.brandPrimary.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.person_add_rounded,
+                                  color: colors.brandPrimary,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Add Admin',
+                                style: GoogleFonts.poppins(
+                                  color: colors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
                           _Field(
                             controller: _adminNameCtrl,
                             hint: 'Admin Name',
@@ -962,21 +1037,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           const SizedBox(height: 12),
                           _Field(
                             controller: _adminEmailCtrl,
-                            hint: 'Admin Email (Must be a registered user)',
+                            hint: 'Admin Email (must be a registered user)',
                           ),
                           const SizedBox(height: 14),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed:
-                                  _addingAdmin ? null : _addAdmin,
+                              onPressed: _addingAdmin ? null : _addAdmin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colors.brandPrimary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
                               child: _addingAdmin
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child:
-                                          CircularProgressIndicator(
+                                      child: CircularProgressIndicator(
                                         strokeWidth: 2,
+                                        color: Colors.white,
                                       ),
                                     )
                                   : Text(
@@ -987,20 +1070,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                     ),
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          Text(
-                            'Current Admins',
-                            style: GoogleFonts.poppins(
-                              color: colors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.people_alt_rounded,
+                                color: colors.textSecondary,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Current Admins',
+                                style: GoogleFonts.poppins(
+                                  color: colors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 10),
                           StreamBuilder<List<Map<String, dynamic>>>(
                             stream: _firebaseService.watchAdmins(),
                             builder: (context, snapshot) {
-                              final admins =
-                                  snapshot.data ?? [];
+                              final admins = snapshot.data ?? [];
                               if (admins.isEmpty) {
                                 return Text(
                                   'No extra admins yet',
@@ -1012,27 +1105,98 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
                               return Column(
                                 children: admins.map((admin) {
-                                  return ListTile(
-                                    contentPadding:
-                                        EdgeInsets.zero,
-                                    title: Text(
-                                      (admin['displayName'] ??
-                                              admin['email'] ??
-                                              '')
-                                          .toString(),
-                                      style: GoogleFonts.poppins(
-                                        color:
-                                            colors.textPrimary,
-                                      ),
+                                  return Container(
+                                    margin:
+                                        const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
                                     ),
-                                    subtitle: Text(
-                                      (admin['email'] ?? '')
-                                          .toString(),
-                                      style: GoogleFonts.poppins(
-                                        color: colors
-                                            .textSecondary,
-                                        fontSize: 11,
-                                      ),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceAlt,
+                                      borderRadius:
+                                          BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: colors.borderSoft),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor: colors
+                                              .brandPrimary
+                                              .withOpacity(0.15),
+                                          child: Text(
+                                            ((admin['displayName'] ??
+                                                            admin['email'] ??
+                                                            'A')
+                                                        .toString()
+                                                        .isNotEmpty
+                                                    ? (admin['displayName'] ??
+                                                            admin['email'] ??
+                                                            'A')
+                                                        .toString()[0]
+                                                        .toUpperCase()
+                                                    : 'A'),
+                                            style: GoogleFonts.poppins(
+                                              color: colors.brandPrimary,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                (admin['displayName'] ??
+                                                        admin['email'] ??
+                                                        '')
+                                                    .toString(),
+                                                style: GoogleFonts.poppins(
+                                                  color: colors.textPrimary,
+                                                  fontWeight:
+                                                      FontWeight.w600,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              Text(
+                                                (admin['email'] ?? '')
+                                                    .toString(),
+                                                style: GoogleFonts.poppins(
+                                                  color:
+                                                      colors.textSecondary,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Container(
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.brandPrimary
+                                                .withOpacity(0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            'Admin',
+                                            style: GoogleFonts.poppins(
+                                              color: colors.brandPrimary,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   );
                                 }).toList(),
@@ -1044,30 +1208,46 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                     const SizedBox(height: 18),
                   ],
-                  Text(
-                    'My Uploaded Products',
-                    style: GoogleFonts.poppins(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                    ),
+
+                  // ── My Uploaded Products Header ─────────────────
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: colors.brandPrimary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'My Uploaded Products',
+                        style: GoogleFonts.poppins(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                 ],
               ),
             ),
           ),
+
+          // ── Products List ──────────────────────────────────────
           StreamBuilder<List<ProductModel>>(
             stream: _firebaseService.watchMyUploadedProducts(),
             builder: (context, snapshot) {
-              if (snapshot.connectionState ==
-                  ConnectionState.waiting) {
+              final colors = AppTheme.colorsOf(context);
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(20),
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
                 );
               }
@@ -1078,28 +1258,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 return SliverToBoxAdapter(
                   child: Padding(
                     padding:
-                        const EdgeInsets.fromLTRB(
-                      16,
-                      0,
-                      16,
-                      24,
-                    ),
+                        const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     child: Container(
-                      padding:
-                          const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: colors.card,
-                        borderRadius:
-                            BorderRadius.circular(18),
-                        border: Border.all(
-                          color: colors.borderSoft,
-                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: colors.borderSoft),
                       ),
-                      child: Text(
-                        'You have not uploaded any product yet',
-                        style: GoogleFonts.poppins(
-                          color: colors.textSecondary,
-                        ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            color: colors.textSecondary,
+                            size: 40,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'No products uploaded yet',
+                            style: GoogleFonts.poppins(
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tap "Add Product" to get started on IsmailTex',
+                            style: GoogleFonts.poppins(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1107,72 +1298,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               }
 
               return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  0,
-                  16,
-                  24,
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 sliver: SliverList(
-                  delegate:
-                      SliverChildBuilderDelegate(
+                  delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final product = items[index];
 
                       return Container(
-                        margin:
-                            const EdgeInsets.only(
-                          bottom: 12,
-                        ),
+                        margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: colors.card,
-                          borderRadius:
-                              BorderRadius.circular(
-                            18,
-                          ),
-                          border: Border.all(
-                            color: colors.borderSoft,
-                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: colors.borderSoft),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: ListTile(
-                          contentPadding:
-                              const EdgeInsets.all(12),
+                          contentPadding: const EdgeInsets.all(12),
                           leading: ClipRRect(
-                            borderRadius:
-                                BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12),
                             child: SizedBox(
                               width: 56,
                               height: 56,
-                              child: _hasValidImage(
-                                      product.imageUrl)
+                              child: _hasValidImage(product.imageUrl)
                                   ? Image.network(
                                       product.imageUrl,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (_, __, ___) =>
-                                              Container(
-                                        color: Theme.of(
-                                                context)
+                                      errorBuilder: (_, __, ___) =>
+                                          Container(
+                                        color: Theme.of(context)
                                             .colorScheme
                                             .surfaceContainerHighest,
                                         child: Icon(
-                                          Icons
-                                              .image_not_supported,
-                                          color: colors
-                                              .textSecondary,
+                                          Icons.image_not_supported,
+                                          color: colors.textSecondary,
                                         ),
                                       ),
                                     )
                                   : Container(
-                                      color: Theme.of(
-                                              context)
+                                      color: Theme.of(context)
                                           .colorScheme
                                           .surfaceContainerHighest,
                                       child: Icon(
-                                        Icons
-                                            .image_not_supported,
-                                        color: colors
-                                            .textSecondary,
+                                        Icons.image_not_supported,
+                                        color: colors.textSecondary,
                                       ),
                                     ),
                             ),
@@ -1181,8 +1355,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             product.name,
                             style: GoogleFonts.poppins(
                               color: colors.textPrimary,
-                              fontWeight:
-                                  FontWeight.w600,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           subtitle: Text(
@@ -1192,71 +1365,83 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               fontSize: 12,
                             ),
                           ),
-                          trailing:
-                              PopupMenuButton<String>(
+                          trailing: PopupMenuButton<String>(
                             color: colors.surfaceAlt,
-                            iconColor:
-                                colors.textSecondary,
-                            onSelected:
-                                (value) async {
-                              if (value ==
-                                  'preview') {
-                                Navigator.of(context)
-                                    .push(
+                            iconColor: colors.textSecondary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            onSelected: (value) async {
+                              if (value == 'preview') {
+                                Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        ProductDetailScreen(
+                                    builder: (_) => ProductDetailScreen(
                                       product: product,
                                     ),
                                   ),
                                 );
-                              } else if (value ==
-                                  'edit') {
-                                Navigator.of(context)
-                                    .push(
+                              } else if (value == 'edit') {
+                                Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        EditProductScreen(
+                                    builder: (_) => EditProductScreen(
                                       product: product,
                                     ),
                                   ),
                                 );
-                              } else if (value ==
-                                  'delete') {
+                              } else if (value == 'delete') {
                                 await _firebaseService
-                                    .deleteProduct(
-                                  product.id,
-                                );
+                                    .deleteProduct(product.id);
                               }
                             },
                             itemBuilder: (_) => [
                               PopupMenuItem(
                                 value: 'preview',
-                                child: Text(
-                                  'Preview',
-                                  style: GoogleFonts.poppins(
-                                    color:
-                                        colors.textPrimary,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.visibility_outlined,
+                                        color: colors.textPrimary,
+                                        size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Preview',
+                                      style: GoogleFonts.poppins(
+                                        color: colors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               PopupMenuItem(
                                 value: 'edit',
-                                child: Text(
-                                  'Edit',
-                                  style: GoogleFonts.poppins(
-                                    color:
-                                        colors.textPrimary,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_outlined,
+                                        color: colors.textPrimary,
+                                        size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Edit',
+                                      style: GoogleFonts.poppins(
+                                        color: colors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               PopupMenuItem(
                                 value: 'delete',
-                                child: Text(
-                                  'Delete',
-                                  style: GoogleFonts.poppins(
-                                    color: colors.error,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline_rounded,
+                                        color: colors.error, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Delete',
+                                      style: GoogleFonts.poppins(
+                                        color: colors.error,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -1284,22 +1469,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         color: colors.card,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colors.borderSoft),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: child,
     );
   }
 }
 
+// ── Stat Card ─────────────────────────────────────────────────────────────────
+
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.title,
     required this.value,
     required this.color,
+    required this.icon,
   });
 
   final String title;
   final String value;
   final Color color;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1311,23 +1507,41 @@ class _StatCard extends StatelessWidget {
         color: colors.card,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: colors.borderSoft),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 10),
           Text(
             value,
             style: GoogleFonts.poppins(
               color: color,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               fontSize: 22,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           Text(
             title,
             style: GoogleFonts.poppins(
               color: colors.textSecondary,
-              fontSize: 12,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -1335,6 +1549,8 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
+
+// ── Action Card ───────────────────────────────────────────────────────────────
 
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
@@ -1351,30 +1567,53 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppTheme.colorsOf(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.borderSoft),
-      ),
-      child: ListTile(
+    return Material(
+      color: colors.card,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
         onTap: onTap,
-        leading: Icon(icon, color: colors.brandPrimary),
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w600,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.borderSoft),
           ),
-        ),
-        trailing: Icon(
-          Icons.chevron_right_rounded,
-          color: colors.textSecondary,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.brandPrimary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: colors.brandPrimary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.textSecondary,
+                size: 18,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+// ── Text Field ────────────────────────────────────────────────────────────────
 
 class _Field extends StatelessWidget {
   const _Field({
@@ -1403,6 +1642,20 @@ class _Field extends StatelessWidget {
         hintStyle: GoogleFonts.poppins(color: colors.textSecondary),
         filled: true,
         fillColor: colors.surfaceAlt,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderSoft),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderSoft),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.brandPrimary, width: 1.5),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
     );
   }
