@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:mix/services/admin_preview_controller.dart';
+import 'package:ift/services/admin_preview_controller.dart';
 
 class AdminPreviewScope extends InheritedNotifier<AdminPreviewController> {
   const AdminPreviewScope({
