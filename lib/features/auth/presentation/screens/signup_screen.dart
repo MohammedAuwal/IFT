@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/config/routes/route_names.dart';
-import 'package:mix/core/routing/app_router.dart';
-import 'package:mix/core/theme/app_theme.dart';
-import 'package:mix/services/firebase_auth_service.dart';
-import 'package:mix/services/firebase_service.dart';
+import 'package:ift/config/routes/route_names.dart';
+import 'package:ift/core/routing/app_router.dart';
+import 'package:ift/core/theme/app_theme.dart';
+import 'package:ift/services/firebase_auth_service.dart';
+import 'package:ift/services/firebase_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
