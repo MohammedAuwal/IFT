@@ -55,7 +55,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadNotificationSound() async {
-    final sound = await LocalNotificationService.instance.getNotificationSound();
+    final sound =
+        await LocalNotificationService.instance.getNotificationSound();
     if (mounted) setState(() => _currentNotifSound = sound);
   }
 
@@ -114,9 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final c = ctx.appColors;
 
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
-            'Edit name',
+            'Edit Name',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w700,
               color: c.textPrimary,
@@ -130,15 +132,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             decoration: InputDecoration(
               hintText: 'Enter your full name',
               hintStyle: GoogleFonts.poppins(color: c.textSecondary),
+              prefixIcon: const Icon(Icons.person_outline_rounded),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(),
-              ),
+              child: Text('Cancel', style: GoogleFonts.poppins()),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, controller.text.trim()),
@@ -192,10 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await _firebaseService.addAddress(address);
       _addressCtrl.clear();
-
-      setState(() {
-        _selectedAddressSuggestion = null;
-      });
+      setState(() => _selectedAddressSuggestion = null);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -261,8 +261,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openWhatsAppSupport() async {
+    // ✅ Updated: WhatsApp message references IsmailTex
     final uri = Uri.parse(
-      'https://wa.me/2340000000000?text=Hello%20Mix%20support',
+      'https://wa.me/2340000000000?text=Hello%20IsmailTex%20support',
     );
     try {
       if (await canLaunchUrl(uri)) {
@@ -284,9 +285,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _showAboutDialog() async {
     await AppDialogs.info(
       context: context,
-      title: "Maamah's Mix",
+      title: 'IsmailTex — ITEX',
       message:
-          'Premium African spices, flours & traditional foods delivered to your doorstep.\n\nVersion 1.0.0',
+          'Premium African fabrics, textiles & traditional products delivered to your doorstep.\n\nVersion 1.0.0',
       icon: Icons.info_outline_rounded,
     );
   }
@@ -302,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirm = await AppDialogs.confirm(
       context: context,
       title: 'Log out',
-      message: 'Are you sure you want to log out?',
+      message: 'Are you sure you want to log out of IsmailTex?',
       confirmText: 'Log out',
       destructive: true,
       icon: Icons.logout_rounded,
@@ -343,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 AppBottomSheets.sheetHeader(
                   ctx,
                   title: 'Notification Sound',
-                  subtitle: 'Choose how notification alerts sound',
+                  subtitle: 'Choose how ITEX notification alerts sound',
                 ),
                 const SizedBox(height: 16),
                 ...sounds.map((sound) {
@@ -371,9 +372,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: Text(
                       label,
                       style: GoogleFonts.poppins(
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
                         color: isSelected
                             ? sheetColors.brandPrimary
                             : sheetColors.textPrimary,
@@ -407,6 +407,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  // ── Guest Content ────────────────────────────────────────────────────────────
+
   Widget _buildGuestContent(BuildContext context) {
     final colors = context.appColors;
     final themeController = ThemeScope.of(context);
@@ -418,68 +420,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
           sliver: SliverList(
             delegate: SliverChildListDelegate(
               [
+                // ── Guest Hero Card ──────────────────────────────
                 AppSurfaceCard(
-                  padding: const EdgeInsets.all(20),
-                  borderRadius: BorderRadius.circular(22),
+                  padding: const EdgeInsets.all(24),
+                  borderRadius: BorderRadius.circular(24),
                   child: Column(
                     children: [
+                      // ITEX Logo Avatar
                       Container(
-                        width: 92,
-                        height: 92,
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
-                          color: colors.brandPrimary.withOpacity(0.14),
+                          color: colors.brandPrimary.withOpacity(0.10),
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: colors.brandPrimary.withOpacity(0.25),
+                            width: 2,
                           ),
                         ),
                         child: Center(
                           child: Container(
-                            width: 58,
-                            height: 58,
+                            width: 62,
+                            height: 62,
                             decoration: BoxDecoration(
-                              color: colors.brandPrimary,
+                              gradient: LinearGradient(
+                                colors: [
+                                  colors.brandPrimary,
+                                  colors.brandPrimary.withOpacity(0.75),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
                               child: Text(
-                                'M',
+                                'IT',
                                 style: GoogleFonts.cinzel(
-                                  color: colors.brandSecondary,
-                                  fontSize: 26,
+                                  color: Colors.white,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
+                                  letterSpacing: 1.5,
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
                       Text(
-                        'Continue as Guest',
+                        'Welcome to IsmailTex',
                         style: GoogleFonts.poppins(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colors.brandPrimary.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'ITEX',
+                          style: GoogleFonts.cinzel(
+                            color: colors.brandPrimary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Text(
-                        'Browse products freely. Sign in to save favorites, track orders, manage addresses, and enjoy the full Mix experience.',
+                        'Browse products freely. Sign in to save favourites, track orders, manage addresses, and enjoy the full IsmailTex experience.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
                           fontSize: 12.5,
-                          height: 1.5,
+                          height: 1.6,
                           color: colors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 52,
                         child: ElevatedButton.icon(
                           onPressed: _goToLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.brandPrimary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
                           icon: const Icon(Icons.login_rounded),
                           label: Text(
                             'Sign In / Create Account',
@@ -492,10 +529,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
+
+                // ── Settings Group ───────────────────────────────
+                _SectionHeader(title: 'Preferences'),
+                const SizedBox(height: 8),
                 _ProfileTile(
                   icon: Icons.dark_mode_rounded,
-                  title: 'Dark mode',
+                  title: 'Dark Mode',
                   subtitle: 'Switch between light and dark theme',
                   trailing: Switch(
                     value: themeController.isDarkMode,
@@ -504,20 +545,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileTile(
                   icon: Icons.notifications_outlined,
-                  title: 'Notification sound',
+                  title: 'Notification Sound',
                   subtitle:
                       'Current: ${_currentNotifSound == 'default' ? 'Default Sound' : 'Silent'}',
                   onTap: _showNotificationSoundPicker,
                 ),
+                const SizedBox(height: 8),
+                _SectionHeader(title: 'Account'),
+                const SizedBox(height: 8),
                 _ProfileTile(
                   icon: Icons.favorite_border_rounded,
-                  title: 'Favorites',
-                  subtitle: 'Sign in to save your favorite products',
+                  title: 'Favourites',
+                  subtitle: 'Sign in to save your favourite products',
                   onTap: _goToLogin,
                 ),
                 _ProfileTile(
                   icon: Icons.location_on_outlined,
-                  title: 'Saved addresses',
+                  title: 'Saved Addresses',
                   subtitle: 'Sign in to save delivery addresses',
                   onTap: _goToLogin,
                 ),
@@ -527,22 +571,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   subtitle: 'Sign in to track your order history',
                   onTap: _goToLogin,
                 ),
+                const SizedBox(height: 8),
+                _SectionHeader(title: 'Support'),
+                const SizedBox(height: 8),
                 _ProfileTile(
                   icon: Icons.support_agent_rounded,
-                  title: 'Help & support',
-                  subtitle: 'Chat with us on WhatsApp',
+                  title: 'Help & Support',
+                  subtitle: 'Chat with IsmailTex support on WhatsApp',
                   onTap: _openWhatsAppSupport,
                 ),
                 _ProfileTile(
                   icon: Icons.info_outline_rounded,
-                  title: 'About Mix',
-                  subtitle: "Learn more about Maamah's Mix",
+                  title: 'About ITEX',
+                  subtitle: 'Learn more about IsmailTex',
                   onTap: _showAboutDialog,
                 ),
                 const SizedBox(height: 24),
                 Center(
                   child: Text(
-                    'Version 1.0.0',
+                    'IsmailTex · ITEX · Version 1.0.0',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       color: colors.textSecondary.withOpacity(0.6),
@@ -558,6 +605,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ── Authenticated Content ────────────────────────────────────────────────────
+
   Widget _buildAuthenticatedContent(BuildContext context) {
     final colors = context.appColors;
     final themeController = ThemeScope.of(context);
@@ -567,23 +616,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         final profile = snapshot.data ?? {};
         final name = (profile['displayName'] ?? '').toString();
-        final displayName = name.isNotEmpty ? name : 'Mix User';
+        final displayName = name.isNotEmpty ? name : 'ITEX User';
         final email = (profile['email'] ?? '').toString();
         final displayEmail = email.isNotEmpty ? email : 'No email';
         final photoUrl = (profile['photoUrl'] ?? '').toString();
         final favorites = List<String>.from(profile['favorites'] ?? []);
-        final cart = List<Map<String, dynamic>>.from(profile['cart'] ?? []);
+        final cart =
+            List<Map<String, dynamic>>.from(profile['cart'] ?? []);
         final addresses = List<String>.from(profile['addresses'] ?? []);
-        final selectedAddress = (profile['selectedAddress'] ?? '').toString();
+        final selectedAddress =
+            (profile['selectedAddress'] ?? '').toString();
         final initial =
-            displayName.isNotEmpty ? displayName[0].toUpperCase() : 'M';
+            displayName.isNotEmpty ? displayName[0].toUpperCase() : 'I';
 
         return CustomScrollView(
           slivers: [
@@ -592,9 +641,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate(
                   [
+                    // ── Profile Header Card ────────────────────────
                     AppSurfaceCard(
-                      padding: const EdgeInsets.all(18),
-                      borderRadius: BorderRadius.circular(22),
+                      padding: const EdgeInsets.all(20),
+                      borderRadius: BorderRadius.circular(24),
                       child: Row(
                         children: [
                           GestureDetector(
@@ -603,29 +653,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : _pickAndUploadProfileImage,
                             child: Stack(
                               children: [
-                                CircleAvatar(
-                                  radius: 32,
-                                  backgroundColor: colors.brandPrimary,
-                                  backgroundImage: photoUrl.isNotEmpty
-                                      ? NetworkImage(photoUrl)
-                                      : null,
-                                  child: photoUrl.isEmpty
-                                      ? Text(
-                                          initial,
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 24,
-                                          ),
-                                        )
-                                      : null,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: colors.brandPrimary
+                                          .withOpacity(0.4),
+                                      width: 2.5,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 34,
+                                    backgroundColor: colors.brandPrimary,
+                                    backgroundImage: photoUrl.isNotEmpty
+                                        ? NetworkImage(photoUrl)
+                                        : null,
+                                    child: photoUrl.isEmpty
+                                        ? Text(
+                                            initial,
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 24,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
                                 ),
                                 Positioned(
                                   bottom: 0,
                                   right: 0,
                                   child: Container(
-                                    width: 22,
-                                    height: 22,
+                                    width: 24,
+                                    height: 24,
                                     decoration: BoxDecoration(
                                       color: colors.brandPrimary,
                                       shape: BoxShape.circle,
@@ -644,18 +704,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 GestureDetector(
                                   onTap: _savingName
                                       ? null
-                                      : () => _editDisplayName(
-                                            displayName,
-                                          ),
+                                      : () =>
+                                          _editDisplayName(displayName),
                                   child: Row(
                                     children: [
                                       Flexible(
@@ -669,20 +727,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      Icon(
-                                        Icons.edit_rounded,
-                                        size: 16,
-                                        color: colors.textSecondary,
+                                      Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: colors.brandPrimary
+                                              .withOpacity(0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Icon(
+                                          Icons.edit_rounded,
+                                          size: 14,
+                                          color: colors.brandPrimary,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  displayEmail,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    color: colors.textSecondary,
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.email_outlined,
+                                      size: 13,
+                                      color: colors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        displayEmail,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: colors.textSecondary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.brandPrimary
+                                        .withOpacity(0.10),
+                                    borderRadius:
+                                        BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    'ITEX Member',
+                                    style: GoogleFonts.poppins(
+                                      color: colors.brandPrimary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                                 if (_uploadingPhoto)
@@ -702,7 +803,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         Text(
                                           'Uploading photo...',
                                           style: GoogleFonts.poppins(
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             color: colors.brandPrimary,
                                           ),
                                         ),
@@ -715,7 +816,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: Text(
                                       'Saving name...',
                                       style: GoogleFonts.poppins(
-                                        fontSize: 12,
+                                        fontSize: 11,
                                         color: colors.brandPrimary,
                                       ),
                                     ),
@@ -726,12 +827,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
+
+                    // ── Metrics Row ────────────────────────────────
                     Row(
                       children: [
                         Expanded(
                           child: AppMetricCard(
-                            title: 'Favorites',
+                            title: 'Favourites',
                             value: '${favorites.length}',
                           ),
                         ),
@@ -742,12 +845,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             value: '${cart.length}',
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppMetricCard(
+                            title: 'Addresses',
+                            value: '${addresses.length}',
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
+
+                    // ── Preferences ────────────────────────────────
+                    _SectionHeader(title: 'Preferences'),
+                    const SizedBox(height: 8),
                     _ProfileTile(
                       icon: Icons.dark_mode_rounded,
-                      title: 'Dark mode',
+                      title: 'Dark Mode',
                       subtitle: 'Switch between light and dark theme',
                       trailing: Switch(
                         value: themeController.isDarkMode,
@@ -756,36 +870,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     _ProfileTile(
                       icon: Icons.notifications_outlined,
-                      title: 'Notification sound',
+                      title: 'Notification Sound',
                       subtitle:
                           'Current: ${_currentNotifSound == 'default' ? 'Default Sound' : 'Silent'}',
                       onTap: _showNotificationSoundPicker,
                     ),
+                    const SizedBox(height: 8),
+
+                    // ── Delivery Addresses ─────────────────────────
+                    _SectionHeader(title: 'Delivery Addresses'),
+                    const SizedBox(height: 8),
                     AppSurfaceCard(
                       margin: const EdgeInsets.only(bottom: 12),
+                      borderRadius: BorderRadius.circular(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const AppSectionTitle(
-                            title: 'Saved addresses',
-                            spacingBottom: 8,
-                          ),
-                          Text(
-                            selectedAddress.isEmpty
-                                ? 'No selected delivery address'
-                                : 'Selected: $selectedAddress',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
+                          // Selected address banner
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
                               color: selectedAddress.isEmpty
-                                  ? colors.error
-                                  : colors.brandPrimary,
-                              fontWeight: FontWeight.w600,
+                                  ? colors.error.withOpacity(0.08)
+                                  : colors.brandPrimary.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: selectedAddress.isEmpty
+                                    ? colors.error.withOpacity(0.25)
+                                    : colors.brandPrimary.withOpacity(0.25),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  selectedAddress.isEmpty
+                                      ? Icons.location_off_outlined
+                                      : Icons.check_circle_rounded,
+                                  color: selectedAddress.isEmpty
+                                      ? colors.error
+                                      : colors.brandPrimary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    selectedAddress.isEmpty
+                                        ? 'No delivery address selected'
+                                        : selectedAddress,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: selectedAddress.isEmpty
+                                          ? colors.error
+                                          : colors.brandPrimary,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
+
+                          // Add new address
                           Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: AddressAutocompleteField(
@@ -801,6 +955,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 height: 48,
                                 child: ElevatedButton(
                                   onPressed: _addAddress,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: colors.brandPrimary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(12),
+                                    ),
+                                  ),
                                   child: const Icon(
                                     Icons.add_rounded,
                                     size: 22,
@@ -809,100 +971,109 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ],
                           ),
+
                           if (addresses.isNotEmpty) ...[
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 14),
                             ...addresses.map(
                               (address) {
                                 final isSelected =
                                     selectedAddress == address;
 
                                 return Container(
-                                  margin: const EdgeInsets.only(top: 6),
+                                  margin:
+                                      const EdgeInsets.only(bottom: 8),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
-                                    vertical: 8,
+                                    vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: colors.surfaceAlt,
-                                    borderRadius: BorderRadius.circular(12),
+                                    color: isSelected
+                                        ? colors.brandPrimary
+                                            .withOpacity(0.06)
+                                        : colors.surfaceAlt,
+                                    borderRadius:
+                                        BorderRadius.circular(14),
                                     border: Border.all(
                                       color: isSelected
                                           ? colors.brandPrimary
-                                          : Colors.transparent,
-                                      width: 1.2,
+                                              .withOpacity(0.35)
+                                          : colors.borderSoft,
+                                      width: isSelected ? 1.5 : 1,
                                     ),
                                   ),
                                   child: Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                        CrossAxisAlignment.center,
                                     children: [
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(
-                                          top: 2,
-                                        ),
-                                        child: Icon(
-                                          isSelected
-                                              ? Icons
-                                                  .check_circle_rounded
-                                              : Icons.place_outlined,
-                                          size: 18,
-                                          color: isSelected
-                                              ? colors.brandPrimary
-                                              : colors.textSecondary,
-                                        ),
+                                      Icon(
+                                        isSelected
+                                            ? Icons.check_circle_rounded
+                                            : Icons.place_outlined,
+                                        size: 18,
+                                        color: isSelected
+                                            ? colors.brandPrimary
+                                            : colors.textSecondary,
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
                                           address,
                                           style: GoogleFonts.poppins(
-                                            fontSize: 13,
-                                            color:
-                                                colors.textPrimary,
+                                            fontSize: 12.5,
+                                            color: colors.textPrimary,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.w400,
                                           ),
                                         ),
                                       ),
-                                      Column(
-                                        mainAxisSize:
-                                            MainAxisSize.min,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                _selectAddress(
-                                              address,
-                                            ),
-                                            child: Text(
-                                              isSelected
-                                                  ? 'Selected'
-                                                  : 'Use',
-                                              style: GoogleFonts.poppins(
-                                                color: colors.brandPrimary,
-                                                fontWeight:
-                                                    FontWeight.w700,
-                                                fontSize: 12,
-                                              ),
+                                      if (!isSelected)
+                                        TextButton(
+                                          onPressed: () =>
+                                              _selectAddress(address),
+                                          style: TextButton.styleFrom(
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
                                             ),
                                           ),
-                                          IconButton(
-                                            onPressed: () =>
-                                                _removeAddress(
-                                              address,
-                                            ),
-                                            icon: Icon(
-                                              Icons
-                                                  .delete_outline_rounded,
-                                              size: 20,
-                                              color: colors.error,
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                            constraints:
-                                                const BoxConstraints(
-                                              minWidth: 32,
-                                              minHeight: 32,
+                                          child: Text(
+                                            'Use',
+                                            style: GoogleFonts.poppins(
+                                              color: colors.brandPrimary,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
                                             ),
                                           ),
-                                        ],
+                                        ),
+                                      if (isSelected)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: 4),
+                                          child: Text(
+                                            'Active',
+                                            style: GoogleFonts.poppins(
+                                              color: colors.brandPrimary,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      IconButton(
+                                        onPressed: () =>
+                                            _removeAddress(address),
+                                        icon: Icon(
+                                          Icons.delete_outline_rounded,
+                                          size: 18,
+                                          color: colors.error,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        constraints:
+                                            const BoxConstraints(
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -912,23 +1083,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ] else ...[
                             const SizedBox(height: 12),
                             Center(
-                              child: Text(
-                                'No saved addresses yet',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: colors.textSecondary
-                                      .withOpacity(0.7),
-                                ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.location_off_outlined,
+                                    color: colors.textSecondary
+                                        .withOpacity(0.5),
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'No saved addresses yet',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: colors.textSecondary
+                                          .withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ],
                       ),
                     ),
+                    const SizedBox(height: 4),
+
+                    // ── My Account Links ───────────────────────────
+                    _SectionHeader(title: 'My Account'),
+                    const SizedBox(height: 8),
                     _ProfileTile(
                       icon: Icons.favorite_border_rounded,
-                      title: 'Favorites',
-                      subtitle: 'View all your favorite products',
+                      title: 'Favourites',
+                      subtitle: 'View all your favourite products',
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -939,9 +1126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     _ProfileTile(
                       icon: Icons.cleaning_services_rounded,
-                      title: 'Clean old notifications',
-                      subtitle:
-                          'Delete notifications older than 30 days',
+                      title: 'Clean Old Notifications',
+                      subtitle: 'Delete notifications older than 30 days',
                       onTap: () async {
                         final count = await _firebaseService
                             .cleanupOldNotifications(days: 30);
@@ -955,29 +1141,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       },
                     ),
+                    const SizedBox(height: 8),
+
+                    // ── Support ────────────────────────────────────
+                    _SectionHeader(title: 'Support'),
+                    const SizedBox(height: 8),
                     _ProfileTile(
                       icon: Icons.support_agent_rounded,
-                      title: 'Help & support',
-                      subtitle: 'Chat with us on WhatsApp',
+                      title: 'Help & Support',
+                      subtitle: 'Chat with IsmailTex support on WhatsApp',
                       onTap: _openWhatsAppSupport,
                     ),
                     _ProfileTile(
                       icon: Icons.info_outline_rounded,
-                      title: 'About Mix',
-                      subtitle: "Learn more about Maamah's Mix",
+                      title: 'About ITEX',
+                      subtitle: 'Learn more about IsmailTex',
                       onTap: _showAboutDialog,
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
+
+                    // ── Logout Button ──────────────────────────────
                     SizedBox(
-                      height: 52,
+                      height: 54,
                       child: ElevatedButton.icon(
-                        onPressed:
-                            _loggingOut ? null : _handleLogout,
+                        onPressed: _loggingOut ? null : _handleLogout,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              colors.error.withOpacity(0.10),
+                          backgroundColor: colors.error.withOpacity(0.10),
                           foregroundColor: colors.error,
                           elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: colors.error.withOpacity(0.25),
+                            ),
+                          ),
                         ),
                         icon: _loggingOut
                             ? SizedBox(
@@ -990,9 +1187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               )
                             : const Icon(Icons.logout_rounded),
                         label: Text(
-                          _loggingOut
-                              ? 'Logging out...'
-                              : 'Log out',
+                          _loggingOut ? 'Logging out...' : 'Log Out',
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700,
                           ),
@@ -1002,7 +1197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 24),
                     Center(
                       child: Text(
-                        'Version 1.0.0',
+                        'IsmailTex · ITEX · Version 1.0.0',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: colors.textSecondary.withOpacity(0.6),
@@ -1056,6 +1251,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+// ── Section Header ─────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          decoration: BoxDecoration(
+            color: colors.brandPrimary,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: colors.textSecondary,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Profile Tile ───────────────────────────────────────────────────────────────
+
 class _ProfileTile extends StatelessWidget {
   const _ProfileTile({
     required this.icon,
@@ -1076,22 +1309,28 @@ class _ProfileTile extends StatelessWidget {
     final colors = context.appColors;
 
     return AppListTileCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      leading: CircleAvatar(
-        backgroundColor: colors.brandPrimary.withOpacity(0.15),
-        child: Icon(icon, color: colors.brandPrimary),
+      margin: const EdgeInsets.only(bottom: 10),
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: colors.brandPrimary.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: colors.brandPrimary, size: 20),
       ),
       title: Text(
         title,
         style: GoogleFonts.poppins(
           fontWeight: FontWeight.w600,
           color: colors.textPrimary,
+          fontSize: 14,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: GoogleFonts.poppins(
-          fontSize: 12,
+          fontSize: 11.5,
           color: colors.textSecondary,
         ),
       ),
