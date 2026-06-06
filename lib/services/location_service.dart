@@ -1,6 +1,6 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mix/services/geocoding_service.dart';
+import 'package:ift/services/geocoding_service.dart';
 
 class CurrentLocationResult {
   final String displayName;
