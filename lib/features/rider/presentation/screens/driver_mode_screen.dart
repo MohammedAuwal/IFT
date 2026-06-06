@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mix/models/ride_model.dart';
-import 'package:mix/services/firebase_service.dart';
-import 'package:mix/services/location_service.dart';
+import 'package:ift/models/ride_model.dart';
+import 'package:ift/services/firebase_service.dart';
+import 'package:ift/services/location_service.dart';
 
 class DriverModeScreen extends StatefulWidget {
   final RideModel ride;
