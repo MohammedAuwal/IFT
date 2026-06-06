@@ -4,15 +4,15 @@ import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/models/app_notification_model.dart';
-import 'package:mix/models/order_model.dart';
-import 'package:mix/models/product_model.dart';
-import 'package:mix/models/ride_model.dart';
-import 'package:mix/services/geocoding_service.dart';
-import 'package:mix/services/pricing_service.dart';
-import 'package:mix/services/routing_service.dart';
-import 'package:mix/services/supabase_notification_service.dart';
+import 'package:ift/core/constants/app_constants.dart';
+import 'package:ift/models/app_notification_model.dart';
+import 'package:ift/models/order_model.dart';
+import 'package:ift/models/product_model.dart';
+import 'package:ift/models/ride_model.dart';
+import 'package:ift/services/geocoding_service.dart';
+import 'package:ift/services/pricing_service.dart';
+import 'package:ift/services/routing_service.dart';
+import 'package:ift/services/supabase_notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MovementEstimate {
@@ -1213,12 +1213,12 @@ class FirebaseService {
 
   Future<void> _saveLocalCart(List<Map<String, dynamic>> cart) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('mix_local_cart', jsonEncode(cart));
+    await prefs.setString('ift_local_cart', jsonEncode(cart));
   }
 
   Future<List<Map<String, dynamic>>> getLocalCart() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('mix_local_cart');
+    final raw = prefs.getString('ift_local_cart');
     if (raw == null || raw.isEmpty) return [];
     final decoded = jsonDecode(raw) as List;
     return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
