@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:mix/core/constants/app_constants.dart';
+import 'package:ift/core/constants/app_constants.dart';
 
 class SupabaseNotificationService {
   final http.Client _client;
