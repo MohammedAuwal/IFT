@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mix/features/rider/presentation/widgets/location_search_field.dart';
-import 'package:mix/models/place_suggestion_model.dart';
+import 'package:ift/features/rider/presentation/widgets/location_search_field.dart';
+import 'package:ift/models/place_suggestion_model.dart';
 
 class AddressAutocompleteField extends StatelessWidget {
   final TextEditingController controller;
