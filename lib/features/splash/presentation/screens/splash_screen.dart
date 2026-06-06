@@ -200,47 +200,67 @@ class _SplashScreenState extends State<SplashScreen>
                       ? Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // ── ITEX Animated Logo ───────────────────
                             ScaleTransition(
                               scale: _pulseAnimation,
                               child: Container(
                                 width: 118,
                                 height: 118,
                                 decoration: BoxDecoration(
-                                  color: colors.surface.withOpacity(0.18),
+                                  color:
+                                      colors.surface.withOpacity(0.18),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: colors.borderSoft),
+                                  border: Border.all(
+                                      color: colors.borderSoft),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          colors.brandPrimary.withOpacity(0.15),
-                                      blurRadius: 26,
-                                      spreadRadius: 2,
+                                      color: colors.brandPrimary
+                                          .withOpacity(0.18),
+                                      blurRadius: 30,
+                                      spreadRadius: 4,
                                     ),
                                   ],
                                 ),
                                 child: Center(
                                   child: Container(
-                                    width: 72,
-                                    height: 72,
+                                    width: 76,
+                                    height: 76,
                                     decoration: BoxDecoration(
-                                      color: colors.brandPrimary,
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          colors.brandPrimary,
+                                          colors.brandPrimary
+                                              .withOpacity(0.75),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
                                       shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.brandPrimary
+                                              .withOpacity(0.35),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
                                     ),
                                     child: Stack(
                                       alignment: Alignment.center,
                                       children: [
+                                        // ITEX text badge inside logo
                                         Text(
-                                          'M',
+                                          'IT',
                                           style: GoogleFonts.cinzel(
-                                            color: colors.brandSecondary,
-                                            fontSize: 34,
+                                            color: Colors.white,
+                                            fontSize: 22,
                                             fontWeight: FontWeight.w900,
-                                            letterSpacing: 1.5,
+                                            letterSpacing: 2,
                                           ),
                                         ),
                                         Positioned(
                                           top: 12,
-                                          right: 16,
+                                          right: 14,
                                           child: Container(
                                             width: 8,
                                             height: 8,
@@ -258,30 +278,67 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ),
                             const SizedBox(height: 22),
+
+                            // ── App Name ─────────────────────────────
                             SlideTransition(
                               position: _textSlideAnimation,
-                              child: Text(
-                                "Maamah's Mix",
-                                style: GoogleFonts.playfairDisplay(
-                                  color: colors.textPrimary,
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'IsmailTex',
+                                    style: GoogleFonts.playfairDisplay(
+                                      color: colors.textPrimary,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.brandPrimary
+                                          .withOpacity(0.10),
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: colors.brandPrimary
+                                            .withOpacity(0.25),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'ITEX',
+                                      style: GoogleFonts.cinzel(
+                                        color: colors.brandPrimary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
+
+                            // ── Tagline ──────────────────────────────
                             SlideTransition(
                               position: _textSlideAnimation,
                               child: Text(
-                                'Food, products, rides & delivery in one app',
+                                'Products, rides & delivery — all in one place',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.poppins(
                                   color: colors.textSecondary,
                                   fontSize: 13,
+                                  height: 1.5,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 28),
+
+                            // ── Loading Indicator ─────────────────────
                             TweenAnimationBuilder<double>(
                               tween: Tween<double>(begin: 0.7, end: 1),
                               duration: const Duration(milliseconds: 900),
@@ -305,13 +362,16 @@ class _SplashScreenState extends State<SplashScreen>
                       : Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // ── Error State ──────────────────────────
                             Container(
                               width: 118,
                               height: 118,
                               decoration: BoxDecoration(
-                                color: colors.surface.withOpacity(0.18),
+                                color:
+                                    colors.surface.withOpacity(0.18),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: colors.borderSoft),
+                                border:
+                                    Border.all(color: colors.borderSoft),
                               ),
                               child: Center(
                                 child: Icon(
@@ -323,7 +383,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'Unable to load app',
+                              'Unable to load IsmailTex',
                               style: GoogleFonts.poppins(
                                 color: colors.textPrimary,
                                 fontWeight: FontWeight.w700,
@@ -341,9 +401,10 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ),
                             const SizedBox(height: 18),
-                            ElevatedButton(
+                            ElevatedButton.icon(
                               onPressed: _retry,
-                              child: Text(
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: Text(
                                 'Retry',
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w700,
