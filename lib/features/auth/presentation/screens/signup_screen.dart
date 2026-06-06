@@ -17,6 +17,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final FirebaseAuthService _authService = FirebaseAuthService();
   final FirebaseService _firebaseService = FirebaseService();
 
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
@@ -46,11 +47,12 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _signup() async {
+    final name = _nameCtrl.text.trim();
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text.trim();
     final confirmPassword = _confirmPasswordCtrl.text.trim();
 
-    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('All fields are required'),
@@ -68,12 +70,22 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 6 characters'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
       final user = await _authService.signUpWithEmailPassword(
         email: email,
         password: password,
+        displayName: name,
       );
 
       if (user == null) {
@@ -87,6 +99,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$e'),
+          backgroundColor: AppTheme.colorsOf(context).error.withOpacity(0.9),
         ),
       );
     } finally {
@@ -111,6 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$e'),
+          backgroundColor: AppTheme.colorsOf(context).error.withOpacity(0.9),
         ),
       );
     } finally {
@@ -124,6 +138,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmPasswordCtrl.dispose();
@@ -133,6 +148,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colorsOf(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
@@ -149,6 +165,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         child: Stack(
           children: [
+            // ── Background Glow Circles (Red brand theme) ───────────────
             Positioned(
               top: -90,
               left: -80,
@@ -176,10 +193,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 190,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: colors.warning.withOpacity(0.16),
+                  color: colors.brandPrimary.withOpacity(0.14),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.warning.withOpacity(0.14),
+                      color: colors.brandPrimary.withOpacity(0.10),
                       blurRadius: 80,
                       spreadRadius: 18,
                     ),
@@ -195,10 +212,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 250,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: colors.brandSecondary.withOpacity(0.22),
+                  color: colors.brandSecondary.withOpacity(0.18),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.brandSecondary.withOpacity(0.18),
+                      color: colors.brandSecondary.withOpacity(0.14),
                       blurRadius: 100,
                       spreadRadius: 20,
                     ),
@@ -217,28 +234,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       child: Column(
                         children: [
-                          const SizedBox(height: 70),
-                          Text(
-                            "Maamah's Mix",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.playfairDisplay(
-                              color: colors.textPrimary,
-                              fontSize: 34,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Premium African spices, flours & traditional foods',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              color: colors.textSecondary,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
+                          const SizedBox(height: 40),
+
+                          // ── IsmailTex Brand Logo ───────────────────────
+                          _buildBrandLogo(colors, isDark),
+
                           const SizedBox(height: 26),
+
+                          // ── Signup Card ────────────────────────────────
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
@@ -267,13 +270,19 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Join Mix and enjoy seamless shopping, rides and deliveries.',
+                                  'Join IsmailTex and enjoy seamless shopping, rides and deliveries.',
                                   style: GoogleFonts.poppins(
                                     color: colors.textSecondary,
                                     fontSize: 13,
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+                                _GlassField(
+                                  controller: _nameCtrl,
+                                  hint: 'Full name',
+                                  icon: Icons.person_outline_rounded,
+                                ),
+                                const SizedBox(height: 16),
                                 _GlassField(
                                   controller: _emailCtrl,
                                   hint: 'Email address',
@@ -327,6 +336,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                   height: 58,
                                   child: ElevatedButton(
                                     onPressed: _loading ? null : _signup,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: colors.brandPrimary,
+                                      foregroundColor: Colors.white,
+                                      elevation: 2,
+                                      shadowColor: colors.brandPrimary.withOpacity(0.35),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
                                     child: _loading
                                         ? const SizedBox(
                                             width: 22,
@@ -380,6 +398,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                     onPressed: _googleLoading ? null : _signupWithGoogle,
                                     style: OutlinedButton.styleFrom(
                                       backgroundColor: colors.surface.withOpacity(0.5),
+                                      side: BorderSide(color: colors.border, width: 1.5),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
                                     child: _googleLoading
                                         ? SizedBox(
@@ -393,12 +415,18 @@ class _SignupScreenState extends State<SignupScreen> {
                                         : Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Text(
-                                                'G',
-                                                style: GoogleFonts.poppins(
-                                                  color: colors.textPrimary,
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.w700,
+                                              // Google Logo
+                                              Image.network(
+                                                'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                                                width: 22,
+                                                height: 22,
+                                                errorBuilder: (_, __, ___) => Text(
+                                                  'G',
+                                                  style: GoogleFonts.poppins(
+                                                    color: colors.textPrimary,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
@@ -406,7 +434,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                                 'Continue with Google',
                                                 style: GoogleFonts.poppins(
                                                   color: colors.textPrimary,
-                                                  fontWeight: FontWeight.w700,
+                                                  fontWeight: FontWeight.w600,
                                                   fontSize: 15,
                                                 ),
                                               ),
@@ -464,7 +492,129 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
+
+  // ── Brand Logo Widget ────────────────────────────────────────────────
+
+  Widget _buildBrandLogo(AppThemeColors colors, bool isDark) {
+    return Column(
+      children: [
+        // Logo Icon — Red gradient circle with 'iT'
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFCC2222), // primary red
+                Color(0xFFA61818), // primaryDark red
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFCC2222).withOpacity(0.40),
+                blurRadius: 18,
+                spreadRadius: 2,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Text(
+                'iT',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1,
+                ),
+              ),
+              // Dot above 'i' — mirrors logo icon
+              Positioned(
+                top: 10,
+                right: 13,
+                child: Container(
+                  width: 5,
+                  height: 5,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // "ISMAIL" + "TEX" — mirrors actual logo typography
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'ISMAIL',
+                style: GoogleFonts.montserrat(
+                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              TextSpan(
+                text: 'TEX',
+                style: GoogleFonts.montserrat(
+                  color: const Color(0xFFCC2222), // brand red
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        // Red divider line — mirrors logo
+        Container(
+          width: 40,
+          height: 2.5,
+          decoration: BoxDecoration(
+            color: const Color(0xFFCC2222),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Tagline from logo
+        Text(
+          'We weave a better tomorrow.',
+          style: GoogleFonts.poppins(
+            color: colors.textSecondary,
+            fontSize: 12.5,
+            fontStyle: FontStyle.italic,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'A quality you can trust.',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFFCC2222),
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
 }
+
+// ── Glass Field Widget ───────────────────────────────────────────────────
 
 class _GlassField extends StatelessWidget {
   final TextEditingController controller;
