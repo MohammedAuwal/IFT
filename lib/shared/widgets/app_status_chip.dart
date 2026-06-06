@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/core/theme/build_context_theme_x.dart';
+import 'package:ift/core/theme/build_context_theme_x.dart';
 
 enum AppStatusChipTone {
   primary,
