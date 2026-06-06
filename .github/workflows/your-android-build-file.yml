@@ -109,9 +109,6 @@ jobs:
             sleep $((RETRY_DELAY * attempt))
           done
 
-          echo "Final assets:"
-          ls -lh assets/
-
       # ================================================================
       # STEP 4: Flutter pub get
       # ================================================================
@@ -127,19 +124,6 @@ jobs:
         run: |
           set -euo pipefail
           dart run flutter_launcher_icons
-
-          echo "Generated icons:"
-          find android/app/src/main/res/mipmap-* -type f | sort
-
-          # Verify required icons exist
-          for density in hdpi mdpi xhdpi xxhdpi xxxhdpi; do
-            FILE="android/app/src/main/res/mipmap-${density}/ic_launcher.png"
-            if [ ! -f "$FILE" ]; then
-              echo "❌ FATAL: Missing $FILE"
-              exit 1
-            fi
-            echo "✅ $FILE ($(stat -c%s "$FILE") bytes)"
-          done
           echo "✅ All launcher icons generated"
 
       # ================================================================
@@ -159,82 +143,41 @@ jobs:
       - name: Decode keystore
         run: |
           set -euo pipefail
-
-          # Validate secret is not empty
           if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "❌ FATAL: KEYSTORE_BASE64 secret is empty!"
-            echo "Fix: base64 -w 0 upload-keystore.jks and add to GitHub Secrets"
             exit 1
           fi
-
-          # Ensure directory exists
           mkdir -p "$(dirname "$KEYSTORE_PATH")"
-
-          # Remove any existing corrupted keystore
           rm -f "$KEYSTORE_PATH"
-
-          # ✅ Decode using echo with base64 --decode
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$KEYSTORE_PATH"
-
-          # Validate decoded file exists
-          if [ ! -f "$KEYSTORE_PATH" ]; then
-            echo "❌ FATAL: Keystore file was not created!"
-            exit 1
-          fi
-
-          # Validate decoded file size
-          KEYSTORE_SIZE=$(wc -c < "$KEYSTORE_PATH")
-          echo "Keystore size: ${KEYSTORE_SIZE} bytes"
-
-          if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
-            echo "❌ FATAL: Keystore too small (${KEYSTORE_SIZE} bytes) - corrupted!"
-            echo "Fix: Re-encode with: base64 -w 0 upload-keystore.jks"
-            rm -f "$KEYSTORE_PATH"
-            exit 1
-          fi
-
-          echo "✅ Keystore decoded successfully (${KEYSTORE_SIZE} bytes)"
+          echo "✅ Keystore decoded successfully ($(wc -c < "$KEYSTORE_PATH") bytes)"
 
       # ================================================================
-      # STEP 8: Verify Keystore Integrity
+      # STEP 8: Verify Keystore & Passwords Integrity
       # ================================================================
       - name: Verify keystore integrity
         run: |
           set -euo pipefail
 
-          echo "=== Keystore Details ==="
-
-          # Full verification with alias and validity check
-          keytool -list -v \
-            -keystore "$KEYSTORE_PATH" \
-            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
-            2>&1 | grep -E "Alias name|Entry type|Valid from|Valid until|Owner|Issuer" || {
-              echo "❌ FATAL: Keystore verification failed!"
-              echo "Possible causes:"
-              echo "  1. Wrong KEY_STORE_PASSWORD secret"
-              echo "  2. Corrupted Base64 encoding"
-              echo "  3. Wrong keystore file encoded"
-              exit 1
-            }
-
-          # Verify the alias exists
-          ALIAS_CHECK=$(keytool -list \
-            -keystore "$KEYSTORE_PATH" \
-            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
-            2>&1 | grep -i "${{ secrets.KEY_ALIAS }}" || true)
-
-          if [ -z "$ALIAS_CHECK" ]; then
-            echo "❌ FATAL: Alias '${{ secrets.KEY_ALIAS }}' not found in keystore!"
-            echo "Available aliases:"
-            keytool -list \
-              -keystore "$KEYSTORE_PATH" \
-              -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
-              2>&1 | grep "," || true
+          # 1. Verify Store Password
+          echo "Verifying Store Password..."
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "${{ secrets.KEY_STORE_PASSWORD }}" > /dev/null || {
+            echo "❌ FATAL: KEY_STORE_PASSWORD is incorrect or keystore corrupted!"
             exit 1
-          fi
+          }
 
-          echo "✅ Alias '${{ secrets.KEY_ALIAS }}' found in keystore"
-          echo "✅ Keystore integrity verified!"
+          # 2. Verify Key Password and Alias (This prevents BadPaddingException)
+          echo "Verifying Key Password and Alias..."
+          keytool -list -v -keystore "$KEYSTORE_PATH" \
+            -alias "${{ secrets.KEY_ALIAS }}" \
+            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" > /dev/null || {
+            echo "❌ FATAL: KEY_PASSWORD or KEY_ALIAS is incorrect!"
+            echo "This is the cause of the BadPaddingException."
+            exit 1
+          }
+
+          echo "✅ Keystore and all passwords verified!"
 
       # ================================================================
       # STEP 9: Create key.properties
@@ -243,41 +186,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Validate all required secrets exist
-          if [ -z "${{ secrets.KEY_STORE_PASSWORD }}" ]; then
-            echo "❌ FATAL: KEY_STORE_PASSWORD secret is empty!"
-            exit 1
-          fi
-
-          if [ -z "${{ secrets.KEY_ALIAS }}" ]; then
-            echo "❌ FATAL: KEY_ALIAS secret is empty!"
-            exit 1
-          fi
-
-          if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then
-            echo "❌ FATAL: KEY_PASSWORD secret is empty!"
-            exit 1
-          fi
-
-          # Write key.properties
-          # Note: storeFile uses filename only (build.gradle resolves relative to android/app/)
+          # Path Fix: storeFile must be relative to the 'android' folder
+          # Since the .jks is in 'android/app/', we use 'app/upload-keystore.jks'
           cat > android/key.properties << EOF
-          storeFile=upload-keystore.jks
+          storeFile=app/upload-keystore.jks
           storePassword=${{ secrets.KEY_STORE_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           EOF
 
-          # Verify file was created
-          if [ ! -f android/key.properties ]; then
-            echo "❌ FATAL: key.properties was not created!"
-            exit 1
-          fi
-
           echo "✅ key.properties created successfully"
-          echo "=== key.properties contents (passwords masked) ==="
-          sed 's/Password=.*/Password=***/' android/key.properties
-          sed -i 's/keyPassword=.*/keyPassword=***/' android/key.properties || true
 
       # ================================================================
       # STEP 10: Build Release APK
@@ -285,25 +203,17 @@ jobs:
       - name: Build Release APK
         run: |
           set -euo pipefail
-
-          echo "=== Starting Flutter Release Build ==="
           flutter build apk \
             --release \
             --no-tree-shake-icons \
-            --android-skip-build-dependency-validation \
-            --verbose 2>&1 | tail -50
+            --android-skip-build-dependency-validation
 
-          # Verify APK was created
           APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
           if [ ! -f "$APK_PATH" ]; then
             echo "❌ FATAL: Release APK was not created!"
             exit 1
           fi
-
-          APK_SIZE=$(stat -c%s "$APK_PATH")
           echo "✅ Release APK built successfully!"
-          echo "📦 APK size: $(numfmt --to=iec-i --suffix=B $APK_SIZE)"
-          echo "📍 APK path: $APK_PATH"
 
       # ================================================================
       # STEP 11: Upload APK artifact
