@@ -42,9 +42,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   bool _matchesSearch(ProductModel product, String query) {
     if (query.isEmpty) return true;
-
     final q = query.toLowerCase();
-
     return product.name.toLowerCase().contains(q) ||
         product.description.toLowerCase().contains(q) ||
         product.normalizedCategories.any((c) => c.toLowerCase().contains(q)) ||
@@ -73,7 +71,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       _openGuestNotificationsPanel();
       return;
     }
-
     await Navigator.of(context).pushNamed(RouteNames.notifications);
   }
 
@@ -108,7 +105,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Notifications',
+                  'ITEX Notifications',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
@@ -117,7 +114,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to receive order, ride, delivery, and account notifications.',
+                  'Sign in to receive order, ride, delivery, and account notifications from IsmailTex.',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     color: sheetColors.textSecondary,
@@ -282,8 +279,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               padding: const EdgeInsets.all(10),
                               borderRadius: BorderRadius.circular(20),
                               child: const Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: AppShimmerLoader(
@@ -308,10 +304,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
                       final filtered = items.where((p) {
                         return _matchesSearch(p, query) &&
-                            _matchesCategory(
-                              p,
-                              effectiveSelectedCategory,
-                            );
+                            _matchesCategory(p, effectiveSelectedCategory);
                       }).toList();
 
                       final trendingItems =
@@ -319,23 +312,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
                       return CustomScrollView(
                         slivers: [
+                          // ── Header Row ────────────────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 14, 16, 10),
                               child: Row(
                                 children: [
+                                  // User Avatar
                                   Container(
                                     width: 46,
                                     height: 46,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: colors.brandPrimary.withOpacity(0.45),
+                                        color: colors.brandPrimary
+                                            .withOpacity(0.45),
                                         width: 2,
                                       ),
                                       image: hasHeaderPhoto
                                           ? DecorationImage(
-                                              image: NetworkImage(headerPhotoUrl),
+                                              image:
+                                                  NetworkImage(headerPhotoUrl),
                                               fit: BoxFit.cover,
                                             )
                                           : null,
@@ -346,7 +344,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                             child: Text(
                                               displayName.isNotEmpty
                                                   ? displayName[0].toUpperCase()
-                                                  : 'M',
+                                                  : 'I',
                                               style: GoogleFonts.poppins(
                                                 color: colors.brown,
                                                 fontWeight: FontWeight.w700,
@@ -356,64 +354,89 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         : null,
                                   ),
                                   const SizedBox(width: 12),
+
+                                  // ── ITEX Brand + Greeting ────────────
                                   Expanded(
                                     child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
+                                        // ITEX Brand Badge
                                         Row(
-                                          mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Container(
-                                              width: 34,
-                                              height: 34,
-                                              decoration: BoxDecoration(
-                                                color: colors.brandPrimary,
-                                                shape: BoxShape.circle,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 5,
                                               ),
-                                              child: Center(
-                                                child: Text(
-                                                  'M',
-                                                  style: GoogleFonts.cinzel(
-                                                    color: colors.brandSecondary,
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.w900,
-                                                    letterSpacing: 1.0,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    colors.brandPrimary,
+                                                    colors.brandPrimary
+                                                        .withOpacity(0.75),
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: colors.brandPrimary
+                                                        .withOpacity(0.30),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 3),
                                                   ),
+                                                ],
+                                              ),
+                                              child: Text(
+                                                'ITEX',
+                                                style: GoogleFonts.cinzel(
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: 2.0,
                                                 ),
                                               ),
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
-                                              'Mix',
+                                              'IsmailTex',
                                               style: GoogleFonts.playfairDisplay(
                                                 fontWeight: FontWeight.w800,
-                                                fontSize: 24,
+                                                fontSize: 18,
                                                 color: colors.textPrimary,
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 2),
+                                        const SizedBox(height: 4),
                                         Text(
                                           _isGuest
                                               ? 'Welcome, Guest 👋'
                                               : 'Hi, $displayName 👋',
                                           style: GoogleFonts.poppins(
-                                            color: colors.textPrimary,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
+                                            color: colors.textSecondary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
+
+                                  // ── Notification Bell ─────────────────
                                   StreamBuilder<int>(
                                     stream: _firebaseService
                                         .watchUnreadNotificationCount(),
                                     builder: (context, snapshot) {
                                       final unreadCount = snapshot.data ?? 0;
                                       final showBadge = unreadCount > 0;
-                                      final badgeText =
-                                          unreadCount > 99 ? '99+' : '$unreadCount';
+                                      final badgeText = unreadCount > 99
+                                          ? '99+'
+                                          : '$unreadCount';
 
                                       return GestureDetector(
                                         onTap: _openNotifications,
@@ -430,12 +453,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   BoxShadow(
                                                     color: colors.shadow,
                                                     blurRadius: 12,
-                                                    offset: const Offset(0, 4),
+                                                    offset:
+                                                        const Offset(0, 4),
                                                   ),
                                                 ],
                                               ),
                                               child: Icon(
-                                                Icons.notifications_none_rounded,
+                                                Icons
+                                                    .notifications_none_rounded,
                                                 color: colors.iconOnLightTint,
                                               ),
                                             ),
@@ -444,7 +469,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                 right: -4,
                                                 top: -4,
                                                 child: Container(
-                                                  constraints: const BoxConstraints(
+                                                  constraints:
+                                                      const BoxConstraints(
                                                     minWidth: 18,
                                                     minHeight: 18,
                                                   ),
@@ -456,7 +482,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   decoration: BoxDecoration(
                                                     color: colors.error,
                                                     borderRadius:
-                                                        BorderRadius.circular(999),
+                                                        BorderRadius.circular(
+                                                            999),
                                                     border: Border.all(
                                                       color: colors.surface,
                                                       width: 1.5,
@@ -465,7 +492,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                   child: Center(
                                                     child: Text(
                                                       badgeText,
-                                                      style: GoogleFonts.poppins(
+                                                      style:
+                                                          GoogleFonts.poppins(
                                                         color: Colors.white,
                                                         fontSize: 9,
                                                         fontWeight:
@@ -485,26 +513,37 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
+                          // ── Guest Banner ──────────────────────────────
                           if (_isGuest)
                             SliverToBoxAdapter(
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 0, 16, 12),
                                 child: AppSurfaceCard(
-                                  color: colors.brandPrimary.withOpacity(0.12),
+                                  color: colors.brandPrimary.withOpacity(0.10),
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        Icons.person_outline_rounded,
-                                        color: colors.brown,
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: colors.brandPrimary
+                                              .withOpacity(0.15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.person_outline_rounded,
+                                          color: colors.brown,
+                                          size: 18,
+                                        ),
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          'You are browsing as a guest. Sign in to save favorites, confirm rides, save addresses, and checkout orders.',
+                                          'Browsing as guest. Sign in to save favourites, book rides, and checkout on IsmailTex.',
                                           style: GoogleFonts.poppins(
                                             color: colors.brown,
                                             fontWeight: FontWeight.w600,
-                                            fontSize: 12.5,
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ),
@@ -525,10 +564,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ),
                             ),
 
+                          // ── Admin Preview Banner ──────────────────────
                           if (previewController.isPreviewMode)
                             SliverToBoxAdapter(
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 0, 16, 10),
                                 child: AppSurfaceCard(
                                   color: colors.brandPrimary.withOpacity(0.12),
                                   padding: const EdgeInsets.symmetric(
@@ -544,7 +585,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Preview Mode',
+                                        'Admin Preview Mode — IsmailTex',
                                         style: GoogleFonts.poppins(
                                           color: colors.brown,
                                           fontWeight: FontWeight.w700,
@@ -557,28 +598,34 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ),
                             ),
 
+                          // ── Search Bar ────────────────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               child: TextField(
                                 controller: _searchCtrl,
                                 onChanged: (_) => setState(() {}),
                                 decoration: const InputDecoration(
                                   hintText:
                                       'Search products, categories, variants...',
-                                  prefixIcon: Icon(Icons.search),
+                                  prefixIcon: Icon(Icons.search_rounded),
                                 ),
                               ),
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          const SliverToBoxAdapter(
+                              child: SizedBox(height: 12)),
 
+                          // ── Delivery Location Card ────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               child: StreamBuilder<String>(
-                                stream: _firebaseService.watchSelectedAddress(),
+                                stream:
+                                    _firebaseService.watchSelectedAddress(),
                                 builder: (context, addressSnapshot) {
                                   final selectedAddress =
                                       addressSnapshot.data ?? '';
@@ -589,7 +636,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     builder: (context, vendorSnapshot) {
                                       final vendorAddress =
                                           vendorSnapshot.data ??
-                                              AppConstants.defaultVendorLocation;
+                                              AppConstants
+                                                  .defaultVendorLocation;
 
                                       return AppSurfaceCard(
                                         padding: const EdgeInsets.symmetric(
@@ -640,7 +688,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                             ),
                                             const SizedBox(height: 8),
                                             Text(
-                                              'Vendor Pickup: $vendorAddress',
+                                              'IsmailTex Pickup: $vendorAddress',
                                               style: GoogleFonts.poppins(
                                                 color: colors.textSecondary,
                                                 fontSize: 11,
@@ -659,17 +707,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          const SliverToBoxAdapter(
+                              child: SizedBox(height: 12)),
 
+                          // ── Main Action Cards ─────────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: _MainActionCard(
                                       title: 'Book a Ride',
-                                      icon: Icons.directions_car_filled_rounded,
+                                      icon:
+                                          Icons.directions_car_filled_rounded,
                                       iconBg: colors.paleBlue,
                                       onTap: () {
                                         Navigator.of(context).push(
@@ -695,11 +747,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          const SliverToBoxAdapter(
+                              child: SizedBox(height: 12)),
 
+                          // ── Quick Action Row ──────────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -742,7 +797,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                   Expanded(
                                     child: _QuickActionItem(
                                       icon: Icons.star_rounded,
-                                      label: 'Favorites',
+                                      label: 'Favourites',
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
@@ -758,14 +813,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                          const SliverToBoxAdapter(
+                              child: SizedBox(height: 14)),
 
+                          // ── Category Chips ────────────────────────────
                           SliverToBoxAdapter(
                             child: SizedBox(
                               height: 40,
                               child: ListView.separated(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16),
                                 scrollDirection: Axis.horizontal,
                                 itemBuilder: (_, i) {
                                   final item = categories[i];
@@ -793,8 +850,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                          const SliverToBoxAdapter(
+                              child: SizedBox(height: 10)),
 
+                          // ── Active Services ───────────────────────────
                           if (activeServices.isNotEmpty)
                             SliverToBoxAdapter(
                               child: Padding(
@@ -826,8 +885,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         onTap: () {
                                           Navigator.of(context).push(
                                             MaterialPageRoute(
-                                              builder: (_) =>
-                                                  RideDetailScreen(
+                                              builder: (_) => RideDetailScreen(
                                                 ride: service,
                                               ),
                                             ),
@@ -840,13 +898,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ),
                             ),
 
+                          // ── Trending Section ──────────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
                               padding:
                                   const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                              child: const AppSectionTitle(
-                                title: 'Trending Now 🔥',
-                                spacingBottom: 0,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: colors.brandPrimary,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const AppSectionTitle(
+                                    title: 'Trending Now 🔥',
+                                    spacingBottom: 0,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -856,8 +928,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               child: Padding(
                                 padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
                                 child: EmptyStateCard(
-                                  icon:
-                                      Icons.local_fire_department_outlined,
+                                  icon: Icons.local_fire_department_outlined,
                                   title: 'No trending products yet',
                                   subtitle:
                                       'Mark products as trending from admin to show them here.',
@@ -869,8 +940,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               child: SizedBox(
                                 height: 210,
                                 child: ListView.separated(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
                                   scrollDirection: Axis.horizontal,
                                   itemCount: trendingItems.length,
                                   separatorBuilder: (_, __) =>
@@ -882,8 +953,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (_) =>
-                                                ProductDetailScreen(
+                                            builder: (_) => ProductDetailScreen(
                                               product: product,
                                             ),
                                           ),
@@ -895,15 +965,30 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ),
                             ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                          const SliverToBoxAdapter(
+                              child: SizedBox(height: 16)),
 
+                          // ── All Products Section ──────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
                               padding:
                                   const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                              child: const AppSectionTitle(
-                                title: 'All Products',
-                                spacingBottom: 0,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: colors.brandPrimary,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const AppSectionTitle(
+                                    title: 'All Products',
+                                    spacingBottom: 0,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -928,8 +1013,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 final favorites = favSnapshot.data ?? [];
 
                                 return SliverPadding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      16, 0, 16, 8),
                                   sliver: SliverGrid(
                                     delegate: SliverChildBuilderDelegate(
                                       (_, i) {
@@ -961,23 +1046,23 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                     children: [
                                                       ClipRRect(
                                                         borderRadius:
-                                                            const BorderRadius.vertical(
+                                                            const BorderRadius
+                                                                .vertical(
                                                           top: Radius.circular(
-                                                            20,
-                                                          ),
+                                                              20),
                                                         ),
                                                         child: _hasValidImage(
                                                                 product.imageUrl)
                                                             ? Image.network(
                                                                 product.imageUrl,
-                                                                width: double.infinity,
-                                                                fit: BoxFit.cover,
+                                                                width: double
+                                                                    .infinity,
+                                                                fit:
+                                                                    BoxFit.cover,
                                                                 loadingBuilder:
-                                                                    (
-                                                                  context,
-                                                                  child,
-                                                                  progress,
-                                                                ) {
+                                                                    (context,
+                                                                        child,
+                                                                        progress) {
                                                                   if (progress ==
                                                                       null) {
                                                                     return child;
@@ -996,11 +1081,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                     ),
                                                                   );
                                                                 },
-                                                                errorBuilder: (
-                                                                  _,
-                                                                  __,
-                                                                  ___,
-                                                                ) =>
+                                                                errorBuilder: (_,
+                                                                        __,
+                                                                        ___) =>
                                                                     Container(
                                                                   color: context
                                                                       .colorScheme
@@ -1027,6 +1110,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                 ),
                                                               ),
                                                       ),
+                                                      // Status Chips
                                                       Positioned(
                                                         top: 8,
                                                         left: 8,
@@ -1035,7 +1119,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                               CrossAxisAlignment
                                                                   .start,
                                                           children: [
-                                                            if (product.isTrending)
+                                                            if (product
+                                                                .isTrending)
                                                               const AppStatusChip(
                                                                 label:
                                                                     'Trending',
@@ -1043,12 +1128,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                     AppStatusChipTone
                                                                         .warning,
                                                               ),
-                                                            if (product.featured)
+                                                            if (product
+                                                                .featured)
                                                               const Padding(
-                                                                padding:
-                                                                    EdgeInsets.only(
-                                                                  top: 4,
-                                                                ),
+                                                                padding: EdgeInsets
+                                                                    .only(
+                                                                        top: 4),
                                                                 child:
                                                                     AppStatusChip(
                                                                   label:
@@ -1061,6 +1146,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                           ],
                                                         ),
                                                       ),
+                                                      // Favourite Button
                                                       Positioned(
                                                         top: 8,
                                                         right: 8,
@@ -1072,8 +1158,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                             }
                                                             await _firebaseService
                                                                 .toggleFavorite(
-                                                              product.id,
-                                                            );
+                                                                    product.id);
                                                           },
                                                           child: CircleAvatar(
                                                             radius: 14,
@@ -1081,12 +1166,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                                 colors.surface,
                                                             child: Icon(
                                                               isFavorite
-                                                                  ? Icons.favorite
+                                                                  ? Icons
+                                                                      .favorite
                                                                   : Icons
                                                                       .favorite_border,
                                                               color: isFavorite
                                                                   ? colors.error
-                                                                  : colors.iconPrimary,
+                                                                  : colors
+                                                                      .iconPrimary,
                                                               size: 16,
                                                             ),
                                                           ),
@@ -1098,22 +1185,19 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                 Padding(
                                                   padding:
                                                       const EdgeInsets.fromLTRB(
-                                                    8,
-                                                    8,
-                                                    8,
-                                                    8,
-                                                  ),
+                                                          8, 8, 8, 8),
                                                   child: Column(
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Text(
                                                         product.name,
                                                         maxLines: 1,
-                                                        overflow:
-                                                            TextOverflow.ellipsis,
-                                                        style: GoogleFonts
-                                                            .poppins(
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            GoogleFonts.poppins(
                                                           fontWeight:
                                                               FontWeight.w600,
                                                           fontSize: 12,
@@ -1125,10 +1209,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                       Text(
                                                         product.primaryCategory,
                                                         maxLines: 1,
-                                                        overflow:
-                                                            TextOverflow.ellipsis,
-                                                        style: GoogleFonts
-                                                            .poppins(
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            GoogleFonts.poppins(
                                                           fontSize: 10,
                                                           color: colors
                                                               .textSecondary,
@@ -1165,15 +1249,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .circular(
-                                                                999,
-                                                              ),
+                                                                          999),
                                                             ),
-                                                            child: Text(
+                                                            child:
+                                                                Text(
                                                               'Buy',
                                                               style: GoogleFonts
                                                                   .poppins(
-                                                                color:
-                                                                    Colors.white,
+                                                                color: Colors
+                                                                    .white,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .w700,
@@ -1205,14 +1289,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               },
                             ),
 
+                          // ── ITEX Promo Banner ─────────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                8,
-                                16,
-                                24,
-                              ),
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 8, 16, 24),
                               child: Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.symmetric(
@@ -1222,28 +1303,55 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      colors.cream,
                                       colors.brandPrimary,
+                                      colors.cream,
                                     ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.brandPrimary
+                                          .withOpacity(0.25),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
                                 child: Row(
                                   children: [
-                                    const Text(
-                                      '🔥',
-                                      style: TextStyle(fontSize: 18),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.20),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'ITEX',
+                                        style: GoogleFonts.cinzel(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
                                         _isGuest
-                                            ? 'Sign in to unlock favorites, delivery checkout, ride booking, and personal tracking.'
-                                            : 'Live route pricing now powers rides and deliveries across Nigeria!',
+                                            ? 'Sign in to unlock favourites, delivery checkout, ride booking, and personal tracking on IsmailTex.'
+                                            : 'Live route pricing now powers rides and deliveries on IsmailTex across Nigeria! 🚀',
                                         style: GoogleFonts.poppins(
-                                          color: colors.darkBrown,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12.5,
+                                          height: 1.4,
                                         ),
                                       ),
                                     ),
@@ -1334,6 +1442,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 }
 
+// ── Trending Product Card ──────────────────────────────────────────────────────
+
 class _TrendingProductCard extends StatelessWidget {
   final ProductModel product;
   final VoidCallback onTap;
@@ -1381,8 +1491,8 @@ class _TrendingProductCard extends StatelessWidget {
                           ),
                         )
                       : Container(
-                          color:
-                              context.colorScheme.surfaceContainerHighest,
+                          color: context
+                              .colorScheme.surfaceContainerHighest,
                           child: const Center(
                             child: Icon(Icons.image_not_supported),
                           ),
@@ -1390,11 +1500,9 @@ class _TrendingProductCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       product.name,
@@ -1434,6 +1542,8 @@ class _TrendingProductCard extends StatelessWidget {
     );
   }
 }
+
+// ── Main Action Card ───────────────────────────────────────────────────────────
 
 class _MainActionCard extends StatelessWidget {
   final String title;
@@ -1496,6 +1606,8 @@ class _MainActionCard extends StatelessWidget {
     );
   }
 }
+
+// ── Quick Action Item ──────────────────────────────────────────────────────────
 
 class _QuickActionItem extends StatelessWidget {
   final IconData icon;
