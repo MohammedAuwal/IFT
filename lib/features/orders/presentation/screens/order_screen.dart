@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/core/theme/app_theme.dart';
-import 'package:mix/features/orders/presentation/screens/order_detail_screen.dart';
-import 'package:mix/models/order_model.dart';
-import 'package:mix/models/ride_model.dart';
-import 'package:mix/services/firebase_service.dart';
+import 'package:ift/core/theme/app_theme.dart';
+import 'package:ift/features/orders/presentation/screens/order_detail_screen.dart';
+import 'package:ift/models/order_model.dart';
+import 'package:ift/models/ride_model.dart';
+import 'package:ift/services/firebase_service.dart';
 
 class OrderScreen extends StatelessWidget {
   final bool showScaffold;
