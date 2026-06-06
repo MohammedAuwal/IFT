@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/services/local_notification_service.dart';
-import 'package:mix/services/notification_navigation_service.dart';
+import 'package:ift/core/constants/app_constants.dart';
+import 'package:ift/services/local_notification_service.dart';
+import 'package:ift/services/notification_navigation_service.dart';
 
 class FcmService {
   FcmService._();
