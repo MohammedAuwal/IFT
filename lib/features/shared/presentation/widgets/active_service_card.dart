@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/shared/widgets/app_status_chip.dart';
-import 'package:mix/shared/widgets/app_surface_card.dart';
-import 'package:mix/core/theme/build_context_theme_x.dart';
+import 'package:ift/shared/widgets/app_status_chip.dart';
+import 'package:ift/shared/widgets/app_surface_card.dart';
+import 'package:ift/core/theme/build_context_theme_x.dart';
 
 class ActiveServiceCard extends StatelessWidget {
   final IconData icon;
