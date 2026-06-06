@@ -1,15 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/features/admin/presentation/screens/admin_reassignment_screen.dart';
-import 'package:mix/models/order_model.dart';
-import 'package:mix/models/ride_model.dart';
-import 'package:mix/services/firebase_service.dart';
-import 'package:mix/shared/widgets/app_page_scaffold.dart';
-import 'package:mix/shared/widgets/app_status_chip.dart';
-import 'package:mix/shared/widgets/app_surface_card.dart';
-import 'package:mix/core/theme/build_context_theme_x.dart';
+import 'package:ift/core/constants/app_constants.dart';
+import 'package:ift/features/admin/presentation/screens/admin_reassignment_screen.dart';
+import 'package:ift/models/order_model.dart';
+import 'package:ift/models/ride_model.dart';
+import 'package:ift/services/firebase_service.dart';
+import 'package:ift/shared/widgets/app_page_scaffold.dart';
+import 'package:ift/shared/widgets/app_status_chip.dart';
+import 'package:ift/shared/widgets/app_surface_card.dart';
+import 'package:ift/core/theme/build_context_theme_x.dart';
 
 class AdminOrdersScreen extends StatelessWidget {
   AdminOrdersScreen({super.key});
