@@ -1,4 +1,4 @@
-package com.maamahsmix.app
+package com.ift.app
 
 import io.flutter.embedding.android.FlutterActivity
 
