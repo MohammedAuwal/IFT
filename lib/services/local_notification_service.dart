@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:mix/services/notification_navigation_service.dart';
+import 'package:ift/services/notification_navigation_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalNotificationService {
