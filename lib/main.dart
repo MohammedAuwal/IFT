@@ -4,9 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mix/app.dart';
-import 'package:mix/services/fcm_service.dart';
-import 'package:mix/services/local_notification_service.dart';
+import 'package:ift/app.dart';
+import 'package:ift/services/fcm_service.dart';
+import 'package:ift/services/local_notification_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -63,7 +63,7 @@ Future<void> main() async {
 
   runApp(
     startupError == null
-        ? const MixApp()
+        ? const iftApp()
         : StartupErrorApp(
             error: startupError,
             stackTrace: startupStack,
