@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mix/core/constants/app_constants.dart';
-import 'package:mix/core/theme/app_theme.dart';
-import 'package:mix/models/ride_model.dart';
+import 'package:ift/core/constants/app_constants.dart';
+import 'package:ift/core/theme/app_theme.dart';
+import 'package:ift/models/ride_model.dart';
 
 class RideMapScreen extends StatefulWidget {
   final RideModel ride;
@@ -137,7 +137,7 @@ class _RideMapScreenState extends State<RideMapScreen> {
                     TileLayer(
                       urlTemplate:
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.maamahsmix.app',
+                      userAgentPackageName: 'com.maamahsift.app',
                     ),
                     if (routePoints.length >= 2)
                       PolylineLayer(
