@@ -5,6 +5,7 @@ import 'package:ift/core/routing/app_router.dart';
 import 'package:ift/core/theme/app_theme.dart';
 import 'package:ift/services/firebase_auth_service.dart';
 import 'package:ift/services/firebase_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -82,15 +83,18 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _loading = true);
 
     try {
+      // Create user without displayName parameter
       final user = await _authService.signUpWithEmailPassword(
         email: email,
         password: password,
-        displayName: name,
       );
 
       if (user == null) {
         throw AuthFailure('Account creation failed. Please try again.');
       }
+
+      // Update the profile with the display name after successful creation
+      await FirebaseAuth.instance.currentUser?.updateProfile(displayName: name);
 
       if (!mounted) return;
       await _goAfterSignup();
