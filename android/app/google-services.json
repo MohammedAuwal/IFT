@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "996231494835-f9hslft6t1vp92fat1k5vf7acsrslkdt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ift.app",
+            "certificate_hash": "e7ca5f9f591505ad72656114d93cbcb1b9590b52"
+          }
+        },
+        {
           "client_id": "996231494835-1ka75mcsn1h8fsrejum5jjr160akgakv.apps.googleusercontent.com",
           "client_type": 3
         }
