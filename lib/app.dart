@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:mix/core/routing/app_router.dart';
-import 'package:mix/core/theme/app_theme.dart';
-import 'package:mix/core/theme/theme_controller.dart';
-import 'package:mix/core/theme/theme_scope.dart';
-import 'package:mix/features/splash/presentation/screens/splash_screen.dart';
-import 'package:mix/services/admin_preview_controller.dart';
-import 'package:mix/services/admin_preview_scope.dart';
-import 'package:mix/services/notification_navigation_service.dart';
+import 'package:ift/core/routing/app_router.dart';
+import 'package:ift/core/theme/app_theme.dart';
+import 'package:ift/core/theme/theme_controller.dart';
+import 'package:ift/core/theme/theme_scope.dart';
+import 'package:ift/features/splash/presentation/screens/splash_screen.dart';
+import 'package:ift/services/admin_preview_controller.dart';
+import 'package:ift/services/admin_preview_scope.dart';
+import 'package:ift/services/notification_navigation_service.dart';
 
-class MixApp extends StatefulWidget {
-  const MixApp({super.key});
+class IftApp extends StatefulWidget {
+  const IftApp({super.key});
 
   @override
-  State<MixApp> createState() => _MixAppState();
+  State<IftApp> createState() => _IftAppState();
 }
 
-class _MixAppState extends State<MixApp> {
+class _IftAppState extends State<IftApp> {
   final ThemeController _themeController = ThemeController();
   final AdminPreviewController _adminPreviewController =
       AdminPreviewController();
@@ -40,7 +40,7 @@ class _MixAppState extends State<MixApp> {
           return AdminPreviewScope(
             controller: _adminPreviewController,
             child: MaterialApp(
-              title: "Maamah's Mix",
+              title: "Maamah's Ift",
               debugShowCheckedModeBanner: false,
               navigatorKey: NotificationNavigationService.instance.navigatorKey,
               theme: AppTheme.light(),
