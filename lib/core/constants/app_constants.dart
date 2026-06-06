@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = "Maamah's Mix";
+  static const String appName = "IsmailTex";
 
   static const List<String> superAdminUids = [
     "DfbaXxItLIMFkY48XF2jBF1qjLC3",
