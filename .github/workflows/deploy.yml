@@ -24,8 +24,6 @@ jobs:
 
       - name: Create Web Folder
         run: flutter create --platforms web .
-        # ☝️ This automatically generates the web folder
-        # with all required files including icons
 
       - name: Install Dependencies
         run: flutter pub get
