@@ -11,19 +11,32 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
+          flutter-version: "3.24.0"
+          channel: stable
+          cache: true
 
       - name: Enable Flutter Web
         run: flutter config --enable-web
 
-      - name: Create Web Folder
-        run: flutter create --platforms web .
+      # Generate the web/ folder without relying on the repo folder name (e.g. "IFT")
+      # and without modifying other project platforms.
+      - name: Generate web folder (if missing)
+        run: |
+          set -euo pipefail
+          if [ ! -d "web" ] || [ ! -f "web/index.html" ]; then
+            echo "web/ folder missing. Generating web template..."
+            rm -rf tmp_web web
+            flutter create --platforms web --project-name ift tmp_web
+            mv tmp_web/web ./web
+            rm -rf tmp_web
+          else
+            echo "web/ folder exists. Skipping generation."
+          fi
 
       - name: Install Dependencies
         run: flutter pub get
@@ -34,7 +47,7 @@ jobs:
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
           channelId: live
           projectId: ift-1336f
