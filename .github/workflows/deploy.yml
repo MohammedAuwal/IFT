@@ -29,14 +29,32 @@ jobs:
         run: |
           set -euo pipefail
           if [ ! -d "web" ] || [ ! -f "web/index.html" ]; then
-            echo "web/ folder missing. Generating web template..."
             rm -rf tmp_web web
             flutter create --platforms web --project-name ift tmp_web
             mv tmp_web/web ./web
             rm -rf tmp_web
-          else
-            echo "web/ folder exists. Skipping generation."
           fi
+
+      # IMPORTANT: make sure assets referenced in pubspec.yaml exist
+      - name: Ensure required assets exist
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          mkdir -p assets/images
+
+          # If icon.png is not committed, download it (same as Android workflow)
+          if [ ! -f assets/icon.png ]; then
+            echo "assets/icon.png missing. Downloading..."
+            GDRIVE_FILE_ID="14So0qV9rf_iUs9FoWMUKTb9sBC61UrAB"
+            curl -L "https://drive.google.com/uc?export=download&id=${GDRIVE_FILE_ID}" -o assets/icon.png
+          fi
+
+          # Ensure icon_foreground exists too
+          if [ ! -f assets/icon_foreground.png ]; then
+            cp assets/icon.png assets/icon_foreground.png
+          fi
+
+          ls -la assets || true
 
       - name: Install Dependencies
         run: flutter pub get
