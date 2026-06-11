@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "996231494835",
-    "project_id": "ift-1336f",
-    "storage_bucket": "ift-1336f.firebasestorage.app"
+    "project_number": "331362046998",
+    "project_id": "ismailtex-f070d",
+    "storage_bucket": "ismailtex-f070d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:996231494835:android:88e9a06f5d51d8513884c6",
+        "mobilesdk_app_id": "1:331362046998:android:65b49a4beb457e17025137",
         "android_client_info": {
           "package_name": "com.ift.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "996231494835-f9hslft6t1vp92fat1k5vf7acsrslkdt.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.ift.app",
-            "certificate_hash": "e7ca5f9f591505ad72656114d93cbcb1b9590b52"
-          }
-        },
-        {
-          "client_id": "996231494835-1ka75mcsn1h8fsrejum5jjr160akgakv.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCLYMSGU7Ep-LXdMPkj57L4Dc61slV-7C8"
+          "current_key": "AIzaSyDEYw7A7kyleURxqLFGarqifXG9Bzbsyk4"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "996231494835-1ka75mcsn1h8fsrejum5jjr160akgakv.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
