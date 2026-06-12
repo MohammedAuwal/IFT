@@ -164,57 +164,51 @@ class _CartScreenState extends State<CartScreen>
 
   // ── Estimate Delivery Fee ─────────────────────────────────────────────────
 
-  Future<void> _estimateDeliveryFee(String selectedAddress) async {
-    if (_isGuest) {
-      await _showGuestPrompt('estimate delivery');
-      return;
-    }
-
-    if (selectedAddress.trim().isEmpty) {
-      setState(() {
-        _deliveryFeeAmount = null;
-        _deliveryFeeError =
-            'Please select a delivery address in your Profile first';
-      });
-      return;
-    }
-
-    setState(() {
-      _loadingDeliveryFee = true;
-      _deliveryFeeError = null;
-    });
-
-    try {
-      final vendorPickup =
-          await _firebaseService.getVendorPickupAddress();
-
-      final estimate = await _firebaseService.estimateMovement(
-        type: 'delivery',
-        pickup: vendorPickup,
-        destination: selectedAddress,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _deliveryFeeAmount = estimate.price;
-        _lastEstimatedAddress = selectedAddress;
-      });
-
-      _summaryAnimCtrl
-        ..reset()
-        ..forward();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _deliveryFeeAmount = null;
-        _deliveryFeeError =
-            'Could not estimate delivery. Please try again.';
-      });
-    } finally {
-      if (mounted) setState(() => _loadingDeliveryFee = false);
-    }
+  Future<void> _estimateDeliveryFee(String selectedAddress, double itemsTotal) async {
+  if (_isGuest) {
+    await _showGuestPrompt('estimate delivery');
+    return;
   }
 
+  if (selectedAddress.trim().isEmpty) {
+    setState(() {
+      _deliveryFeeAmount = null;
+      _deliveryFeeError = 'Please select a delivery address in your Profile first';
+    });
+    return;
+  }
+
+  setState(() {
+    _loadingDeliveryFee = true;
+    _deliveryFeeError = null;
+  });
+
+  try {
+    // Simple delivery fee model (replace with distance-based later if you want):
+    const freeThreshold = 25000.0;
+    const baseFee = 1500.0;
+
+    final fee = itemsTotal >= freeThreshold ? 0.0 : baseFee;
+
+    if (!mounted) return;
+    setState(() {
+      _deliveryFeeAmount = fee;
+      _lastEstimatedAddress = selectedAddress;
+    });
+
+    _summaryAnimCtrl
+      ..reset()
+      ..forward();
+  } catch (_) {
+    if (!mounted) return;
+    setState(() {
+      _deliveryFeeAmount = null;
+      _deliveryFeeError = 'Could not estimate delivery. Please try again.';
+    });
+  } finally {
+    if (mounted) setState(() => _loadingDeliveryFee = false);
+  }
+}
   // ── Apply Coupon ──────────────────────────────────────────────────────────
 
   Future<void> _applyCoupon() async {
@@ -1284,7 +1278,7 @@ class _CartScreenState extends State<CartScreen>
                 onPressed: _loadingDeliveryFee
                     ? null
                     : () =>
-                        _estimateDeliveryFee(selectedAddress),
+                        _estimateDeliveryFee(selectedAddress, itemsTotal),
                 icon: _loadingDeliveryFee
                     ? SizedBox(
                         width: 16,
