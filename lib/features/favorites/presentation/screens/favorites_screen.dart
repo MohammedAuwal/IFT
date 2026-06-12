@@ -7,9 +7,14 @@ import 'package:ift/shared/widgets/app_surface_card.dart';
 import 'package:ift/core/theme/build_context_theme_x.dart';
 
 class FavoritesScreen extends StatelessWidget {
-  FavoritesScreen({super.key});
+  const FavoritesScreen({
+    super.key,
+    this.showScaffold = true,
+  });
 
-  final firebaseService = FirebaseService();
+  final bool showScaffold;
+
+  static final FirebaseService firebaseService = FirebaseService();
 
   bool _hasValidImage(String url) {
     final value = url.trim();
@@ -21,125 +26,125 @@ class FavoritesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
+    final body = StreamBuilder(
+      stream: firebaseService.watchFavoriteProducts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingGrid(colors);
+        }
+
+        final items = snapshot.data ?? [];
+
+        if (items.isEmpty) {
+          return _buildEmptyState(context, colors);
+        }
+
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colors.brandPrimary,
+                      colors.brandPrimary.withOpacity(0.80),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.favorite_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${items.length} item${items.length == 1 ? '' : 's'} saved to your wishlist',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) {
+                    final product = items[i];
+                    return _WishlistProductCard(
+                      product: product,
+                      colors: colors,
+                      hasValidImage: _hasValidImage,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ProductDetailScreen(product: product),
+                        ),
+                      ),
+                      onRemove: () async {
+                        await firebaseService.toggleFavorite(product.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '${product.name} removed from wishlist',
+                                style: GoogleFonts.poppins(),
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: colors.brandPrimary,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                  childCount: items.length,
+                ),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.72,
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
+        );
+      },
+    );
+
+    if (!showScaffold) {
+      return Scaffold(
+        backgroundColor: colors.scaffold,
+        body: SafeArea(child: body),
+      );
+    }
+
     return AppPageScaffold(
       title: 'My Wishlist',
-      body: StreamBuilder(
-        stream: firebaseService.watchFavoriteProducts(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingGrid(colors);
-          }
-
-          final items = snapshot.data ?? [];
-
-          if (items.isEmpty) {
-            return _buildEmptyState(context, colors);
-          }
-
-          return CustomScrollView(
-            slivers: [
-              // ── Header Banner ──────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colors.brandPrimary,
-                        colors.brandPrimary.withOpacity(0.80),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.favorite_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '${items.length} item${items.length == 1 ? '' : 's'} saved to your wishlist',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Product Grid ───────────────────────────────────────────────
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) {
-                      final product = items[i];
-                      return _WishlistProductCard(
-                        product: product,
-                        colors: colors,
-                        hasValidImage: _hasValidImage,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ProductDetailScreen(product: product),
-                          ),
-                        ),
-                        onRemove: () async {
-                          await firebaseService.toggleFavorite(product.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${product.name} removed from wishlist',
-                                  style: GoogleFonts.poppins(),
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                backgroundColor: colors.brandPrimary,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        },
-                      );
-                    },
-                    childCount: items.length,
-                  ),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.72,
-                  ),
-                ),
-              ),
-
-              // ── Bottom Padding ─────────────────────────────────────────────
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
-          );
-        },
-      ),
+      body: body,
     );
   }
-
-  // ── Empty State ──────────────────────────────────────────────────────────────
 
   Widget _buildEmptyState(BuildContext context, dynamic colors) {
     return Center(
@@ -148,7 +153,6 @@ class FavoritesScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon container
             Container(
               width: 120,
               height: 120,
@@ -181,49 +185,11 @@ class FavoritesScreen extends StatelessWidget {
                 height: 1.6,
               ),
             ),
-            const SizedBox(height: 28),
-            // Fabric type chips as visual hint
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                '🎨 Ankara',
-                '✨ Lace',
-                '👘 Silk',
-                '🌿 Aso Oke',
-                '💎 Chiffon',
-              ].map((label) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.brandPrimary.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: colors.brandPrimary.withOpacity(0.20),
-                    ),
-                  ),
-                  child: Text(
-                    label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: colors.brandPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
           ],
         ),
       ),
     );
   }
-
-  // ── Loading Shimmer Grid ─────────────────────────────────────────────────────
 
   Widget _buildLoadingGrid(dynamic colors) {
     return GridView.builder(
@@ -289,8 +255,6 @@ class FavoritesScreen extends StatelessWidget {
   }
 }
 
-// ── Wishlist Product Card ──────────────────────────────────────────────────────
-
 class _WishlistProductCard extends StatelessWidget {
   const _WishlistProductCard({
     required this.product,
@@ -310,8 +274,7 @@ class _WishlistProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final discountPercent = product.originalPrice != null &&
             product.originalPrice! > product.price
-        ? (((product.originalPrice! - product.price) /
-                    product.originalPrice!) *
+        ? (((product.originalPrice! - product.price) / product.originalPrice!) *
                 100)
             .round()
         : 0;
@@ -333,7 +296,6 @@ class _WishlistProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Product Image ────────────────────────────────────
             Expanded(
               flex: 3,
               child: Stack(
@@ -354,8 +316,6 @@ class _WishlistProductCard extends StatelessWidget {
                           : _imagePlaceholder(colors),
                     ),
                   ),
-
-                  // Discount badge
                   if (discountPercent > 0)
                     Positioned(
                       top: 8,
@@ -379,33 +339,6 @@ class _WishlistProductCard extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                  // New Arrival badge
-                  if (product.isNewArrival == true)
-                    Positioned(
-                      top: discountPercent > 0 ? 34 : 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade600,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'NEW',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  // Remove from wishlist button
                   Positioned(
                     top: 8,
                     right: 8,
@@ -435,8 +368,6 @@ class _WishlistProductCard extends StatelessWidget {
                 ],
               ),
             ),
-
-            // ── Product Info ─────────────────────────────────────
             Expanded(
               flex: 2,
               child: Padding(
@@ -444,7 +375,6 @@ class _WishlistProductCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Fabric type tag
                     if (product.fabricType != null &&
                         product.fabricType!.isNotEmpty)
                       Container(
@@ -466,8 +396,6 @@ class _WishlistProductCard extends StatelessWidget {
                           ),
                         ),
                       ),
-
-                    // Product name
                     Text(
                       product.name,
                       style: GoogleFonts.poppins(
@@ -479,8 +407,6 @@ class _WishlistProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Spacer(),
-
-                    // Price row
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -521,23 +447,10 @@ class _WishlistProductCard extends StatelessWidget {
     return Container(
       color: colors.surfaceAlt,
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.texture_rounded,
-              color: colors.textSecondary.withOpacity(0.4),
-              size: 32,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'No Image',
-              style: GoogleFonts.poppins(
-                fontSize: 9,
-                color: colors.textSecondary.withOpacity(0.4),
-              ),
-            ),
-          ],
+        child: Icon(
+          Icons.texture_rounded,
+          color: colors.textSecondary.withOpacity(0.4),
+          size: 32,
         ),
       ),
     );
