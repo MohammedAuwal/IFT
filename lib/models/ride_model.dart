@@ -1,3 +1,15 @@
+// ── ISMAILTEX — ride_model.dart ───────────────────────────────────────────────
+// This model is KEPT because driver_mode_screen.dart (admin delivery dispatch
+// screen) still references it during this transition batch.
+//
+// ⚠️  DO NOT import RideModel in any new screen or feature.
+// ⚠️  This file will be fully deprecated in a future batch when
+//     driver_mode_screen is fully converted to use OrderModel.
+//
+// For now: kept as-is to prevent compilation errors.
+// firebase_service.dart no longer writes new ride documents.
+// Existing ride documents in Firestore will not affect new orders.
+
 class RideModel {
   final String id;
   final String type;
@@ -70,7 +82,6 @@ class RideModel {
   });
 
   bool get isDelivery => type == 'delivery';
-
   bool get isActive => status != 'completed' && status != 'cancelled';
 
   String get readableType {
@@ -112,7 +123,8 @@ class RideModel {
       assignedAdminArea: map['assignedAdminArea']?.toString(),
       assignmentMethod: map['assignmentMethod']?.toString(),
       activeAdminLoad: (map['activeAdminLoad'] as num?)?.toInt(),
-      escalatedToSuperAdmin: (map['escalatedToSuperAdmin'] ?? false) == true,
+      escalatedToSuperAdmin:
+          (map['escalatedToSuperAdmin'] ?? false) == true,
       createdAt:
           DateTime.tryParse((map['createdAt'] ?? '').toString()) ??
               DateTime.now(),
@@ -216,12 +228,16 @@ class RideModel {
       orderId: orderId ?? this.orderId,
       addressLabel: addressLabel ?? this.addressLabel,
       assignedAdminUid: assignedAdminUid ?? this.assignedAdminUid,
-      assignedAdminEmail: assignedAdminEmail ?? this.assignedAdminEmail,
-      assignedAdminName: assignedAdminName ?? this.assignedAdminName,
+      assignedAdminEmail:
+          assignedAdminEmail ?? this.assignedAdminEmail,
+      assignedAdminName:
+          assignedAdminName ?? this.assignedAdminName,
       assignedAdminDistanceKm:
           assignedAdminDistanceKm ?? this.assignedAdminDistanceKm,
-      assignedAdminState: assignedAdminState ?? this.assignedAdminState,
-      assignedAdminArea: assignedAdminArea ?? this.assignedAdminArea,
+      assignedAdminState:
+          assignedAdminState ?? this.assignedAdminState,
+      assignedAdminArea:
+          assignedAdminArea ?? this.assignedAdminArea,
       assignmentMethod: assignmentMethod ?? this.assignmentMethod,
       activeAdminLoad: activeAdminLoad ?? this.activeAdminLoad,
       escalatedToSuperAdmin:
