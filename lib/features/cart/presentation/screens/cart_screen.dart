@@ -33,17 +33,17 @@ class _CartScreenState extends State<CartScreen>
   double? _deliveryFeeAmount;
   String _lastEstimatedAddress = '';
 
-  // Coupon
+  // ── Coupon ────────────────────────────────────────────────────────────────
   final _couponCtrl = TextEditingController();
   bool _couponApplied = false;
   double _couponDiscount = 0;
   String? _couponError;
   bool _checkingCoupon = false;
 
-  // Payment method
+  // ── Payment method ────────────────────────────────────────────────────────
   String _selectedPayment = 'Paystack';
 
-  // Animation
+  // ── Animation ─────────────────────────────────────────────────────────────
   late AnimationController _summaryAnimCtrl;
   late Animation<double> _summaryAnim;
 
@@ -89,11 +89,9 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── Guest prompt ──────────────────────────────────────────────────────────
+  // ── Guest Prompt ──────────────────────────────────────────────────────────
 
   Future<void> _showGuestPrompt(String action) async {
-    final colors = AppTheme.colorsOf(context);
-
     final go = await showDialog<bool>(
           context: context,
           builder: (ctx) {
@@ -117,12 +115,14 @@ class _CartScreenState extends State<CartScreen>
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    'Sign In Required',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: c.textPrimary,
+                  Expanded(
+                    child: Text(
+                      'Sign In Required',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: c.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -140,16 +140,14 @@ class _CartScreenState extends State<CartScreen>
                   onPressed: () => Navigator.pop(ctx, false),
                   child: Text(
                     'Later',
-                    style: GoogleFonts.poppins(
-                        color: c.textSecondary),
+                    style: GoogleFonts.poppins(color: c.textSecondary),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   child: Text(
                     'Sign In',
-                    style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w700),
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -163,52 +161,60 @@ class _CartScreenState extends State<CartScreen>
   }
 
   // ── Estimate Delivery Fee ─────────────────────────────────────────────────
+  // Simple flat-fee model:
+  // - Orders ≥ ₦25,000 → free delivery
+  // - Orders < ₦25,000 → ₦1,500 flat delivery fee
 
-  Future<void> _estimateDeliveryFee(String selectedAddress, double itemsTotal) async {
-  if (_isGuest) {
-    await _showGuestPrompt('estimate delivery');
-    return;
-  }
+  Future<void> _estimateDeliveryFee(
+    String selectedAddress,
+    double itemsTotal,
+  ) async {
+    if (_isGuest) {
+      await _showGuestPrompt('estimate delivery');
+      return;
+    }
 
-  if (selectedAddress.trim().isEmpty) {
+    if (selectedAddress.trim().isEmpty) {
+      setState(() {
+        _deliveryFeeAmount = null;
+        _deliveryFeeError =
+            'Please select a delivery address in your Profile first';
+      });
+      return;
+    }
+
     setState(() {
-      _deliveryFeeAmount = null;
-      _deliveryFeeError = 'Please select a delivery address in your Profile first';
-    });
-    return;
-  }
-
-  setState(() {
-    _loadingDeliveryFee = true;
-    _deliveryFeeError = null;
-  });
-
-  try {
-    // Simple delivery fee model (replace with distance-based later if you want):
-    const freeThreshold = 25000.0;
-    const baseFee = 1500.0;
-
-    final fee = itemsTotal >= freeThreshold ? 0.0 : baseFee;
-
-    if (!mounted) return;
-    setState(() {
-      _deliveryFeeAmount = fee;
-      _lastEstimatedAddress = selectedAddress;
+      _loadingDeliveryFee = true;
+      _deliveryFeeError = null;
     });
 
-    _summaryAnimCtrl
-      ..reset()
-      ..forward();
-  } catch (_) {
-    if (!mounted) return;
-    setState(() {
-      _deliveryFeeAmount = null;
-      _deliveryFeeError = 'Could not estimate delivery. Please try again.';
-    });
-  } finally {
-    if (mounted) setState(() => _loadingDeliveryFee = false);
+    try {
+      const freeThreshold = 25000.0;
+      const baseFee = 1500.0;
+      final fee = itemsTotal >= freeThreshold ? 0.0 : baseFee;
+
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      if (!mounted) return;
+      setState(() {
+        _deliveryFeeAmount = fee;
+        _lastEstimatedAddress = selectedAddress;
+      });
+
+      _summaryAnimCtrl
+        ..reset()
+        ..forward();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _deliveryFeeAmount = null;
+        _deliveryFeeError = 'Could not estimate delivery. Please try again.';
+      });
+    } finally {
+      if (mounted) setState(() => _loadingDeliveryFee = false);
+    }
   }
-}
+
   // ── Apply Coupon ──────────────────────────────────────────────────────────
 
   Future<void> _applyCoupon() async {
@@ -222,17 +228,16 @@ class _CartScreenState extends State<CartScreen>
 
     await Future.delayed(const Duration(milliseconds: 800));
 
-    // Demo coupon logic — replace with real Firebase lookup
     if (code == 'ITEX10') {
       setState(() {
         _couponApplied = true;
-        _couponDiscount = 0.10; // 10%
+        _couponDiscount = 0.10;
         _couponError = null;
       });
     } else if (code == 'ANKARA20') {
       setState(() {
         _couponApplied = true;
-        _couponDiscount = 0.20; // 20%
+        _couponDiscount = 0.20;
         _couponError = null;
       });
     } else {
@@ -265,7 +270,8 @@ class _CartScreenState extends State<CartScreen>
     double couponSaving,
   ) async {
     if (_isGuest) {
-      await _showGuestPrompt('complete checkout and track your fabric delivery');
+      await _showGuestPrompt(
+          'complete checkout and track your fabric delivery');
       return;
     }
 
@@ -285,22 +291,20 @@ class _CartScreenState extends State<CartScreen>
 
     if (_deliveryFeeAmount == null) {
       if (!mounted) return;
+      final colors = AppTheme.colorsOf(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.info_rounded,
-                  color: Colors.white, size: 18),
+              const Icon(Icons.info_rounded, color: Colors.white, size: 18),
               const SizedBox(width: 8),
               Text(
                 'Please estimate delivery fee first.',
-                style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
             ],
           ),
-          backgroundColor:
-              AppTheme.colorsOf(context).warning,
+          backgroundColor: colors.warning,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -339,16 +343,12 @@ class _CartScreenState extends State<CartScreen>
         return;
       }
 
-      final opened = await _paymentService
-          .openCheckoutUrl(result.authorizationUrl);
+      final opened = await _paymentService.openCheckoutUrl(result.authorizationUrl);
 
       if (!opened) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Unable to open Paystack checkout'),
-          ),
+          const SnackBar(content: Text('Unable to open Paystack checkout')),
         );
         return;
       }
@@ -376,8 +376,7 @@ class _CartScreenState extends State<CartScreen>
 
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) =>
-              PaystackVerificationScreen(session: session),
+          builder: (_) => PaystackVerificationScreen(session: session),
         ),
       );
     } catch (e) {
@@ -401,7 +400,7 @@ class _CartScreenState extends State<CartScreen>
       builder: (context, snapshot) {
         final cartItems = snapshot.data ?? [];
 
-        // Items subtotal
+        // ── Calculate items total ─────────────────────────────────
         final itemsTotal = cartItems.fold<double>(
           0,
           (sum, item) =>
@@ -410,7 +409,7 @@ class _CartScreenState extends State<CartScreen>
                   ((item['qty'] ?? 1) as int)),
         );
 
-        // ── Empty Cart ────────────────────────────────────────────
+        // ── Empty cart ────────────────────────────────────────────
         if (cartItems.isEmpty) {
           return _buildEmptyCart(colors);
         }
@@ -418,14 +417,12 @@ class _CartScreenState extends State<CartScreen>
         return StreamBuilder<String>(
           stream: _firebaseService.watchSelectedAddress(),
           builder: (context, addressSnapshot) {
-            final selectedAddress =
-                addressSnapshot.data ?? '';
+            final selectedAddress = addressSnapshot.data ?? '';
 
-            // Reset delivery fee if address changed
+            // Reset delivery fee when address changes
             if (_lastEstimatedAddress != selectedAddress &&
                 _deliveryFeeAmount != null) {
-              WidgetsBinding.instance
-                  .addPostFrameCallback((_) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 setState(() {
                   _deliveryFeeAmount = null;
@@ -435,56 +432,51 @@ class _CartScreenState extends State<CartScreen>
             }
 
             final deliveryFee = _deliveryFeeAmount ?? 0;
-            final couponSaving = _couponApplied
-                ? (itemsTotal * _couponDiscount)
-                : 0.0;
-            final grandTotal =
-                itemsTotal + deliveryFee - couponSaving;
+            final couponSaving =
+                _couponApplied ? (itemsTotal * _couponDiscount) : 0.0;
+            final grandTotal = itemsTotal + deliveryFee - couponSaving;
 
             return CustomScrollView(
               slivers: [
-                // ── Guest Banner ─────────────────────────────────
+                // ── Guest banner ──────────────────────────────────
                 if (_isGuest)
-                  SliverToBoxAdapter(
-                    child: _buildGuestBanner(colors),
-                  ),
+                  SliverToBoxAdapter(child: _buildGuestBanner(colors)),
 
-                // ── Section Header ────────────────────────────────
+                // ── Cart header ───────────────────────────────────
                 SliverToBoxAdapter(
-                  child: _buildCartHeader(
-                      colors, cartItems.length),
+                  child: _buildCartHeader(colors, cartItems.length),
                 ),
 
-                // ── Cart Items ────────────────────────────────────
+                // ── Cart items ────────────────────────────────────
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                      16, 0, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (_, i) => _buildCartItem(
-                          colors, cartItems[i]),
+                      (_, i) => _buildCartItem(colors, cartItems[i]),
                       childCount: cartItems.length,
                     ),
                   ),
                 ),
 
-                // ── Deliver To Card ───────────────────────────────
+                // ── Deliver To ────────────────────────────────────
+                // ✅ itemsTotal is passed here so _buildDeliverToCard
+                //    can forward it to _estimateDeliveryFee
                 SliverToBoxAdapter(
                   child: _buildDeliverToCard(
-                      colors, selectedAddress),
+                    colors,
+                    selectedAddress,
+                    itemsTotal,
+                  ),
                 ),
 
-                // ── Coupon Section ────────────────────────────────
+                // ── Coupon ────────────────────────────────────────
+                SliverToBoxAdapter(child: _buildCouponSection(colors)),
+
+                // ── Payment method ────────────────────────────────
                 SliverToBoxAdapter(
-                  child: _buildCouponSection(colors),
-                ),
+                    child: _buildPaymentMethodSection(colors)),
 
-                // ── Payment Method ────────────────────────────────
-                SliverToBoxAdapter(
-                  child: _buildPaymentMethodSection(colors),
-                ),
-
-                // ── Order Summary ─────────────────────────────────
+                // ── Order summary ─────────────────────────────────
                 SliverToBoxAdapter(
                   child: FadeTransition(
                     opacity: _summaryAnim,
@@ -500,8 +492,7 @@ class _CartScreenState extends State<CartScreen>
                   ),
                 ),
 
-                const SliverToBoxAdapter(
-                    child: SizedBox(height: 32)),
+                const SliverToBoxAdapter(child: SizedBox(height: 32)),
               ],
             );
           },
@@ -523,7 +514,11 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── APP BAR ───────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION BUILDERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── App Bar ───────────────────────────────────────────────────────────────
 
   AppBar _buildAppBar(dynamic colors) {
     return AppBar(
@@ -569,8 +564,7 @@ class _CartScreenState extends State<CartScreen>
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        colors.brandPrimary.withOpacity(0.12),
+                    color: colors.brandPrimary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -590,7 +584,7 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── EMPTY CART ────────────────────────────────────────────────────────────
+  // ── Empty Cart ────────────────────────────────────────────────────────────
 
   Widget _buildEmptyCart(dynamic colors) {
     return Center(
@@ -652,7 +646,7 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── GUEST BANNER ──────────────────────────────────────────────────────────
+  // ── Guest Banner ──────────────────────────────────────────────────────────
 
   Widget _buildGuestBanner(dynamic colors) {
     return Container(
@@ -661,9 +655,7 @@ class _CartScreenState extends State<CartScreen>
       decoration: BoxDecoration(
         color: colors.brandPrimary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colors.brandPrimary.withOpacity(0.20),
-        ),
+        border: Border.all(color: colors.brandPrimary.withOpacity(0.20)),
       ),
       child: Row(
         children: [
@@ -695,10 +687,8 @@ class _CartScreenState extends State<CartScreen>
           TextButton(
             onPressed: _goToLogin,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 6),
-              backgroundColor:
-                  colors.brandPrimary.withOpacity(0.15),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              backgroundColor: colors.brandPrimary.withOpacity(0.15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -717,7 +707,7 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── CART HEADER ───────────────────────────────────────────────────────────
+  // ── Cart Header ───────────────────────────────────────────────────────────
 
   Widget _buildCartHeader(dynamic colors, int count) {
     return Padding(
@@ -755,31 +745,27 @@ class _CartScreenState extends State<CartScreen>
                     title: Text(
                       'Clear Cart?',
                       style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                          color: c.textPrimary),
+                        fontWeight: FontWeight.w700,
+                        color: c.textPrimary,
+                      ),
                     ),
                     content: Text(
                       'Remove all items from your cart?',
-                      style: GoogleFonts.poppins(
-                          color: c.textSecondary),
+                      style: GoogleFonts.poppins(color: c.textSecondary),
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () =>
-                            Navigator.pop(ctx, false),
-                        child: Text('Cancel',
-                            style: GoogleFonts.poppins()),
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text('Cancel', style: GoogleFonts.poppins()),
                       ),
                       ElevatedButton(
-                        onPressed: () =>
-                            Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: c.error,
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style:
+                            ElevatedButton.styleFrom(backgroundColor: c.error),
+                        child: Text(
+                          'Clear All',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                         ),
-                        child: Text('Clear All',
-                            style: GoogleFonts.poppins(
-                                fontWeight:
-                                    FontWeight.w700)),
                       ),
                     ],
                   );
@@ -789,11 +775,7 @@ class _CartScreenState extends State<CartScreen>
                 await _firebaseService.clearCart();
               }
             },
-            icon: Icon(
-              Icons.delete_sweep_rounded,
-              size: 16,
-              color: colors.error,
-            ),
+            icon: Icon(Icons.delete_sweep_rounded, size: 16, color: colors.error),
             label: Text(
               'Clear All',
               style: GoogleFonts.poppins(
@@ -808,20 +790,20 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── CART ITEM ─────────────────────────────────────────────────────────────
+  // ── Cart Item ─────────────────────────────────────────────────────────────
 
-  Widget _buildCartItem(
-      dynamic colors, Map<String, dynamic> item) {
+  Widget _buildCartItem(dynamic colors, Map<String, dynamic> item) {
     final qty = (item['qty'] ?? 1) as int;
     final imageUrl = (item['imageUrl'] ?? '').toString();
-    final itemTotal =
-        ((item['price'] ?? 0) as num).toDouble() * qty;
-    final fabricType =
-        (item['fabricType'] ?? '').toString().trim();
+    final itemTotal = ((item['price'] ?? 0) as num).toDouble() * qty;
+    final fabricType = (item['fabricType'] ?? '').toString().trim();
+
+    // Support both key conventions: 'selectedColor'/'selectedSize'
+    // and 'color'/'size' (from addToCart)
     final selectedColor =
-        (item['selectedColor'] ?? '').toString().trim();
+        (item['selectedColor'] ?? item['color'] ?? '').toString().trim();
     final selectedSize =
-        (item['selectedSize'] ?? '').toString().trim();
+        (item['selectedSize'] ?? item['size'] ?? '').toString().trim();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -841,7 +823,7 @@ class _CartScreenState extends State<CartScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image
+          // ── Product image ──────────────────────────────────────
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: SizedBox(
@@ -851,20 +833,18 @@ class _CartScreenState extends State<CartScreen>
                   ? Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _imagePlaceholder(colors),
+                      errorBuilder: (_, __, ___) => _imagePlaceholder(colors),
                     )
                   : _imagePlaceholder(colors),
             ),
           ),
           const SizedBox(width: 12),
 
-          // Product Info
+          // ── Product info ───────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name
                 Text(
                   (item['name'] ?? '').toString(),
                   style: GoogleFonts.poppins(
@@ -875,18 +855,12 @@ class _CartScreenState extends State<CartScreen>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-
                 const SizedBox(height: 4),
-
-                // Fabric type
                 if (fabricType.isNotEmpty)
                   Row(
                     children: [
-                      Icon(
-                        Icons.style_rounded,
-                        size: 12,
-                        color: colors.textSecondary,
-                      ),
+                      Icon(Icons.style_rounded,
+                          size: 12, color: colors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         fabricType,
@@ -898,32 +872,20 @@ class _CartScreenState extends State<CartScreen>
                       ),
                     ],
                   ),
-
-                // Color & Size tags
-                if (selectedColor.isNotEmpty ||
-                    selectedSize.isNotEmpty)
+                if (selectedColor.isNotEmpty || selectedSize.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Wrap(
                       spacing: 6,
                       children: [
                         if (selectedColor.isNotEmpty)
-                          _MiniTag(
-                            label: selectedColor,
-                            colors: colors,
-                          ),
+                          _MiniTag(label: selectedColor, colors: colors),
                         if (selectedSize.isNotEmpty)
-                          _MiniTag(
-                            label: selectedSize,
-                            colors: colors,
-                          ),
+                          _MiniTag(label: selectedSize, colors: colors),
                       ],
                     ),
                   ),
-
                 const SizedBox(height: 6),
-
-                // Price per unit
                 Text(
                   '₦${((item['price'] ?? 0) as num).toDouble().toStringAsFixed(0)} each',
                   style: GoogleFonts.poppins(
@@ -931,10 +893,7 @@ class _CartScreenState extends State<CartScreen>
                     fontSize: 11.5,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
-                // Subtotal
                 Text(
                   'Subtotal: ₦${itemTotal.toStringAsFixed(0)}',
                   style: GoogleFonts.poppins(
@@ -949,10 +908,9 @@ class _CartScreenState extends State<CartScreen>
 
           const SizedBox(width: 8),
 
-          // Qty Controls + Remove
+          // ── Qty controls + remove ──────────────────────────────
           Column(
             children: [
-              // Quantity stepper
               Container(
                 decoration: BoxDecoration(
                   color: colors.surfaceAlt,
@@ -969,15 +927,13 @@ class _CartScreenState extends State<CartScreen>
                           : colors.brandPrimary,
                       onTap: () async {
                         await _firebaseService.updateCartQty(
-                          productId: item['productId']
-                              .toString(),
+                          productId: item['productId'].toString(),
                           qty: qty - 1,
                         );
                       },
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Text(
                         '$qty',
                         style: GoogleFonts.poppins(
@@ -992,8 +948,7 @@ class _CartScreenState extends State<CartScreen>
                       color: colors.brandPrimary,
                       onTap: () async {
                         await _firebaseService.updateCartQty(
-                          productId: item['productId']
-                              .toString(),
+                          productId: item['productId'].toString(),
                           qty: qty + 1,
                         );
                       },
@@ -1001,15 +956,11 @@ class _CartScreenState extends State<CartScreen>
                   ],
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              // Remove button
               GestureDetector(
                 onTap: () async {
                   await _firebaseService.updateCartQty(
-                    productId:
-                        item['productId'].toString(),
+                    productId: item['productId'].toString(),
                     qty: 0,
                   );
                 },
@@ -1046,12 +997,16 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── DELIVER TO CARD ───────────────────────────────────────────────────────
+  // ── Deliver To Card ───────────────────────────────────────────────────────
+  // ✅ itemsTotal is passed in as a parameter so it can be forwarded
+  //    to _estimateDeliveryFee without any "not defined" errors.
 
   Widget _buildDeliverToCard(
-      dynamic colors, String selectedAddress) {
-    final hasAddress =
-        !_isGuest && selectedAddress.isNotEmpty;
+    dynamic colors,
+    String selectedAddress,
+    double itemsTotal,
+  ) {
+    final hasAddress = !_isGuest && selectedAddress.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -1075,23 +1030,20 @@ class _CartScreenState extends State<CartScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // ── Header row ─────────────────────────────────────────
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (hasAddress
-                          ? colors.brandPrimary
-                          : colors.error)
+                  color: (hasAddress ? colors.brandPrimary : colors.error)
                       .withOpacity(0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.local_shipping_rounded,
-                  color: hasAddress
-                      ? colors.brandPrimary
-                      : colors.error,
+                  color:
+                      hasAddress ? colors.brandPrimary : colors.error,
                   size: 18,
                 ),
               ),
@@ -1110,8 +1062,7 @@ class _CartScreenState extends State<CartScreen>
                   if (_isGuest) {
                     _goToLogin();
                   } else {
-                    Navigator.of(context)
-                        .pushNamed(RouteNames.profile);
+                    Navigator.of(context).pushNamed(RouteNames.profile);
                   }
                 },
                 style: TextButton.styleFrom(
@@ -1134,10 +1085,9 @@ class _CartScreenState extends State<CartScreen>
               ),
             ],
           ),
-
           const SizedBox(height: 10),
 
-          // Address Display
+          // ── Address display ─────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1152,9 +1102,8 @@ class _CartScreenState extends State<CartScreen>
                   hasAddress
                       ? Icons.location_on_rounded
                       : Icons.location_off_rounded,
-                  color: hasAddress
-                      ? colors.brandPrimary
-                      : colors.error,
+                  color:
+                      hasAddress ? colors.brandPrimary : colors.error,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
@@ -1182,11 +1131,11 @@ class _CartScreenState extends State<CartScreen>
             ),
           ),
 
-          // Estimate button
+          // ── Estimate section (authenticated only) ───────────────
           if (!_isGuest) ...[
             const SizedBox(height: 12),
 
-            // Error
+            // Error message
             if (_deliveryFeeError != null)
               Container(
                 padding: const EdgeInsets.all(10),
@@ -1194,8 +1143,8 @@ class _CartScreenState extends State<CartScreen>
                 decoration: BoxDecoration(
                   color: colors.error.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: colors.error.withOpacity(0.25)),
+                  border:
+                      Border.all(color: colors.error.withOpacity(0.25)),
                 ),
                 child: Row(
                   children: [
@@ -1216,7 +1165,7 @@ class _CartScreenState extends State<CartScreen>
                 ),
               ),
 
-            // Delivery fee result
+            // Success delivery fee display
             if (_deliveryFeeAmount != null)
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1225,24 +1174,21 @@ class _CartScreenState extends State<CartScreen>
                   color: colors.paleGreen,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: colors.success.withOpacity(0.30),
-                  ),
+                      color: colors.success.withOpacity(0.30)),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      color: colors.success,
-                      size: 18,
-                    ),
+                    Icon(Icons.check_circle_rounded,
+                        color: colors.success, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Delivery fee estimated',
+                            _deliveryFeeAmount == 0
+                                ? 'Free delivery! 🎉'
+                                : 'Delivery fee estimated',
                             style: GoogleFonts.poppins(
                               color: colors.success,
                               fontWeight: FontWeight.w700,
@@ -1250,7 +1196,7 @@ class _CartScreenState extends State<CartScreen>
                             ),
                           ),
                           Text(
-                            'To: ${selectedAddress.length > 40 ? selectedAddress.substring(0, 40) + '...' : selectedAddress}',
+                            'To: ${selectedAddress.length > 40 ? '${selectedAddress.substring(0, 40)}...' : selectedAddress}',
                             style: GoogleFonts.poppins(
                               color: colors.textSecondary,
                               fontSize: 11,
@@ -1260,7 +1206,9 @@ class _CartScreenState extends State<CartScreen>
                       ),
                     ),
                     Text(
-                      '₦${_deliveryFeeAmount!.toStringAsFixed(0)}',
+                      _deliveryFeeAmount == 0
+                          ? 'FREE'
+                          : '₦${_deliveryFeeAmount!.toStringAsFixed(0)}',
                       style: GoogleFonts.poppins(
                         color: colors.success,
                         fontWeight: FontWeight.w800,
@@ -1271,14 +1219,17 @@ class _CartScreenState extends State<CartScreen>
                 ),
               ),
 
+            // Estimate / Re-estimate button
             SizedBox(
               width: double.infinity,
               height: 46,
               child: OutlinedButton.icon(
                 onPressed: _loadingDeliveryFee
                     ? null
-                    : () =>
-                        _estimateDeliveryFee(selectedAddress, itemsTotal),
+                    : () => _estimateDeliveryFee(
+                          selectedAddress,
+                          itemsTotal,
+                        ),
                 icon: _loadingDeliveryFee
                     ? SizedBox(
                         width: 16,
@@ -1288,10 +1239,7 @@ class _CartScreenState extends State<CartScreen>
                           color: colors.brandPrimary,
                         ),
                       )
-                    : const Icon(
-                        Icons.calculate_rounded,
-                        size: 18,
-                      ),
+                    : const Icon(Icons.calculate_rounded, size: 18),
                 label: Text(
                   _loadingDeliveryFee
                       ? 'Calculating...'
@@ -1311,7 +1259,7 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── COUPON SECTION ────────────────────────────────────────────────────────
+  // ── Coupon Section ────────────────────────────────────────────────────────
 
   Widget _buildCouponSection(dynamic colors) {
     return Container(
@@ -1322,11 +1270,7 @@ class _CartScreenState extends State<CartScreen>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colors.borderSoft),
         boxShadow: [
-          BoxShadow(
-            color: colors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
+          BoxShadow(color: colors.shadow, blurRadius: 8, offset: const Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -1334,11 +1278,8 @@ class _CartScreenState extends State<CartScreen>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.local_offer_rounded,
-                color: colors.brandPrimary,
-                size: 18,
-              ),
+              Icon(Icons.local_offer_rounded,
+                  color: colors.brandPrimary, size: 18),
               const SizedBox(width: 8),
               Text(
                 'Coupon Code',
@@ -1357,8 +1298,7 @@ class _CartScreenState extends State<CartScreen>
                         horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: colors.error.withOpacity(0.10),
-                      borderRadius:
-                          BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       'Remove',
@@ -1374,16 +1314,13 @@ class _CartScreenState extends State<CartScreen>
             ],
           ),
           const SizedBox(height: 12),
-
           if (_couponApplied)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: colors.paleGreen,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colors.success.withOpacity(0.30),
-                ),
+                border: Border.all(color: colors.success.withOpacity(0.30)),
               ),
               child: Row(
                 children: [
@@ -1409,36 +1346,25 @@ class _CartScreenState extends State<CartScreen>
                 Expanded(
                   child: TextField(
                     controller: _couponCtrl,
-                    textCapitalization:
-                        TextCapitalization.characters,
+                    textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
                       hintText: 'Enter coupon code',
                       hintStyle: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: colors.textSecondary,
-                      ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
+                          fontSize: 13, color: colors.textSecondary),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: colors.border),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: colors.border),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: colors.brandPrimary,
-                          width: 1.5,
-                        ),
+                            color: colors.brandPrimary, width: 1.5),
                       ),
                       filled: true,
                       fillColor: colors.surfaceAlt,
@@ -1454,37 +1380,28 @@ class _CartScreenState extends State<CartScreen>
                 SizedBox(
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: _checkingCoupon
-                        ? null
-                        : _applyCoupon,
+                    onPressed: _checkingCoupon ? null : _applyCoupon,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _checkingCoupon
                         ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
+                                strokeWidth: 2, color: Colors.white),
                           )
                         : Text(
                             'Apply',
                             style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                            ),
+                                fontWeight: FontWeight.w700),
                           ),
                   ),
                 ),
               ],
             ),
-
           if (_couponError != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -1502,7 +1419,7 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── PAYMENT METHOD ────────────────────────────────────────────────────────
+  // ── Payment Method Section ────────────────────────────────────────────────
 
   Widget _buildPaymentMethodSection(dynamic colors) {
     final methods = ['Paystack', 'Bank Transfer', 'USSD'];
@@ -1515,11 +1432,7 @@ class _CartScreenState extends State<CartScreen>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colors.borderSoft),
         boxShadow: [
-          BoxShadow(
-            color: colors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
+          BoxShadow(color: colors.shadow, blurRadius: 8, offset: const Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -1527,11 +1440,7 @@ class _CartScreenState extends State<CartScreen>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.payment_rounded,
-                color: colors.brandPrimary,
-                size: 18,
-              ),
+              Icon(Icons.payment_rounded, color: colors.brandPrimary, size: 18),
               const SizedBox(width: 8),
               Text(
                 'Payment Method',
@@ -1551,8 +1460,7 @@ class _CartScreenState extends State<CartScreen>
             return GestureDetector(
               onTap: isComingSoon
                   ? null
-                  : () =>
-                      setState(() => _selectedPayment = method),
+                  : () => setState(() => _selectedPayment = method),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(
@@ -1563,9 +1471,7 @@ class _CartScreenState extends State<CartScreen>
                       : colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSelected
-                        ? colors.brandPrimary
-                        : colors.borderSoft,
+                    color: isSelected ? colors.brandPrimary : colors.borderSoft,
                     width: isSelected ? 1.5 : 1,
                   ),
                 ),
@@ -1599,14 +1505,11 @@ class _CartScreenState extends State<CartScreen>
                     ),
                     if (isComingSoon)
                       Container(
-                        padding:
-                            const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: colors.warning
-                              .withOpacity(0.15),
-                          borderRadius:
-                              BorderRadius.circular(6),
+                          color: colors.warning.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           'Soon',
@@ -1618,11 +1521,8 @@ class _CartScreenState extends State<CartScreen>
                         ),
                       )
                     else if (isSelected)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: colors.brandPrimary,
-                        size: 20,
-                      ),
+                      Icon(Icons.check_circle_rounded,
+                          color: colors.brandPrimary, size: 20),
                   ],
                 ),
               ),
@@ -1633,7 +1533,7 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ── ORDER SUMMARY ─────────────────────────────────────────────────────────
+  // ── Order Summary ─────────────────────────────────────────────────────────
 
   Widget _buildOrderSummary({
     required dynamic colors,
@@ -1653,16 +1553,15 @@ class _CartScreenState extends State<CartScreen>
         border: Border.all(color: colors.borderSoft),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow,
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
+              color: colors.shadow,
+              blurRadius: 16,
+              offset: const Offset(0, 6)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
+          // Header
           Row(
             children: [
               Container(
@@ -1671,11 +1570,8 @@ class _CartScreenState extends State<CartScreen>
                   color: colors.brandPrimary.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  Icons.receipt_long_rounded,
-                  color: colors.brandPrimary,
-                  size: 18,
-                ),
+                child: Icon(Icons.receipt_long_rounded,
+                    color: colors.brandPrimary, size: 18),
               ),
               const SizedBox(width: 10),
               Text(
@@ -1688,7 +1584,6 @@ class _CartScreenState extends State<CartScreen>
               ),
             ],
           ),
-
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 16),
@@ -1699,7 +1594,6 @@ class _CartScreenState extends State<CartScreen>
             value: '₦${itemsTotal.toStringAsFixed(0)}',
             colors: colors,
           ),
-
           const SizedBox(height: 8),
 
           // Delivery fee
@@ -1707,17 +1601,15 @@ class _CartScreenState extends State<CartScreen>
             label: 'Delivery Fee',
             value: _deliveryFeeAmount == null
                 ? 'Not estimated'
-                : '₦${deliveryFee.toStringAsFixed(0)}',
+                : (deliveryFee == 0 ? 'FREE' : '₦${deliveryFee.toStringAsFixed(0)}'),
             colors: colors,
             valueColor: _deliveryFeeAmount == null
                 ? colors.warning
-                : null,
-            icon: _deliveryFeeAmount == null
-                ? Icons.warning_rounded
-                : null,
+                : (deliveryFee == 0 ? colors.success : null),
+            icon: _deliveryFeeAmount == null ? Icons.warning_rounded : null,
           ),
 
-          // Coupon saving
+          // Coupon discount
           if (couponSaving > 0) ...[
             const SizedBox(height: 8),
             _SummaryRow(
@@ -1747,8 +1639,7 @@ class _CartScreenState extends State<CartScreen>
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: colors.brandPrimary.withOpacity(0.20),
-              ),
+                  color: colors.brandPrimary.withOpacity(0.20)),
             ),
             child: Row(
               children: [
@@ -1772,14 +1663,13 @@ class _CartScreenState extends State<CartScreen>
               ],
             ),
           ),
-
           const SizedBox(height: 16),
 
           // Free delivery banner
           if (itemsTotal >= 25000 && _deliveryFeeAmount != null)
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFFE8F5E9),
@@ -1787,8 +1677,7 @@ class _CartScreenState extends State<CartScreen>
               ),
               child: Row(
                 children: [
-                  const Text('🎉',
-                      style: TextStyle(fontSize: 16)),
+                  const Text('🎉', style: TextStyle(fontSize: 16)),
                   const SizedBox(width: 8),
                   Text(
                     'You qualify for free delivery on this order!',
@@ -1802,7 +1691,7 @@ class _CartScreenState extends State<CartScreen>
               ),
             ),
 
-          // Checkout Button
+          // Checkout button
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -1820,8 +1709,7 @@ class _CartScreenState extends State<CartScreen>
                 backgroundColor: colors.brandPrimary,
                 foregroundColor: Colors.white,
                 elevation: 3,
-                shadowColor:
-                    colors.brandPrimary.withOpacity(0.40),
+                shadowColor: colors.brandPrimary.withOpacity(0.40),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -1831,14 +1719,9 @@ class _CartScreenState extends State<CartScreen>
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
+                          strokeWidth: 2.5, color: Colors.white),
                     )
-                  : const Icon(
-                      Icons.lock_rounded,
-                      size: 20,
-                    ),
+                  : const Icon(Icons.lock_rounded, size: 20),
               label: Text(
                 _processingCheckout
                     ? 'Processing...'
@@ -1852,7 +1735,6 @@ class _CartScreenState extends State<CartScreen>
               ),
             ),
           ),
-
           const SizedBox(height: 12),
 
           // Trust badges
@@ -1885,7 +1767,7 @@ class _CartScreenState extends State<CartScreen>
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Helper Widgets
+// HELPER WIDGETS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _QtyButton extends StatelessWidget {
@@ -1921,8 +1803,7 @@ class _MiniTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: colors.brandPrimary.withOpacity(0.10),
         borderRadius: BorderRadius.circular(6),
@@ -2000,11 +1881,7 @@ class _TrustBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 12,
-          color: colors.textSecondary.withOpacity(0.60),
-        ),
+        Icon(icon, size: 12, color: colors.textSecondary.withOpacity(0.60)),
         const SizedBox(width: 4),
         Text(
           label,
