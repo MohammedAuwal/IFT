@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:ift/app.dart';
 import 'package:ift/services/fcm_service.dart';
 import 'package:ift/services/local_notification_service.dart';
+import 'package:ift/firebase_options.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -35,7 +36,7 @@ Future<void> main() async {
   StackTrace? startupStack;
 
   try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 12));
+    await Firebase.initializeApp(   options: DefaultFirebaseOptions.currentPlatform, ).timeout(const Duration(seconds: 12));
   } catch (e, st) {
     startupError = Exception('Firebase init failed: $e');
     startupStack = st;
