@@ -1,41 +1,48 @@
-import 'dart:convert';
+// ── ISMAILTEX — Delivery Address Map Preview ──────────────────────────────────
+// Replaces the old ride_estimate_map_preview_screen.dart
+// Now shows a fabric order's delivery address on an interactive map.
+// MovementEstimate has been removed from firebase_service.
+// This screen now accepts origin + destination as simple strings/coords.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ift/core/theme/app_theme.dart';
-import 'package:ift/services/firebase_service.dart';
+
+// ── DeliveryAddressPreview ─────────────────────────────────────────────────────
+// Simple data class replacing MovementEstimate for textile delivery preview.
+
+class DeliveryAddressPreview {
+  final String warehouseLabel;
+  final String deliveryLabel;
+  final double warehouseLat;
+  final double warehouseLng;
+  final double deliveryLat;
+  final double deliveryLng;
+
+  const DeliveryAddressPreview({
+    required this.warehouseLabel,
+    required this.deliveryLabel,
+    required this.warehouseLat,
+    required this.warehouseLng,
+    required this.deliveryLat,
+    required this.deliveryLng,
+  });
+}
+
+// ── Class kept as RideEstimateMapPreviewScreen ────────────────────────────────
+// So existing import references in cart_screen or product screens still work.
 
 class RideEstimateMapPreviewScreen extends StatelessWidget {
-  final MovementEstimate estimate;
+  final DeliveryAddressPreview preview;
   final String title;
 
   const RideEstimateMapPreviewScreen({
     super.key,
-    required this.estimate,
-    this.title = 'Route Preview',
+    required this.preview,
+    this.title = 'Delivery Route Preview',
   });
-
-  List<LatLng> _decodeRoute(String geometry) {
-    if (geometry.trim().isEmpty) return [];
-
-    try {
-      final map = jsonDecode(geometry) as Map<String, dynamic>;
-      final coords = List<List<dynamic>>.from(map['coordinates'] ?? []);
-      return coords
-          .where((c) => c.length >= 2)
-          .map(
-            (c) => LatLng(
-              (c[1] as num).toDouble(),
-              (c[0] as num).toDouble(),
-            ),
-          )
-          .toList();
-    } catch (_) {
-      return [];
-    }
-  }
 
   LatLngBounds? _boundsFor(List<LatLng> points) {
     if (points.isEmpty) return null;
@@ -62,16 +69,16 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppTheme.colorsOf(context);
 
-    final routePoints = _decodeRoute(estimate.routeGeometry);
-    final pickup = LatLng(estimate.pickupLat, estimate.pickupLng);
-    final destination = LatLng(estimate.destinationLat, estimate.destinationLng);
+    final warehouse = LatLng(
+      preview.warehouseLat,
+      preview.warehouseLng,
+    );
+    final delivery = LatLng(
+      preview.deliveryLat,
+      preview.deliveryLng,
+    );
 
-    final points = <LatLng>[
-      pickup,
-      destination,
-      ...routePoints,
-    ];
-
+    final points = [warehouse, delivery];
     final bounds = _boundsFor(points);
 
     return Scaffold(
@@ -87,53 +94,81 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // ── Map ────────────────────────────────────────────────
           Expanded(
             child: FlutterMap(
               options: MapOptions(
-                initialCenter: pickup,
-                initialZoom: 6,
+                initialCenter: warehouse,
+                initialZoom: 7,
                 initialCameraFit: bounds != null
                     ? CameraFit.bounds(
                         bounds: bounds,
-                        padding: const EdgeInsets.all(36),
+                        padding: const EdgeInsets.all(48),
                       )
                     : null,
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.maamahsmix.app',
                 ),
-                if (routePoints.length >= 2)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: routePoints,
-                        color: colors.warning,
-                        strokeWidth: 5,
-                      ),
-                    ],
-                  ),
                 MarkerLayer(
                   markers: [
+                    // Warehouse/Origin marker
                     Marker(
-                      point: pickup,
-                      width: 44,
-                      height: 44,
-                      child: Icon(
-                        Icons.my_location,
-                        color: colors.success,
-                        size: 36,
+                      point: warehouse,
+                      width: 48,
+                      height: 48,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colors.brandPrimary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.brandPrimary
+                                  .withOpacity(0.4),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.store_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
+                    // Delivery destination marker
                     Marker(
-                      point: destination,
-                      width: 44,
-                      height: 44,
-                      child: Icon(
-                        Icons.location_on,
-                        color: colors.error,
-                        size: 36,
+                      point: delivery,
+                      width: 48,
+                      height: 48,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colors.success,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  colors.success.withOpacity(0.4),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.home_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ],
@@ -141,55 +176,152 @@ class RideEstimateMapPreviewScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          // ── Info Panel ─────────────────────────────────────────
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: colors.card,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              border: Border(top: BorderSide(color: colors.borderSoft)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              border: Border(
+                top: BorderSide(color: colors.borderSoft),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Pickup: ${estimate.pickupLabel}',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                  ),
+                // Legend
+                Row(
+                  children: [
+                    _LegendDot(color: colors.brandPrimary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'IsmailTex Warehouse',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            preview.warehouseLabel,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Destination: ${estimate.destinationLabel}',
-                  style: GoogleFonts.poppins(
-                    color: colors.textPrimary,
-                  ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _LegendDot(color: colors.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Your Delivery Address',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            preview.deliveryLabel,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Distance: ${estimate.distanceKm.toStringAsFixed(1)} km',
-                  style: GoogleFonts.poppins(
-                    color: colors.textPrimary,
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
                   ),
-                ),
-                Text(
-                  'ETA: ${estimate.eta}',
-                  style: GoogleFonts.poppins(
-                    color: colors.textPrimary,
+                  decoration: BoxDecoration(
+                    color: colors.brandPrimary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.brandPrimary.withOpacity(0.20),
+                    ),
                   ),
-                ),
-                Text(
-                  'Estimated Fare: ₦${estimate.price.toStringAsFixed(0)}',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                    color: colors.brandPrimary,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.local_shipping_outlined,
+                        size: 18,
+                        color: colors.brandPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Your fabric order will be dispatched from our warehouse to your address.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: colors.brandPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Legend Dot ─────────────────────────────────────────────────────────────────
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color});
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }
