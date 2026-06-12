@@ -1,29 +1,33 @@
-// ── ISMAILTEX Payment Config Model ────────────────────────────────────────────
-// Removed ride-specific fare fields.
-// Added textile delivery fee configuration.
-
 class PaymentConfigModel {
   final bool paystackEnabled;
   final String activeGateway;
-  final List<String> enabledGateways;
+
+  // Legacy movement pricing (kept ONLY for backward compatibility)
+  final double rideBaseFare;
+  final double ridePricePerKm;
+
+  // Delivery pricing (still used)
+  final double deliveryBaseFare;
+  final double deliveryPricePerKm;
+
+  // Paystack
   final String paystackPublicKey;
+  final List<String> enabledGateways;
 
-  // ── Textile Delivery Pricing ─────────────────────────────────────────────────
-  final double deliveryBaseFee;
-  final double deliveryFeePerKm;
+  // Textile commerce extensions (safe defaults)
   final double freeDeliveryThreshold;
-
-  // ── Order Settings ───────────────────────────────────────────────────────────
   final double minimumOrderAmount;
   final double maximumCouponDiscount;
 
   const PaymentConfigModel({
     required this.paystackEnabled,
     required this.activeGateway,
-    required this.enabledGateways,
+    required this.rideBaseFare,
+    required this.ridePricePerKm,
+    required this.deliveryBaseFare,
+    required this.deliveryPricePerKm,
     required this.paystackPublicKey,
-    required this.deliveryBaseFee,
-    required this.deliveryFeePerKm,
+    required this.enabledGateways,
     required this.freeDeliveryThreshold,
     required this.minimumOrderAmount,
     required this.maximumCouponDiscount,
@@ -33,32 +37,26 @@ class PaymentConfigModel {
     final data = map ?? {};
 
     return PaymentConfigModel(
-      paystackEnabled:
-          (data['paystackEnabled'] ?? true) == true,
-      activeGateway:
-          (data['activeGateway'] ?? 'paystack').toString(),
+      paystackEnabled: (data['paystackEnabled'] ?? true) == true,
+      activeGateway: (data['activeGateway'] ?? 'paystack').toString(),
+
+      // Legacy fields (still read if present)
+      rideBaseFare: ((data['rideBaseFare'] ?? 0) as num).toDouble(),
+      ridePricePerKm: ((data['ridePricePerKm'] ?? 0) as num).toDouble(),
+
+      // Delivery fields
+      deliveryBaseFare: ((data['deliveryBaseFare'] ?? 1500) as num).toDouble(),
+      deliveryPricePerKm: ((data['deliveryPricePerKm'] ?? 0) as num).toDouble(),
+
+      paystackPublicKey: (data['paystackPublicKey'] ?? '').toString().trim(),
       enabledGateways: List<String>.from(
         data['enabledGateways'] ?? const ['paystack'],
       ),
-      paystackPublicKey:
-          (data['paystackPublicKey'] ?? '').toString().trim(),
 
-      // ── Delivery fee config ──────────────────────────────────
-      // Default: ₦500 base + ₦50 per km, free delivery above ₦15,000
-      deliveryBaseFee:
-          ((data['deliveryBaseFee'] ?? 500) as num).toDouble(),
-      deliveryFeePerKm:
-          ((data['deliveryFeePerKm'] ?? 50) as num).toDouble(),
-      freeDeliveryThreshold:
-          ((data['freeDeliveryThreshold'] ?? 15000) as num)
-              .toDouble(),
-
-      // ── Order config ─────────────────────────────────────────
-      minimumOrderAmount:
-          ((data['minimumOrderAmount'] ?? 1000) as num).toDouble(),
-      maximumCouponDiscount:
-          ((data['maximumCouponDiscount'] ?? 5000) as num)
-              .toDouble(),
+      // Textile extensions
+      freeDeliveryThreshold: ((data['freeDeliveryThreshold'] ?? 25000) as num).toDouble(),
+      minimumOrderAmount: ((data['minimumOrderAmount'] ?? 1000) as num).toDouble(),
+      maximumCouponDiscount: ((data['maximumCouponDiscount'] ?? 5000) as num).toDouble(),
     );
   }
 
@@ -66,29 +64,21 @@ class PaymentConfigModel {
     return {
       'paystackEnabled': paystackEnabled,
       'activeGateway': activeGateway,
-      'enabledGateways': enabledGateways,
+
+      // Legacy keys kept to avoid breaking PaymentService/settings screens
+      'rideBaseFare': rideBaseFare,
+      'ridePricePerKm': ridePricePerKm,
+
+      'deliveryBaseFare': deliveryBaseFare,
+      'deliveryPricePerKm': deliveryPricePerKm,
+
       'paystackPublicKey': paystackPublicKey,
-      'deliveryBaseFee': deliveryBaseFee,
-      'deliveryFeePerKm': deliveryFeePerKm,
+      'enabledGateways': enabledGateways,
+
+      // Textile extensions
       'freeDeliveryThreshold': freeDeliveryThreshold,
       'minimumOrderAmount': minimumOrderAmount,
       'maximumCouponDiscount': maximumCouponDiscount,
     };
   }
-
-  /// Calculate delivery fee for a given order subtotal.
-  /// Returns 0 if subtotal qualifies for free delivery.
-  double calculateDeliveryFee(double orderSubtotal) {
-    if (orderSubtotal >= freeDeliveryThreshold) return 0.0;
-    return deliveryBaseFee;
-  }
-
-  /// Returns true if the order qualifies for free delivery.
-  bool qualifiesForFreeDelivery(double orderSubtotal) {
-    return orderSubtotal >= freeDeliveryThreshold;
-  }
-
-  /// Returns a human-readable free delivery threshold string.
-  String get freeDeliveryLabel =>
-      'Free delivery on orders above ₦${freeDeliveryThreshold.toStringAsFixed(0)}';
 }
