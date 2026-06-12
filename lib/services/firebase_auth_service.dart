@@ -77,47 +77,56 @@ class FirebaseAuthService {
   Future<User?> signInWithGoogle() async {
     try {
       if (kDebugMode) {
-        debugPrint('Google Sign-In: starting');
+        debugPrint('Google Sign-In: starting (kIsWeb=$kIsWeb)');
       }
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      UserCredential userCredential;
 
-      if (googleUser == null) {
-        throw AuthFailure('Google sign-in was cancelled.');
-      }
+      // WEB: Use Firebase Auth popup flow (most reliable for Flutter Web).
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        provider.setCustomParameters({'prompt': 'select_account'});
 
-      if (kDebugMode) {
-        debugPrint('Google Sign-In: account selected ${googleUser.email}');
-      }
+        userCredential = await _firebaseAuth.signInWithPopup(provider);
+      } else {
+        // ANDROID (and other mobile): Use google_sign_in then exchange token with Firebase.
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+        if (googleUser == null) {
+          throw AuthFailure('Google sign-in was cancelled.');
+        }
 
-      if (kDebugMode) {
-        debugPrint(
-          'Google Sign-In: idToken exists=${(googleAuth.idToken ?? '').isNotEmpty}, accessToken exists=${(googleAuth.accessToken ?? '').isNotEmpty}',
+        if (kDebugMode) {
+          debugPrint('Google Sign-In: account selected ${googleUser.email}');
+        }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+
+        if (kDebugMode) {
+          debugPrint(
+            'Google Sign-In: idToken exists=${(googleAuth.idToken ?? '').isNotEmpty}, accessToken exists=${(googleAuth.accessToken ?? '').isNotEmpty}',
+          );
+        }
+
+        if ((googleAuth.idToken ?? '').isEmpty) {
+          throw AuthFailure(
+            'Google sign-in failed because no ID token was returned. '
+            'This usually means Firebase/Google OAuth Android configuration is incorrect (SHA-1/SHA-256, package name, google-services.json).',
+          );
+        }
+
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
         );
+
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
       }
-
-      if ((googleAuth.idToken ?? '').isEmpty) {
-        throw AuthFailure(
-          'Google sign-in failed because no ID token was returned. This usually means Firebase/Google OAuth Android configuration is incorrect.',
-        );
-      }
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential =
-          await _firebaseAuth.signInWithCredential(credential);
 
       final user = userCredential.user;
       if (user == null) {
-        throw AuthFailure(
-          'Google sign-in failed. Firebase did not return a user.',
-        );
+        throw AuthFailure('Google sign-in failed. Firebase did not return a user.');
       }
 
       await FcmService.instance.syncTokenForCurrentUser();
@@ -140,7 +149,6 @@ class FirebaseAuthService {
           'Google Sign-In PlatformException: code=${e.code}, message=${e.message}, details=${e.details}',
         );
       }
-
       throw AuthFailure(_mapGooglePlatformError(e));
     } catch (e) {
       if (e is AuthFailure) rethrow;
@@ -158,9 +166,13 @@ class FirebaseAuthService {
       await FcmService.instance.removeCurrentDeviceTokenForCurrentUser();
     } catch (_) {}
 
-    try {
-      await _googleSignIn.signOut();
-    } catch (_) {}
+    // On web we used signInWithPopup; no need to call GoogleSignIn().signOut().
+    // Also, GoogleSignIn web signOut can be noisy; we safely skip it.
+    if (!kIsWeb) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
+    }
 
     await _firebaseAuth.signOut();
   }
@@ -205,14 +217,13 @@ class FirebaseAuthService {
 
   String _mapFirebaseError(String code, String? message) {
     switch (code) {
+      // Email/password
       case 'user-not-found':
         return 'No account found with this email.';
       case 'wrong-password':
         return 'Incorrect password. Please try again.';
       case 'invalid-credential':
         return 'Invalid email or password.';
-      case 'account-exists-with-different-credential':
-        return 'This email is already linked to another sign-in method. Sign in with that method first.';
       case 'email-already-in-use':
         return 'This email is already registered. Try signing in.';
       case 'weak-password':
@@ -223,10 +234,23 @@ class FirebaseAuthService {
         return 'This account has been disabled.';
       case 'too-many-requests':
         return 'Too many attempts. Please try again later.';
-      case 'operation-not-allowed':
-        return 'Google sign-in is not enabled in Firebase Authentication.';
       case 'network-request-failed':
         return 'Network error. Please check your connection.';
+
+      // OAuth / Google
+      case 'account-exists-with-different-credential':
+        return 'This email is already linked to another sign-in method. Sign in with that method first.';
+      case 'operation-not-allowed':
+        return 'Google sign-in is not enabled in Firebase Authentication.';
+
+      // Web popup-specific (Firebase Auth Web)
+      case 'popup-closed-by-user':
+        return 'Google sign-in was cancelled.';
+      case 'cancelled-popup-request':
+        return 'Google sign-in was cancelled.';
+      case 'popup-blocked':
+        return 'Popup was blocked by the browser. Please allow popups and try again.';
+
       default:
         return message ?? 'Authentication failed. Please try again.';
     }
