@@ -1,38 +1,42 @@
-name: Print Android SHA1
+name: Print Release Keystore SHA (upload-keystore.jks)
 
 on:
   workflow_dispatch:
 
 jobs:
-  sha1:
+  print-sha:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      KEYSTORE_PATH: android/app/upload-keystore.jks
 
     steps:
-      - name: Generate debug keystore and print SHA1
-        shell: bash
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Decode keystore from secret
         run: |
           set -euo pipefail
+          mkdir -p "$(dirname "$KEYSTORE_PATH")"
+          rm -f "$KEYSTORE_PATH"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$KEYSTORE_PATH"
+          echo "Keystore written to $KEYSTORE_PATH"
 
-          mkdir -p ~/.android
-
-          keytool -genkeypair \
-            -v \
-            -storetype PKCS12 \
-            -keystore ~/.android/debug.keystore \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US" || true
-
-          echo "=============================="
-          echo "ANDROID DEBUG KEYSTORE SHA1"
-          echo "=============================="
-
+      - name: Print SHA-1 and SHA-256
+        run: |
+          set -euo pipefail
+          echo "----- KEYTOOL OUTPUT (filtered) -----"
           keytool -list -v \
-            -keystore ~/.android/debug.keystore \
-            -alias androiddebugkey \
-            -storepass android \
-            -keypass android | grep -E "SHA1:|SHA-1:"
+            -keystore "$KEYSTORE_PATH" \
+            -alias "${{ secrets.KEY_ALIAS }}" \
+            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+          | grep -E "Alias name:|SHA1:|SHA-1:|SHA256:|SHA-256:" || true
+          echo "-------------------------------------"
