@@ -12,17 +12,7 @@ import 'package:ift/shared/widgets/app_section_title.dart';
 import 'package:ift/shared/widgets/app_surface_card.dart';
 import 'package:ift/core/theme/build_context_theme_x.dart';
 
-// ── Analytics Range Enum ───────────────────────────────────────────────────────
-
-enum AnalyticsRange {
-  today,
-  week,
-  month,
-  all,
-  custom,
-}
-
-// ── Super Admin Analytics Screen ───────────────────────────────────────────────
+enum AnalyticsRange { today, week, month, all, custom }
 
 class SuperAdminAnalyticsScreen extends StatefulWidget {
   const SuperAdminAnalyticsScreen({super.key});
@@ -32,8 +22,7 @@ class SuperAdminAnalyticsScreen extends StatefulWidget {
       _SuperAdminAnalyticsScreenState();
 }
 
-class _SuperAdminAnalyticsScreenState
-    extends State<SuperAdminAnalyticsScreen> {
+class _SuperAdminAnalyticsScreenState extends State<SuperAdminAnalyticsScreen> {
   final FirebaseService _firebaseService = FirebaseService();
 
   AnalyticsRange _range = AnalyticsRange.all;
@@ -43,7 +32,11 @@ class _SuperAdminAnalyticsScreenState
   String _selectedAdmin = 'All';
   String _selectedArea = 'All';
 
-  // ── Range Helpers ────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  DateTime _orderDate(OrderModel order) {
+    return DateTime.tryParse(order.createdAt) ?? DateTime(2000);
+  }
 
   DateTime _rangeStart() {
     final now = DateTime.now();
@@ -83,17 +76,18 @@ class _SuperAdminAnalyticsScreenState
   }
 
   bool _matchesOrderFilters(OrderModel order) {
-    if (!_inRange(order.createdAt)) return false;
-    if (_selectedState != 'All' &&
-        order.assignedAdminState != _selectedState) return false;
-    if (_selectedAdmin != 'All' &&
-        order.assignedAdminName != _selectedAdmin) return false;
-    if (_selectedArea != 'All' &&
-        order.assignedAdminArea != _selectedArea) return false;
+    if (!_inRange(_orderDate(order))) return false;
+    if (_selectedState != 'All' && order.assignedAdminState != _selectedState) {
+      return false;
+    }
+    if (_selectedAdmin != 'All' && order.assignedAdminName != _selectedAdmin) {
+      return false;
+    }
+    if (_selectedArea != 'All' && order.assignedAdminArea != _selectedArea) {
+      return false;
+    }
     return true;
   }
-
-  // ── Data Aggregators ─────────────────────────────────────────────────────────
 
   Map<String, double> _sumOrderTotalsByField(
     List<OrderModel> orders,
@@ -126,8 +120,8 @@ class _SuperAdminAnalyticsScreenState
     final series = <String, double>{};
     for (final order in orders) {
       if (order.status != 'delivered') continue;
-      final key =
-          '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}';
+      final d = _orderDate(order);
+      final key = '${d.day}/${d.month}/${d.year}';
       series[key] = (series[key] ?? 0) + order.totalAmount;
     }
     return series;
@@ -136,25 +130,21 @@ class _SuperAdminAnalyticsScreenState
   Map<String, int> _dailyOrderSeries(List<OrderModel> orders) {
     final series = <String, int>{};
     for (final order in orders) {
-      final key =
-          '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}';
+      final d = _orderDate(order);
+      final key = '${d.day}/${d.month}/${d.year}';
       series[key] = (series[key] ?? 0) + 1;
     }
     return series;
   }
-
-  // ── Map Category Sales ───────────────────────────────────────────────────────
 
   Map<String, double> _salesByFabricType(List<OrderModel> orders) {
     final map = <String, double>{};
     for (final order in orders) {
       if (order.status != 'delivered') continue;
       for (final item in order.items) {
-        final fabric =
-            (item['fabricType'] ?? 'General').toString().trim();
-        final price =
-            ((item['price'] ?? 0) as num).toDouble() *
-                ((item['qty'] ?? 1) as int);
+        final fabric = (item['fabricType'] ?? 'General').toString().trim();
+        final price = ((item['price'] ?? 0) as num).toDouble() *
+            ((item['qty'] ?? 1) as int);
         map[fabric] = (map[fabric] ?? 0) + price;
       }
     }
@@ -165,8 +155,7 @@ class _SuperAdminAnalyticsScreenState
     final map = <String, int>{};
     for (final order in orders) {
       for (final item in order.items) {
-        final fabric =
-            (item['fabricType'] ?? 'General').toString().trim();
+        final fabric = (item['fabricType'] ?? 'General').toString().trim();
         map[fabric] = (map[fabric] ?? 0) + 1;
       }
     }
@@ -188,8 +177,6 @@ class _SuperAdminAnalyticsScreenState
     });
   }
 
-  // ── Filter Dropdown ──────────────────────────────────────────────────────────
-
   Widget _filterDropdown({
     required String label,
     required String value,
@@ -210,23 +197,16 @@ class _SuperAdminAnalyticsScreenState
           child: DropdownButton<String>(
             value: value,
             dropdownColor: colors.surfaceAlt,
-            style: GoogleFonts.poppins(
-              color: colors.textPrimary,
-              fontSize: 12,
-            ),
+            style: GoogleFonts.poppins(color: colors.textPrimary, fontSize: 12),
             iconEnabledColor: colors.iconPrimary,
             isExpanded: true,
-            hint: Text(
-              label,
-              style: GoogleFonts.poppins(color: colors.textSecondary),
-            ),
+            hint: Text(label,
+                style: GoogleFonts.poppins(color: colors.textSecondary)),
             items: items
-                .map(
-                  (e) => DropdownMenuItem<String>(
-                    value: e,
-                    child: Text(e, overflow: TextOverflow.ellipsis),
-                  ),
-                )
+                .map((e) => DropdownMenuItem<String>(
+                      value: e,
+                      child: Text(e, overflow: TextOverflow.ellipsis),
+                    ))
                 .toList(),
             onChanged: onChanged,
           ),
@@ -252,45 +232,19 @@ class _SuperAdminAnalyticsScreenState
     }
   }
 
-  // ── Build ────────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isSuperAdmin = AppConstants.isSuperAdminUid(
-      _firebaseService.currentUser?.uid,
-    );
+    final isSuperAdmin =
+        AppConstants.isSuperAdminUid(_firebaseService.currentUser?.uid);
 
     return AppPageScaffold(
       title: 'Analytics Dashboard',
       body: !isSuperAdmin
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.lock_outline_rounded,
-                    size: 56,
-                    color: colors.textSecondary.withOpacity(0.4),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Super Admin Only',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Only super admins can view analytics.',
-                    style: GoogleFonts.poppins(
-                      color: colors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Only super admins can view analytics.',
+                style: GoogleFonts.poppins(color: colors.textSecondary),
               ),
             )
           : StreamBuilder<List<OrderModel>>(
@@ -303,7 +257,6 @@ class _SuperAdminAnalyticsScreenState
                   builder: (context, adminSnapshot) {
                     final admins = adminSnapshot.data ?? [];
 
-                    // ── Build filter options ─────────────────────
                     final availableStates = {
                       'All',
                       ...orders
@@ -338,32 +291,25 @@ class _SuperAdminAnalyticsScreenState
                       _selectedArea = 'All';
                     }
 
-                    // ── Filter orders ────────────────────────────
                     final filteredOrders =
                         orders.where(_matchesOrderFilters).toList();
 
                     final deliveredOrders = filteredOrders
                         .where((e) => e.status == 'delivered')
                         .toList();
-
                     final cancelledOrders = filteredOrders
                         .where((e) => e.status == 'cancelled')
                         .toList();
-
                     final processingOrders = filteredOrders
                         .where((e) => e.status == 'processing')
                         .toList();
+                    final shippedOrders =
+                        filteredOrders.where((e) => e.status == 'shipped').toList();
 
-                    final shippedOrders = filteredOrders
-                        .where((e) => e.status == 'shipped')
-                        .toList();
-
-                    // ── Metrics ──────────────────────────────────
                     final totalSales = deliveredOrders.fold<double>(
                       0,
                       (sum, item) => sum + item.totalAmount,
                     );
-
                     final totalOrders = filteredOrders.length;
 
                     final totalEscalations = filteredOrders
@@ -371,8 +317,7 @@ class _SuperAdminAnalyticsScreenState
                         .length;
 
                     final totalReassignments = filteredOrders
-                        .where((e) =>
-                            e.assignmentMethod == 'manual_reassignment')
+                        .where((e) => e.assignmentMethod == 'manual_reassignment')
                         .length;
 
                     final orderCompletionRate = totalOrders == 0
@@ -383,32 +328,25 @@ class _SuperAdminAnalyticsScreenState
                         ? 0.0
                         : (cancelledOrders.length / totalOrders) * 100;
 
-                    // ── Aggregations ─────────────────────────────
                     final salesByAdmin = _sumOrderTotalsByField(
                       filteredOrders,
                       (o) => o.assignedAdminName,
                     );
-
                     final salesByState = _sumOrderTotalsByField(
                       filteredOrders,
                       (o) => o.assignedAdminState,
                     );
-
                     final salesByArea = _sumOrderTotalsByField(
                       filteredOrders,
                       (o) => o.assignedAdminArea,
                     );
-
-                    final salesByFabric =
-                        _salesByFabricType(filteredOrders);
+                    final salesByFabric = _salesByFabricType(filteredOrders);
 
                     final ordersByAdmin = _countOrdersByField(
                       filteredOrders,
                       (o) => o.assignedAdminName,
                     );
-
-                    final ordersByFabric =
-                        _ordersByFabricType(filteredOrders);
+                    final ordersByFabric = _ordersByFabricType(filteredOrders);
 
                     final reassignmentsByAdmin = _countOrdersByField(
                       filteredOrders
@@ -418,53 +356,37 @@ class _SuperAdminAnalyticsScreenState
                       (o) => o.assignedAdminName,
                     );
 
-                    // ── Trend series ─────────────────────────────
-                    final salesSeries =
-                        _dailySalesSeries(filteredOrders);
-                    final orderSeries =
-                        _dailyOrderSeries(filteredOrders);
+                    final salesSeries = _dailySalesSeries(filteredOrders);
+                    final orderSeries = _dailyOrderSeries(filteredOrders);
 
-                    // ── Rank cards ───────────────────────────────
-                    final sortedAdminSales =
-                        salesByAdmin.entries.toList()
-                          ..sort((a, b) => b.value.compareTo(a.value));
-                    final sortedStateSales =
-                        salesByState.entries.toList()
-                          ..sort((a, b) => b.value.compareTo(a.value));
-                    final sortedAreaSales =
-                        salesByArea.entries.toList()
-                          ..sort((a, b) => b.value.compareTo(a.value));
+                    final sortedAdminSales = salesByAdmin.entries.toList()
+                      ..sort((a, b) => b.value.compareTo(a.value));
+                    final sortedStateSales = salesByState.entries.toList()
+                      ..sort((a, b) => b.value.compareTo(a.value));
+                    final sortedAreaSales = salesByArea.entries.toList()
+                      ..sort((a, b) => b.value.compareTo(a.value));
 
-                    final topAdmin = sortedAdminSales.isEmpty
-                        ? null
-                        : sortedAdminSales.first;
-                    final worstAdmin = sortedAdminSales.isEmpty
-                        ? null
-                        : sortedAdminSales.last;
-                    final topState = sortedStateSales.isEmpty
-                        ? null
-                        : sortedStateSales.first;
-                    final worstState = sortedStateSales.isEmpty
-                        ? null
-                        : sortedStateSales.last;
-                    final topArea = sortedAreaSales.isEmpty
-                        ? null
-                        : sortedAreaSales.first;
-                    final worstArea = sortedAreaSales.isEmpty
-                        ? null
-                        : sortedAreaSales.last;
+                    final topAdmin =
+                        sortedAdminSales.isEmpty ? null : sortedAdminSales.first;
+                    final worstAdmin =
+                        sortedAdminSales.isEmpty ? null : sortedAdminSales.last;
+                    final topState =
+                        sortedStateSales.isEmpty ? null : sortedStateSales.first;
+                    final worstState =
+                        sortedStateSales.isEmpty ? null : sortedStateSales.last;
+                    final topArea =
+                        sortedAreaSales.isEmpty ? null : sortedAreaSales.first;
+                    final worstArea =
+                        sortedAreaSales.isEmpty ? null : sortedAreaSales.last;
 
                     return ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
-                        // ── Filter Card ──────────────────────────
                         AppSurfaceCard(
                           margin: const EdgeInsets.only(bottom: 18),
-                          color:
-                              colors.brandPrimary.withOpacity(0.08),
+                          color: colors.brandPrimary.withOpacity(0.08),
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
@@ -485,8 +407,7 @@ class _SuperAdminAnalyticsScreenState
                                       style: GoogleFonts.poppins(
                                         color: colors.textPrimary,
                                       ),
-                                      iconEnabledColor:
-                                          colors.iconPrimary,
+                                      iconEnabledColor: colors.iconPrimary,
                                       items: const [
                                         DropdownMenuItem(
                                           value: AnalyticsRange.today,
@@ -511,8 +432,7 @@ class _SuperAdminAnalyticsScreenState
                                       ],
                                       onChanged: (value) async {
                                         if (value == null) return;
-                                        if (value ==
-                                            AnalyticsRange.custom) {
+                                        if (value == AnalyticsRange.custom) {
                                           await _pickCustomRange();
                                           return;
                                         }
@@ -524,14 +444,11 @@ class _SuperAdminAnalyticsScreenState
                               ),
                               if (_range == AnalyticsRange.custom)
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.only(top: 10),
+                                  padding: const EdgeInsets.only(top: 10),
                                   child: OutlinedButton.icon(
                                     onPressed: _pickCustomRange,
-                                    icon: const Icon(
-                                        Icons.date_range_rounded),
-                                    label: const Text(
-                                        'Change Custom Range'),
+                                    icon: const Icon(Icons.date_range_rounded),
+                                    label: const Text('Change Custom Range'),
                                   ),
                                 ),
                               const SizedBox(height: 12),
@@ -543,8 +460,7 @@ class _SuperAdminAnalyticsScreenState
                                     items: availableStates,
                                     onChanged: (v) {
                                       if (v == null) return;
-                                      setState(
-                                          () => _selectedState = v);
+                                      setState(() => _selectedState = v);
                                     },
                                   ),
                                   const SizedBox(width: 10),
@@ -554,8 +470,7 @@ class _SuperAdminAnalyticsScreenState
                                     items: availableAdmins,
                                     onChanged: (v) {
                                       if (v == null) return;
-                                      setState(
-                                          () => _selectedAdmin = v);
+                                      setState(() => _selectedAdmin = v);
                                     },
                                   ),
                                 ],
@@ -569,8 +484,7 @@ class _SuperAdminAnalyticsScreenState
                                     items: availableAreas,
                                     onChanged: (v) {
                                       if (v == null) return;
-                                      setState(
-                                          () => _selectedArea = v);
+                                      setState(() => _selectedArea = v);
                                     },
                                   ),
                                   const SizedBox(width: 10),
@@ -581,8 +495,7 @@ class _SuperAdminAnalyticsScreenState
                                         _selectedAdmin = 'All';
                                         _selectedArea = 'All';
                                       }),
-                                      child:
-                                          const Text('Clear Filters'),
+                                      child: const Text('Clear Filters'),
                                     ),
                                   ),
                                 ],
@@ -591,17 +504,15 @@ class _SuperAdminAnalyticsScreenState
                           ),
                         ),
 
-                        // ── KPI Metrics ──────────────────────────
-                        const AppSectionTitle(
-                            title: 'Sales Overview'),
+                        const AppSectionTitle(title: 'Sales Overview'),
                         const SizedBox(height: 10),
+
                         Row(
                           children: [
                             Expanded(
                               child: _MetricCard(
                                 title: 'Total Revenue',
-                                value:
-                                    '₦${totalSales.toStringAsFixed(0)}',
+                                value: '₦${totalSales.toStringAsFixed(0)}',
                                 icon: Icons.payments_rounded,
                               ),
                             ),
@@ -610,13 +521,13 @@ class _SuperAdminAnalyticsScreenState
                               child: _MetricCard(
                                 title: 'Delivered Orders',
                                 value: '${deliveredOrders.length}',
-                                icon:
-                                    Icons.check_circle_outline_rounded,
+                                icon: Icons.check_circle_outline_rounded,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
+
                         Row(
                           children: [
                             Expanded(
@@ -637,6 +548,7 @@ class _SuperAdminAnalyticsScreenState
                           ],
                         ),
                         const SizedBox(height: 12),
+
                         Row(
                           children: [
                             Expanded(
@@ -657,6 +569,7 @@ class _SuperAdminAnalyticsScreenState
                           ],
                         ),
                         const SizedBox(height: 12),
+
                         Row(
                           children: [
                             Expanded(
@@ -664,8 +577,7 @@ class _SuperAdminAnalyticsScreenState
                                 title: 'Admins',
                                 value:
                                     '${admins.length + AppConstants.superAdminUids.length}',
-                                icon: Icons
-                                    .admin_panel_settings_outlined,
+                                icon: Icons.admin_panel_settings_outlined,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -679,6 +591,7 @@ class _SuperAdminAnalyticsScreenState
                           ],
                         ),
                         const SizedBox(height: 12),
+
                         Row(
                           children: [
                             Expanded(
@@ -692,21 +605,18 @@ class _SuperAdminAnalyticsScreenState
                             const Expanded(child: SizedBox()),
                           ],
                         ),
-                        const SizedBox(height: 20),
 
-                        // ── Performance ──────────────────────────
-                        const AppSectionTitle(
-                            title: 'Performance Health'),
+                        const SizedBox(height: 20),
+                        const AppSectionTitle(title: 'Performance Health'),
                         const SizedBox(height: 10),
+
                         Row(
                           children: [
                             Expanded(
                               child: PerformanceStatusCard(
                                 title: 'Completion Rate',
-                                value:
-                                    '${orderCompletionRate.toStringAsFixed(1)}%',
-                                subtitle:
-                                    'Delivered / total orders',
+                                value: '${orderCompletionRate.toStringAsFixed(1)}%',
+                                subtitle: 'Delivered / total orders',
                                 accentColor: colors.success,
                               ),
                             ),
@@ -714,21 +624,18 @@ class _SuperAdminAnalyticsScreenState
                             Expanded(
                               child: PerformanceStatusCard(
                                 title: 'Cancellation Rate',
-                                value:
-                                    '${orderCancellationRate.toStringAsFixed(1)}%',
-                                subtitle:
-                                    'Cancelled / total orders',
+                                value: '${orderCancellationRate.toStringAsFixed(1)}%',
+                                subtitle: 'Cancelled / total orders',
                                 accentColor: colors.error,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
 
-                        // ── Top Performers ───────────────────────
-                        const AppSectionTitle(
-                            title: 'Top Performers'),
+                        const SizedBox(height: 20),
+                        const AppSectionTitle(title: 'Top Performers'),
                         const SizedBox(height: 10),
+
                         Row(
                           children: [
                             Expanded(
@@ -753,6 +660,7 @@ class _SuperAdminAnalyticsScreenState
                           ],
                         ),
                         const SizedBox(height: 12),
+
                         Row(
                           children: [
                             Expanded(
@@ -768,12 +676,11 @@ class _SuperAdminAnalyticsScreenState
                             const Expanded(child: SizedBox()),
                           ],
                         ),
-                        const SizedBox(height: 20),
 
-                        // ── Comparisons ──────────────────────────
-                        const AppSectionTitle(
-                            title: 'Best vs Needs Attention'),
+                        const SizedBox(height: 20),
+                        const AppSectionTitle(title: 'Best vs Needs Attention'),
                         const SizedBox(height: 10),
+
                         ComparisonDuelCard(
                           title: 'Admin Sales Comparison',
                           bestLabel: topAdmin?.key ?? 'N/A',
@@ -786,6 +693,7 @@ class _SuperAdminAnalyticsScreenState
                               : '₦${worstAdmin.value.toStringAsFixed(0)}',
                         ),
                         const SizedBox(height: 12),
+
                         ComparisonDuelCard(
                           title: 'State Sales Comparison',
                           bestLabel: topState?.key ?? 'N/A',
@@ -798,6 +706,7 @@ class _SuperAdminAnalyticsScreenState
                               : '₦${worstState.value.toStringAsFixed(0)}',
                         ),
                         const SizedBox(height: 12),
+
                         ComparisonDuelCard(
                           title: 'Area Sales Comparison',
                           bestLabel: topArea?.key ?? 'N/A',
@@ -809,9 +718,8 @@ class _SuperAdminAnalyticsScreenState
                               ? '₦0'
                               : '₦${worstArea.value.toStringAsFixed(0)}',
                         ),
-                        const SizedBox(height: 20),
 
-                        // ── Charts ───────────────────────────────
+                        const SizedBox(height: 20),
                         const AppSectionTitle(title: 'Revenue Trend'),
                         AnalyticsBarChartCard(
                           title: 'Daily Sales (₦)',
@@ -819,82 +727,79 @@ class _SuperAdminAnalyticsScreenState
                           isCurrency: true,
                           emptyLabel: 'No sales trend data yet',
                         ),
+
                         const SizedBox(height: 20),
-                        const AppSectionTitle(
-                            title: 'Order Trend'),
+                        const AppSectionTitle(title: 'Order Trend'),
                         AnalyticsBarChartCard(
                           title: 'Daily Orders',
                           data: orderSeries,
                           isCurrency: false,
                           emptyLabel: 'No order trend data yet',
                         ),
-                        const SizedBox(height: 20),
 
-                        // ── Textile-specific ─────────────────────
-                        const AppSectionTitle(
-                            title: 'Revenue by Fabric Type'),
+                        const SizedBox(height: 20),
+                        const AppSectionTitle(title: 'Revenue by Fabric Type'),
                         AnalyticsBarChartCard(
                           title: 'Fabric Type Sales',
                           data: salesByFabric,
                           isCurrency: true,
                           emptyLabel: 'No fabric sales data yet',
                         ),
+
                         const SizedBox(height: 20),
-                        const AppSectionTitle(
-                            title: 'Orders by Fabric Type'),
+                        const AppSectionTitle(title: 'Orders by Fabric Type'),
                         AnalyticsBarChartCard(
                           title: 'Fabric Type Orders',
                           data: ordersByFabric,
                           isCurrency: false,
                           emptyLabel: 'No fabric order data yet',
                         ),
-                        const SizedBox(height: 20),
 
-                        // ── Admin performance ────────────────────
-                        const AppSectionTitle(
-                            title: 'Sales by Admin'),
+                        const SizedBox(height: 20),
+                        const AppSectionTitle(title: 'Sales by Admin'),
                         AnalyticsBarChartCard(
                           title: 'Admin Revenue',
                           data: salesByAdmin,
                           isCurrency: true,
                           emptyLabel: 'No admin sales data yet',
                         ),
+
                         const SizedBox(height: 20),
-                        const AppSectionTitle(
-                            title: 'Sales by State'),
+                        const AppSectionTitle(title: 'Sales by State'),
                         AnalyticsBarChartCard(
                           title: 'State Revenue',
                           data: salesByState,
                           isCurrency: true,
                           emptyLabel: 'No state sales data yet',
                         ),
+
                         const SizedBox(height: 20),
-                        const AppSectionTitle(
-                            title: 'Sales by Area'),
+                        const AppSectionTitle(title: 'Sales by Area'),
                         AnalyticsBarChartCard(
                           title: 'Area Revenue',
                           data: salesByArea,
                           isCurrency: true,
                           emptyLabel: 'No area sales data yet',
                         ),
+
                         const SizedBox(height: 20),
-                        const AppSectionTitle(
-                            title: 'Orders by Admin'),
+                        const AppSectionTitle(title: 'Orders by Admin'),
                         AnalyticsBarChartCard(
                           title: 'Admin Order Count',
                           data: ordersByAdmin,
                           isCurrency: false,
                           emptyLabel: 'No admin order data yet',
                         ),
+
                         const SizedBox(height: 20),
-                        const AppSectionTitle(
-                            title: 'Reassignments by Admin'),
+                        const AppSectionTitle(title: 'Reassignments by Admin'),
                         AnalyticsBarChartCard(
                           title: 'Reassignment Count',
                           data: reassignmentsByAdmin,
                           isCurrency: false,
                           emptyLabel: 'No reassignment data yet',
                         ),
+
                         const SizedBox(height: 32),
                       ],
                     );
@@ -905,8 +810,6 @@ class _SuperAdminAnalyticsScreenState
     );
   }
 }
-
-// ── Metric Card ────────────────────────────────────────────────────────────────
 
 class _MetricCard extends StatelessWidget {
   final String title;
