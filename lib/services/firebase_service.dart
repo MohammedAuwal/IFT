@@ -139,10 +139,8 @@ class FirebaseService {
   // ── Token Helpers ────────────────────────────────────────────────────────────
 
   Future<List<String>> _readUserTokens(String uid) async {
-    final doc = await firestore
-        .collection(AppConstants.usersCollection)
-        .doc(uid)
-        .get();
+    final doc =
+        await firestore.collection(AppConstants.usersCollection).doc(uid).get();
     final data = doc.data() ?? {};
     return List<String>.from(data['fcmTokens'] ?? []);
   }
@@ -162,10 +160,7 @@ class FirebaseService {
     required String rootCollection,
     required String uid,
   }) {
-    return firestore
-        .collection(rootCollection)
-        .doc(uid)
-        .collection('notifications');
+    return firestore.collection(rootCollection).doc(uid).collection('notifications');
   }
 
   CollectionReference<Map<String, dynamic>> _userNotifications(String uid) {
@@ -185,10 +180,7 @@ class FirebaseService {
   Future<bool> _hasAdminNotificationInbox(String uid) async {
     if (AppConstants.isSuperAdminUid(uid)) return true;
     try {
-      final doc = await firestore
-          .collection(AppConstants.adminsCollection)
-          .doc(uid)
-          .get();
+      final doc = await firestore.collection(AppConstants.adminsCollection).doc(uid).get();
       return doc.exists;
     } catch (_) {
       return false;
@@ -274,9 +266,7 @@ class FirebaseService {
               emit();
             },
             onError: (error, stackTrace) {
-              if (!controller.isClosed) {
-                controller.addError(error, stackTrace);
-              }
+              if (!controller.isClosed) controller.addError(error, stackTrace);
             },
           );
 
@@ -298,15 +288,11 @@ class FirebaseService {
               emit();
             },
             onError: (error, stackTrace) {
-              if (!controller.isClosed) {
-                controller.addError(error, stackTrace);
-              }
+              if (!controller.isClosed) controller.addError(error, stackTrace);
             },
           );
         } catch (error, stackTrace) {
-          if (!controller.isClosed) {
-            controller.addError(error, stackTrace);
-          }
+          if (!controller.isClosed) controller.addError(error, stackTrace);
         }
       }();
     };
@@ -333,9 +319,8 @@ class FirebaseService {
   }
 
   Stream<int> watchUnreadNotificationCount() {
-    return watchNotifications().map(
-      (items) => items.where((item) => !item.isRead).length,
-    );
+    return watchNotifications()
+        .map((items) => items.where((item) => !item.isRead).length);
   }
 
   Future<void> markNotificationAsRead(
@@ -394,13 +379,9 @@ class FirebaseService {
 
     for (final collection in collections) {
       try {
-        final snapshot =
-            await collection.where('isRead', isEqualTo: false).get();
+        final snapshot = await collection.where('isRead', isEqualTo: false).get();
         for (final doc in snapshot.docs) {
-          batch.set(doc.reference, {
-            'isRead': true,
-            'readAt': readAt,
-          }, SetOptions(merge: true));
+          batch.set(doc.reference, {'isRead': true, 'readAt': readAt}, SetOptions(merge: true));
           hasWrites = true;
         }
       } catch (_) {}
@@ -446,9 +427,8 @@ class FirebaseService {
 
     for (final collection in collections) {
       try {
-        final snapshot = await collection
-            .where('createdAt', isLessThan: cutoffStr)
-            .get();
+        final snapshot =
+            await collection.where('createdAt', isLessThan: cutoffStr).get();
 
         final batch = firestore.batch();
         for (final doc in snapshot.docs) {
@@ -473,6 +453,7 @@ class FirebaseService {
     String? targetId,
   }) async {
     String? notificationId;
+
     try {
       notificationId = await _createNotificationRecord(
         rootCollection: AppConstants.usersCollection,
@@ -509,6 +490,7 @@ class FirebaseService {
     String? targetId,
   }) async {
     String? notificationId;
+
     try {
       notificationId = await _createNotificationRecord(
         rootCollection: AppConstants.adminsCollection,
@@ -544,6 +526,7 @@ class FirebaseService {
   }) async {
     for (final superAdminUid in AppConstants.superAdminUids) {
       String? notificationId;
+
       try {
         notificationId = await _createNotificationRecord(
           rootCollection: AppConstants.adminsCollection,
@@ -580,10 +563,8 @@ class FirebaseService {
     if (AppConstants.isSuperAdminUid(user.uid)) return true;
 
     try {
-      final uidDoc = await firestore
-          .collection(AppConstants.adminsCollection)
-          .doc(user.uid)
-          .get();
+      final uidDoc =
+          await firestore.collection(AppConstants.adminsCollection).doc(user.uid).get();
       if (uidDoc.exists) return true;
     } catch (_) {
       return false;
@@ -598,16 +579,14 @@ class FirebaseService {
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
+
       if (emailSnapshot.docs.isEmpty) return false;
 
       final oldDoc = emailSnapshot.docs.first;
       final oldData = oldDoc.data();
 
       try {
-        await firestore
-            .collection(AppConstants.adminsCollection)
-            .doc(user.uid)
-            .set({
+        await firestore.collection(AppConstants.adminsCollection).doc(user.uid).set({
           ...oldData,
           'uid': user.uid,
           'email': email,
@@ -616,12 +595,10 @@ class FirebaseService {
 
         if (oldDoc.id != user.uid) {
           try {
-            await firestore
-                .collection(AppConstants.adminsCollection)
-                .doc(oldDoc.id)
-                .delete();
+            await firestore.collection(AppConstants.adminsCollection).doc(oldDoc.id).delete();
           } catch (_) {}
         }
+
         return true;
       } catch (_) {
         return true;
@@ -636,10 +613,7 @@ class FirebaseService {
     required String email,
   }) async {
     final addedBy = currentUser?.uid ?? '';
-    await firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(uid)
-        .set({
+    await firestore.collection(AppConstants.adminsCollection).doc(uid).set({
       'uid': uid,
       'email': email.trim().toLowerCase(),
       'displayName': email.split('@').first,
@@ -675,10 +649,7 @@ class FirebaseService {
       if (inferredState.isNotEmpty) inferredState,
     }.toList();
 
-    await firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(adminUid)
-        .set({
+    await firestore.collection(AppConstants.adminsCollection).doc(adminUid).set({
       'uid': adminUid,
       'email': email,
       'displayName': displayName,
@@ -701,10 +672,7 @@ class FirebaseService {
     required bool isActive,
     required int maxActiveAssignments,
   }) async {
-    await firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(adminUid)
-        .set({
+    await firestore.collection(AppConstants.adminsCollection).doc(adminUid).set({
       'isActive': isActive,
       'maxActiveAssignments': maxActiveAssignments,
       'updatedAt': DateTime.now().toIso8601String(),
@@ -712,10 +680,7 @@ class FirebaseService {
   }
 
   Stream<List<Map<String, dynamic>>> watchAdmins() {
-    return firestore
-        .collection(AppConstants.adminsCollection)
-        .snapshots()
-        .map(
+    return firestore.collection(AppConstants.adminsCollection).snapshots().map(
           (snapshot) => snapshot.docs.map((e) => e.data()).toList()
             ..sort(
               (a, b) => (b['createdAt'] ?? '')
@@ -746,9 +711,8 @@ class FirebaseService {
 
   Future<void> updateVendorPickupAddress(String address) async {
     final trimmed = address.trim();
-    if (trimmed.isEmpty) {
-      throw Exception('Vendor pickup address cannot be empty');
-    }
+    if (trimmed.isEmpty) throw Exception('Vendor pickup address cannot be empty');
+
     await _settingsDoc.set({
       'vendorPickupAddress': trimmed,
       'updatedAt': DateTime.now().toIso8601String(),
@@ -764,6 +728,7 @@ class FirebaseService {
       }, SetOptions(merge: true));
       return;
     }
+
     final data = doc.data() ?? {};
     final existing = (data['vendorPickupAddress'] ?? '').toString().trim();
     if (existing.isEmpty) {
@@ -814,10 +779,8 @@ class FirebaseService {
     required String destinationState,
   }) async {
     final fallbackUid = AppConstants.primarySuperAdminUid;
-    final superAdminDoc = await firestore
-        .collection(AppConstants.adminsCollection)
-        .doc(fallbackUid)
-        .get();
+    final superAdminDoc =
+        await firestore.collection(AppConstants.adminsCollection).doc(fallbackUid).get();
     final data = superAdminDoc.data();
 
     if (data != null) {
@@ -856,8 +819,7 @@ class FirebaseService {
     required double targetLng,
     required String destinationAddress,
   }) async {
-    final snapshot =
-        await firestore.collection(AppConstants.adminsCollection).get();
+    final snapshot = await firestore.collection(AppConstants.adminsCollection).get();
     final destinationState = _inferStateFromAddress(destinationAddress);
     final destinationLower = destinationAddress.toLowerCase();
 
@@ -865,16 +827,13 @@ class FirebaseService {
       final data = doc.data();
       final states = List<String>.from(data['coverageStates'] ?? []);
       return destinationState.isNotEmpty &&
-          states
-              .map((e) => e.toLowerCase())
-              .contains(destinationState.toLowerCase());
+          states.map((e) => e.toLowerCase()).contains(destinationState.toLowerCase());
     }).toList();
 
     final areaMatchedDocs = snapshot.docs.where((doc) {
       final data = doc.data();
       final areas = List<String>.from(data['coverageAreas'] ?? []);
-      return areas
-          .any((area) => destinationLower.contains(area.toLowerCase()));
+      return areas.any((area) => destinationLower.contains(area.toLowerCase()));
     }).toList();
 
     List<QueryDocumentSnapshot<Map<String, dynamic>>> candidates;
@@ -896,6 +855,7 @@ class FirebaseService {
 
     for (final doc in candidates) {
       if (AppConstants.isSuperAdminUid(doc.id)) continue;
+
       final data = doc.data();
       final isActive = (data['isActive'] ?? true) == true;
       if (!isActive) continue;
@@ -903,8 +863,7 @@ class FirebaseService {
       final lat = (data['baseLat'] as num?)?.toDouble();
       final lng = (data['baseLng'] as num?)?.toDouble();
       final radius = ((data['serviceRadiusKm'] ?? 30) as num).toDouble();
-      final maxActiveAssignments =
-          ((data['maxActiveAssignments'] ?? 20) as num).toInt();
+      final maxActiveAssignments = ((data['maxActiveAssignments'] ?? 20) as num).toInt();
 
       if (lat == null || lng == null) continue;
 
@@ -919,9 +878,7 @@ class FirebaseService {
       final areas = List<String>.from(data['coverageAreas'] ?? []);
 
       final stateMatch = destinationState.isNotEmpty &&
-          states
-              .map((e) => e.toLowerCase())
-              .contains(destinationState.toLowerCase());
+          states.map((e) => e.toLowerCase()).contains(destinationState.toLowerCase());
 
       final matchedArea = areas.firstWhere(
         (area) => destinationLower.contains(area.toLowerCase()),
@@ -949,16 +906,14 @@ class FirebaseService {
         best = AdminAssignmentResult(
           adminUid: doc.id,
           adminEmail: (data['email'] ?? '').toString(),
-          adminName:
-              (data['displayName'] ?? data['email'] ?? '').toString(),
+          adminName: (data['displayName'] ?? data['email'] ?? '').toString(),
           adminLat: lat,
           adminLng: lng,
           distanceKm: distance,
           matchedState: stateMatch ? destinationState : '',
           matchedArea: matchedArea,
-          assignmentMethod: method == 'radius' && activeLoad > 0
-              ? 'workload_radius'
-              : method,
+          assignmentMethod:
+              method == 'radius' && activeLoad > 0 ? 'workload_radius' : method,
           activeLoad: activeLoad,
           escalatedToSuperAdmin: false,
         );
@@ -972,17 +927,11 @@ class FirebaseService {
   // ── Dashboard Counts ─────────────────────────────────────────────────────────
 
   Stream<int> watchProductsCount() {
-    return firestore
-        .collection(AppConstants.productsCollection)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+    return firestore.collection(AppConstants.productsCollection).snapshots().map((s) => s.docs.length);
   }
 
   Stream<int> watchOrdersCount() {
-    return firestore
-        .collection(AppConstants.ordersCollection)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+    return firestore.collection(AppConstants.ordersCollection).snapshots().map((s) => s.docs.length);
   }
 
   Stream<int> watchAssignedOrdersCount() {
@@ -992,15 +941,14 @@ class FirebaseService {
         .collection(AppConstants.ordersCollection)
         .where('assignedAdminUid', isEqualTo: user.uid)
         .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+        .map((s) => s.docs.length);
   }
 
   Stream<int> watchAdminsCount() {
     return firestore
         .collection(AppConstants.adminsCollection)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.length + AppConstants.superAdminUids.length);
+        .map((s) => s.docs.length + AppConstants.superAdminUids.length);
   }
 
   Stream<int> watchAssignedActiveWorkloadCount() {
@@ -1030,8 +978,7 @@ class FirebaseService {
               return {
                 'type': 'product',
                 'title': 'Fabric: ${data['name'] ?? 'Unnamed'}',
-                'subtitle':
-                    '₦${data['price'] ?? 0} · ${data['fabricType'] ?? 'General'}',
+                'subtitle': '₦${data['price'] ?? 0} · ${data['fabricType'] ?? 'General'}',
                 'createdAt': data['createdAt'] ?? '',
               };
             }).toList());
@@ -1052,17 +999,13 @@ class FirebaseService {
     return productStream.asyncMap((products) async {
       final orders = await orderStream.first;
       final merged = [...products, ...orders];
-      merged.sort((a, b) => (b['createdAt'] ?? '')
-          .toString()
-          .compareTo((a['createdAt'] ?? '').toString()));
+      merged.sort((a, b) => (b['createdAt'] ?? '').toString().compareTo((a['createdAt'] ?? '').toString()));
       return merged.take(8).toList();
     });
   }
 
   // ── TEXTILE CATEGORIES ───────────────────────────────────────────────────────
 
-  /// Default protected categories that are always shown
-  /// These are the textile categories for IsmailTex
   static const List<String> _defaultTextileCategories = [
     'General',
     'Trending',
@@ -1085,17 +1028,12 @@ class FirebaseService {
   ];
 
   Stream<List<String>> watchCategories() {
-    return firestore
-        .collection('categories')
-        .orderBy('name')
-        .snapshots()
-        .map((snapshot) {
+    return firestore.collection('categories').orderBy('name').snapshots().map((snapshot) {
       final dbCategories = snapshot.docs
           .map((doc) => (doc.data()['name'] ?? '').toString().trim())
           .where((e) => e.isNotEmpty)
           .toList();
 
-      // Merge defaults with DB categories, remove duplicates
       final merged = <String>{
         ..._defaultTextileCategories,
         ...dbCategories,
@@ -1109,10 +1047,7 @@ class FirebaseService {
   Future<void> addCategory(String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
-    await firestore
-        .collection('categories')
-        .doc(trimmed.toLowerCase())
-        .set({
+    await firestore.collection('categories').doc(trimmed.toLowerCase()).set({
       'name': trimmed,
       'createdAt': DateTime.now().toIso8601String(),
     });
@@ -1124,8 +1059,6 @@ class FirebaseService {
     await firestore.collection('categories').doc(trimmed).delete();
   }
 
-  /// Seeds only if the category doesn't already exist in Firestore.
-  /// Uses textile categories — no food/ride references.
   Future<void> seedDefaultCategoriesIfMissing() async {
     final textileDefaults = [
       'General',
@@ -1149,15 +1082,10 @@ class FirebaseService {
     ];
 
     for (final category in textileDefaults) {
-      final ref = firestore
-          .collection('categories')
-          .doc(category.toLowerCase().replaceAll(' ', '_'));
+      final ref = firestore.collection('categories').doc(category.toLowerCase().replaceAll(' ', '_'));
       final snap = await ref.get();
       if (!snap.exists) {
-        await ref.set({
-          'name': category,
-          'createdAt': DateTime.now().toIso8601String(),
-        });
+        await ref.set({'name': category, 'createdAt': DateTime.now().toIso8601String()});
       }
     }
   }
@@ -1190,21 +1118,17 @@ class FirebaseService {
       } else {
         final data = snap.data() ?? {};
         final updates = <String, dynamic>{};
-        if (user.displayName != null &&
-            user.displayName!.isNotEmpty &&
-            data['displayName'] != user.displayName) {
+
+        if (user.displayName != null && user.displayName!.isNotEmpty && data['displayName'] != user.displayName) {
           updates['displayName'] = user.displayName;
         }
-        if (user.photoURL != null &&
-            user.photoURL!.isNotEmpty &&
-            data['photoUrl'] != user.photoURL) {
+        if (user.photoURL != null && user.photoURL!.isNotEmpty && data['photoUrl'] != user.photoURL) {
           updates['photoUrl'] = user.photoURL;
         }
-        if (user.email != null &&
-            user.email!.isNotEmpty &&
-            data['email'] != user.email) {
+        if (user.email != null && user.email!.isNotEmpty && data['email'] != user.email) {
           updates['email'] = user.email;
         }
+
         if (updates.isNotEmpty) {
           await ref.set(updates, SetOptions(merge: true));
         }
@@ -1217,10 +1141,11 @@ class FirebaseService {
     if (user == null) return;
     final trimmed = displayName.trim();
     if (trimmed.isEmpty) return;
+
     await user.updateDisplayName(trimmed);
     await user.reload();
-    await _userDoc(user.uid)
-        .set({'displayName': trimmed}, SetOptions(merge: true));
+
+    await _userDoc(user.uid).set({'displayName': trimmed}, SetOptions(merge: true));
   }
 
   Stream<Map<String, dynamic>?> watchUserProfile() {
@@ -1234,10 +1159,12 @@ class FirebaseService {
     if (user == null) return;
     final trimmed = photoUrl.trim();
     if (trimmed.isEmpty) return;
+
     try {
       await user.updatePhotoURL(trimmed);
       await user.reload();
     } catch (_) {}
+
     await _userDoc(user.uid).set({
       'uid': user.uid,
       'email': user.email ?? '',
@@ -1251,11 +1178,14 @@ class FirebaseService {
   Future<void> addAddress(String address) async {
     final user = currentUser;
     if (user == null || address.trim().isEmpty) return;
+
     final ref = _userDoc(user.uid);
     final snap = await ref.get();
     final data = snap.data() ?? {};
     final addresses = List<String>.from(data['addresses'] ?? []);
+
     addresses.add(address.trim());
+
     await ref.set({
       'addresses': addresses,
       'selectedAddress': address.trim(),
@@ -1265,12 +1195,16 @@ class FirebaseService {
   Future<void> removeAddress(String address) async {
     final user = currentUser;
     if (user == null) return;
+
     final ref = _userDoc(user.uid);
     final snap = await ref.get();
     final data = snap.data() ?? {};
+
     final addresses = List<String>.from(data['addresses'] ?? []);
     final selectedAddress = (data['selectedAddress'] ?? '').toString();
+
     addresses.remove(address);
+
     await ref.set({
       'addresses': addresses,
       'selectedAddress': selectedAddress == address
@@ -1282,13 +1216,14 @@ class FirebaseService {
   Future<void> setSelectedAddress(String address) async {
     final user = currentUser;
     if (user == null) return;
-    await _userDoc(user.uid).set(
-        {'selectedAddress': address.trim()}, SetOptions(merge: true));
+
+    await _userDoc(user.uid).set({'selectedAddress': address.trim()}, SetOptions(merge: true));
   }
 
   Stream<String> watchSelectedAddress() {
     final user = currentUser;
     if (user == null) return Stream.value('');
+
     return _userDoc(user.uid).snapshots().map((doc) {
       final data = doc.data();
       if (data == null) return '';
@@ -1296,11 +1231,12 @@ class FirebaseService {
     });
   }
 
-  // ── Favourites ────────────────────────────────────────────────────────────────
+  // ── Favourites ───────────────────────────────────────────────────────────────
 
   Stream<List<String>> watchFavorites() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
+
     return _userDoc(user.uid).snapshots().map((doc) {
       final data = doc.data();
       if (data == null) return <String>[];
@@ -1311,13 +1247,13 @@ class FirebaseService {
   Stream<List<ProductModel>> watchFavoriteProducts() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
+
     return _userDoc(user.uid).snapshots().asyncMap((doc) async {
       final data = doc.data();
       final ids = List<String>.from(data?['favorites'] ?? []);
       if (ids.isEmpty) return <ProductModel>[];
-      final snapshot = await firestore
-          .collection(AppConstants.productsCollection)
-          .get();
+
+      final snapshot = await firestore.collection(AppConstants.productsCollection).get();
       return snapshot.docs
           .where((doc) => ids.contains(doc.id))
           .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
@@ -1328,15 +1264,18 @@ class FirebaseService {
   Future<void> toggleFavorite(String productId) async {
     final user = currentUser;
     if (user == null) return;
+
     final ref = _userDoc(user.uid);
     final snap = await ref.get();
     final data = snap.data() ?? {};
     final favorites = List<String>.from(data['favorites'] ?? []);
+
     if (favorites.contains(productId)) {
       favorites.remove(productId);
     } else {
       favorites.add(productId);
     }
+
     await ref.set({'favorites': favorites}, SetOptions(merge: true));
   }
 
@@ -1345,6 +1284,7 @@ class FirebaseService {
   Stream<List<Map<String, dynamic>>> watchCart() {
     final user = currentUser;
     if (user == null) return Stream.fromFuture(getLocalCart());
+
     return _userDoc(user.uid).snapshots().map((doc) {
       final data = doc.data();
       if (data == null) return <Map<String, dynamic>>[];
@@ -1353,8 +1293,8 @@ class FirebaseService {
   }
 
   Stream<int> watchCartCount() {
-    return watchCart().map((cart) => cart.fold<int>(
-        0, (sum, item) => sum + ((item['qty'] ?? 1) as int)));
+    return watchCart()
+        .map((cart) => cart.fold<int>(0, (sum, item) => sum + ((item['qty'] ?? 1) as int)));
   }
 
   Future<void> _saveLocalCart(List<Map<String, dynamic>> cart) async {
@@ -1366,6 +1306,7 @@ class FirebaseService {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('ift_local_cart');
     if (raw == null || raw.isEmpty) return [];
+
     final decoded = jsonDecode(raw) as List;
     return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
   }
@@ -1373,14 +1314,15 @@ class FirebaseService {
   Future<void> syncLocalCartToFirestore() async {
     final user = currentUser;
     if (user == null) return;
+
     final localCart = await getLocalCart();
     if (localCart.isEmpty) return;
+
     final ref = _userDoc(user.uid);
     await ref.set({'cart': localCart}, SetOptions(merge: true));
     await _saveLocalCart([]);
   }
 
-  /// Add item to cart with full textile metadata
   Future<void> addToCart({
     required String productId,
     required String name,
@@ -1392,11 +1334,10 @@ class FirebaseService {
   }) async {
     final user = currentUser;
 
-    // ── Guest: save to local storage ────────────────────────────
     if (user == null) {
       final local = await getLocalCart();
-      final index =
-          local.indexWhere((e) => e['productId'] == productId);
+      final index = local.indexWhere((e) => e['productId'] == productId);
+
       if (index >= 0) {
         local[index] = {
           ...local[index],
@@ -1409,17 +1350,16 @@ class FirebaseService {
           'price': price,
           'imageUrl': imageUrl,
           'qty': 1,
-          if (fabricType != null && fabricType.isNotEmpty)
-            'fabricType': fabricType,
+          if (fabricType != null && fabricType.isNotEmpty) 'fabricType': fabricType,
           if (color != null && color.isNotEmpty) 'color': color,
           if (size != null && size.isNotEmpty) 'size': size,
         });
       }
+
       await _saveLocalCart(local);
       return;
     }
 
-    // ── Authenticated: save to Firestore ─────────────────────────
     final ref = _userDoc(user.uid);
     final snap = await ref.get();
     final data = snap.data() ?? {};
@@ -1436,8 +1376,7 @@ class FirebaseService {
         'price': price,
         'imageUrl': imageUrl,
         'qty': 1,
-        if (fabricType != null && fabricType.isNotEmpty)
-          'fabricType': fabricType,
+        if (fabricType != null && fabricType.isNotEmpty) 'fabricType': fabricType,
         if (color != null && color.isNotEmpty) 'color': color,
         if (size != null && size.isNotEmpty) 'size': size,
       });
@@ -1454,14 +1393,15 @@ class FirebaseService {
 
     if (user == null) {
       final local = await getLocalCart();
-      final index =
-          local.indexWhere((e) => e['productId'] == productId);
+      final index = local.indexWhere((e) => e['productId'] == productId);
       if (index < 0) return;
+
       if (qty <= 0) {
         local.removeAt(index);
       } else {
         local[index] = {...local[index], 'qty': qty};
       }
+
       await _saveLocalCart(local);
       return;
     }
@@ -1470,6 +1410,7 @@ class FirebaseService {
     final snap = await ref.get();
     final data = snap.data() ?? {};
     final cart = List<Map<String, dynamic>>.from(data['cart'] ?? []);
+
     final index = cart.indexWhere((e) => e['productId'] == productId);
     if (index < 0) return;
 
@@ -1488,8 +1429,7 @@ class FirebaseService {
       await _saveLocalCart([]);
       return;
     }
-    await _userDoc(user.uid)
-        .set({'cart': []}, SetOptions(merge: true));
+    await _userDoc(user.uid).set({'cart': []}, SetOptions(merge: true));
   }
 
   // ── Orders ───────────────────────────────────────────────────────────────────
@@ -1497,13 +1437,12 @@ class FirebaseService {
   Stream<List<OrderModel>> watchOrders() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
+
     return firestore
         .collection(AppConstants.ordersCollection)
         .where('userId', isEqualTo: user.uid)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-            .toList()
+        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
   }
 
@@ -1512,21 +1451,18 @@ class FirebaseService {
         .collection(AppConstants.ordersCollection)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<OrderModel>> watchAssignedOrdersForAdmin() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
+
     return firestore
         .collection(AppConstants.ordersCollection)
         .where('assignedAdminUid', isEqualTo: user.uid)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<OrderModel>> watchEscalatedOrders() {
@@ -1534,21 +1470,17 @@ class FirebaseService {
     if (user == null || !AppConstants.isSuperAdminUid(user.uid)) {
       return Stream.value([]);
     }
+
     return firestore
         .collection(AppConstants.ordersCollection)
         .where('escalatedToSuperAdmin', isEqualTo: true)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => OrderModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Future<OrderModel?> getOrderById(String orderId) async {
     try {
-      final doc = await firestore
-          .collection(AppConstants.ordersCollection)
-          .doc(orderId)
-          .get();
+      final doc = await firestore.collection(AppConstants.ordersCollection).doc(orderId).get();
       if (!doc.exists) return null;
       return OrderModel.fromMap(doc.id, doc.data()!);
     } catch (_) {
@@ -1566,12 +1498,10 @@ class FirebaseService {
         .set({'status': status}, SetOptions(merge: true));
 
     try {
-      final orderDoc = await firestore
-          .collection(AppConstants.ordersCollection)
-          .doc(orderId)
-          .get();
+      final orderDoc = await firestore.collection(AppConstants.ordersCollection).doc(orderId).get();
       final data = orderDoc.data() ?? {};
       final userId = (data['userId'] ?? '').toString();
+
       if (userId.isNotEmpty) {
         await _notifyUser(
           userUid: userId,
@@ -1600,8 +1530,6 @@ class FirebaseService {
     }
   }
 
-  /// Place a textile order — no ride creation.
-  /// Assigns nearest admin, saves order, notifies user + admin.
   Future<void> placeOrder(
     List<Map<String, dynamic>> cart, {
     String? couponCode,
@@ -1614,31 +1542,23 @@ class FirebaseService {
     final user = currentUser;
     if (user == null || cart.isEmpty) return;
 
-    // ── Calculate totals ─────────────────────────────────────────
     final itemsSubtotal = cart.fold<double>(
       0,
       (sum, item) =>
-          sum +
-          (((item['price'] ?? 0) as num).toDouble() *
-              ((item['qty'] ?? 1) as int)),
+          sum + (((item['price'] ?? 0) as num).toDouble() * ((item['qty'] ?? 1) as int)),
     );
 
-    final totalAmount =
-        itemsSubtotal + deliveryFee - couponDiscount;
+    final totalAmount = itemsSubtotal + deliveryFee - couponDiscount;
 
-    // ── Resolve delivery address ─────────────────────────────────
     String deliveryAddress = 'Customer delivery address';
     try {
       deliveryAddress = await _resolveDeliveryAddress();
     } catch (_) {}
 
-    // ── Find nearest admin ───────────────────────────────────────
-    // Use a default coordinate if we can't geocode
-    // The admin assignment still works by address text matching
     AdminAssignmentResult adminResult;
     try {
       adminResult = await findNearestAdmin(
-        targetLat: 9.0820,  // Nigeria center fallback
+        targetLat: 9.0820,
         targetLng: 8.6753,
         destinationAddress: deliveryAddress,
       );
@@ -1675,36 +1595,27 @@ class FirebaseService {
       'escalatedToSuperAdmin': adminResult.escalatedToSuperAdmin,
     };
 
-    // ── Save order ───────────────────────────────────────────────
-    await firestore
-        .collection(AppConstants.ordersCollection)
-        .doc(orderId)
-        .set(orderMap);
+    await firestore.collection(AppConstants.ordersCollection).doc(orderId).set(orderMap);
 
-    // ── Clear cart ───────────────────────────────────────────────
     await clearCart();
 
-    // ── Notify customer ──────────────────────────────────────────
     try {
       await _notifyUser(
         userUid: user.uid,
         title: '🎉 Order Placed — IsmailTex',
-        body:
-            'Your fabric order has been placed successfully. We\'ll keep you updated!',
+        body: 'Your fabric order has been placed successfully. We\'ll keep you updated!',
         type: 'order_created',
         targetScreen: 'order_detail',
         targetId: orderId,
       );
     } catch (_) {}
 
-    // ── Notify assigned admin ────────────────────────────────────
     if ((adminResult.adminUid ?? '').isNotEmpty) {
       try {
         await _notifyAdmin(
           adminUid: adminResult.adminUid!,
           title: '📦 New Fabric Order Assigned',
-          body:
-              'A new textile order has been assigned to your area. Total: ₦${totalAmount.toStringAsFixed(0)}',
+          body: 'A new textile order has been assigned to your area. Total: ₦${totalAmount.toStringAsFixed(0)}',
           type: 'admin_assignment_order',
           targetScreen: 'admin_orders',
           targetId: orderId,
@@ -1712,13 +1623,11 @@ class FirebaseService {
       } catch (_) {}
     }
 
-    // ── Escalation notification ──────────────────────────────────
     if (adminResult.escalatedToSuperAdmin) {
       try {
         await _notifySuperAdminEscalation(
           title: '⚠️ Escalated Order',
-          body:
-              'A new fabric order could not be auto-assigned. Manual attention needed.',
+          body: 'A new fabric order could not be auto-assigned. Manual attention needed.',
           targetId: orderId,
           type: 'escalation_created',
         );
@@ -1729,17 +1638,17 @@ class FirebaseService {
   Future<String> _resolveDeliveryAddress() async {
     final user = currentUser;
     if (user == null) return 'Customer delivery address';
+
     final profile = await _userDoc(user.uid).get();
     final data = profile.data() ?? {};
     final selected = (data['selectedAddress'] ?? '').toString().trim();
     final addresses = List<String>.from(data['addresses'] ?? []);
+
     if (selected.isNotEmpty) return selected;
     if (addresses.isNotEmpty) return addresses.first;
-    throw Exception(
-        'Please save and select a delivery address before checkout');
-  }
 
-  // ── Order Reassignment ───────────────────────────────────────────────────────
+    throw Exception('Please save and select a delivery address before checkout');
+  }
 
   Future<void> reassignOrderToAdmin({
     required String orderId,
@@ -1747,10 +1656,7 @@ class FirebaseService {
     required String adminName,
     required String adminEmail,
   }) async {
-    await firestore
-        .collection(AppConstants.ordersCollection)
-        .doc(orderId)
-        .set({
+    await firestore.collection(AppConstants.ordersCollection).doc(orderId).set({
       'assignedAdminUid': adminUid,
       'assignedAdminName': adminName,
       'assignedAdminEmail': adminEmail,
@@ -1775,6 +1681,7 @@ class FirebaseService {
   }
 
   // ── Escalation Queue ─────────────────────────────────────────────────────────
+  // ✅ FIXED: createdAt is String in OrderModel, do NOT call toIso8601String()
 
   Stream<List<Map<String, dynamic>>> watchEscalationQueue() {
     final user = currentUser;
@@ -1782,16 +1689,18 @@ class FirebaseService {
       return Stream.value([]);
     }
 
-    return watchEscalatedOrders().map((orders) => orders
-        .map((order) => {
-              'type': 'order',
-              'id': order.id,
-              'title': 'Escalated Textile Order',
-              'subtitle': order.deliveryAddress,
-              'status': order.status,
-              'createdAt': order.createdAt.toIso8601String(),
-            })
-        .toList());
+    return watchEscalatedOrders().map((orders) {
+      return orders
+          .map((order) => {
+                'type': 'order',
+                'id': order.id,
+                'title': 'Escalated Textile Order',
+                'subtitle': order.deliveryAddress,
+                'status': order.status,
+                'createdAt': order.createdAt, // ✅ fixed
+              })
+          .toList();
+    });
   }
 
   // ── Products ─────────────────────────────────────────────────────────────────
@@ -1801,54 +1710,40 @@ class FirebaseService {
         .collection(AppConstants.productsCollection)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<ProductModel>> watchTrendingProducts() {
-    return watchAllProducts()
-        .map((items) => items.where((item) => item.isTrending).toList());
+    return watchAllProducts().map((items) => items.where((item) => item.isTrending).toList());
   }
 
-  /// New Arrivals — products with isNewArrival flag OR most recently added
   Stream<List<ProductModel>> watchNewArrivals({int limit = 10}) {
     return firestore
         .collection(AppConstants.productsCollection)
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .where((p) => p.isNewArrival == true || true)
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
-  /// Best Sellers — products with isBestSeller flag
   Stream<List<ProductModel>> watchBestSellers({int limit = 10}) {
     return firestore
         .collection(AppConstants.productsCollection)
         .where('isBestSeller', isEqualTo: true)
         .limit(limit)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
-  /// Featured Products
   Stream<List<ProductModel>> watchFeaturedProducts({int limit = 10}) {
     return firestore
         .collection(AppConstants.productsCollection)
         .where('isFeatured', isEqualTo: true)
         .limit(limit)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
-  /// Products by fabric type (e.g. "Ankara", "Lace", "Chiffon")
   Stream<List<ProductModel>> watchProductsByFabricType(
     String fabricType, {
     int limit = 20,
@@ -1858,12 +1753,9 @@ class FirebaseService {
         .where('fabricType', isEqualTo: fabricType)
         .limit(limit)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
-  /// Products by category name
   Stream<List<ProductModel>> watchProductsByCategory(
     String category, {
     int limit = 20,
@@ -1873,12 +1765,9 @@ class FirebaseService {
         .where('category', isEqualTo: category)
         .limit(limit)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
-  /// Products by occasion (e.g. "Wedding", "Sallah", "Corporate")
   Stream<List<ProductModel>> watchProductsByOccasion(
     String occasion, {
     int limit = 20,
@@ -1888,12 +1777,9 @@ class FirebaseService {
         .where('occasion', isEqualTo: occasion)
         .limit(limit)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
-  /// Products by gender (e.g. "Men", "Women", "Children")
   Stream<List<ProductModel>> watchProductsByGender(
     String gender, {
     int limit = 20,
@@ -1903,24 +1789,19 @@ class FirebaseService {
         .where('gender', isEqualTo: gender)
         .limit(limit)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Stream<List<ProductModel>> watchMyUploadedProducts() {
     final user = currentUser;
     if (user == null) return Stream.value([]);
-    if (AppConstants.isSuperAdminUid(user.uid)) {
-      return watchAllProducts();
-    }
+    if (AppConstants.isSuperAdminUid(user.uid)) return watchAllProducts();
+
     return firestore
         .collection(AppConstants.productsCollection)
         .where('createdBy', isEqualTo: user.uid)
         .snapshots()
-        .map((s) => s.docs
-            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((s) => s.docs.map((doc) => ProductModel.fromMap(doc.id, doc.data())).toList());
   }
 
   Future<void> updateProduct(ProductModel product) async {
@@ -1931,9 +1812,6 @@ class FirebaseService {
   }
 
   Future<void> deleteProduct(String productId) async {
-    await firestore
-        .collection(AppConstants.productsCollection)
-        .doc(productId)
-        .delete();
+    await firestore.collection(AppConstants.productsCollection).doc(productId).delete();
   }
 }
