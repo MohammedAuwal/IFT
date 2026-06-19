@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:pfb/config/routes/route_names.dart';
-import 'package:pfb/features/admin/presentation/screens/add_product_screen.dart';
-import 'package:pfb/features/admin/presentation/screens/admin_dashboard_screen.dart';
-import 'package:pfb/features/admin/presentation/screens/admin_orders_screen.dart';
-import 'package:pfb/features/auth/presentation/screens/login_screen.dart';
-import 'package:pfb/features/auth/presentation/screens/signup_screen.dart';
-import 'package:pfb/features/cart/presentation/screens/cart_screen.dart';
-import 'package:pfb/features/favorites/presentation/screens/favorites_screen.dart';
-import 'package:pfb/features/notifications/presentation/screens/notifications_screen.dart';
-import 'package:pfb/features/orders/presentation/screens/order_screen.dart';
-import 'package:pfb/features/products/presentation/screens/product_list_screen.dart';
-import 'package:pfb/features/profile/presentation/screens/profile_screen.dart';
-import 'package:pfb/features/shell/presentation/screens/main_shell_screen.dart';
-import 'package:pfb/features/splash/presentation/screens/splash_screen.dart';
+import 'package:ift/config/routes/route_names.dart';
+import 'package:ift/features/admin/presentation/screens/add_product_screen.dart';
+import 'package:ift/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:ift/features/admin/presentation/screens/admin_orders_screen.dart';
+import 'package:ift/features/auth/presentation/screens/login_screen.dart';
+import 'package:ift/features/auth/presentation/screens/signup_screen.dart';
+import 'package:ift/features/cart/presentation/screens/cart_screen.dart';
+import 'package:ift/features/favorites/presentation/screens/favorites_screen.dart';
+import 'package:ift/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:ift/features/orders/presentation/screens/order_screen.dart';
+import 'package:ift/features/products/presentation/screens/product_list_screen.dart';
+import 'package:ift/features/profile/presentation/screens/profile_screen.dart';
+import 'package:ift/features/shell/presentation/screens/main_shell_screen.dart';
+import 'package:ift/features/splash/presentation/screens/splash_screen.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {

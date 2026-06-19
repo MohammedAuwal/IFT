@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:pfb/features/admin/presentation/screens/admin_dashboard_screen.dart';
-import 'package:pfb/features/admin/presentation/screens/admin_escalation_dashboard_screen.dart';
-import 'package:pfb/features/admin/presentation/screens/admin_orders_screen.dart';
-import 'package:pfb/features/orders/presentation/screens/order_detail_screen.dart';
-import 'package:pfb/features/orders/presentation/screens/order_screen.dart';
-import 'package:pfb/features/rider/presentation/screens/rider_home_screen.dart';
-import 'package:pfb/features/shell/presentation/screens/main_shell_screen.dart';
-import 'package:pfb/services/firebase_service.dart';
+import 'package:ift/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:ift/features/admin/presentation/screens/admin_escalation_dashboard_screen.dart';
+import 'package:ift/features/admin/presentation/screens/admin_orders_screen.dart';
+import 'package:ift/features/admin/presentation/screens/admin_rides_screen.dart';
+import 'package:ift/features/orders/presentation/screens/order_detail_screen.dart';
+import 'package:ift/features/orders/presentation/screens/order_screen.dart';
+import 'package:ift/features/shell/presentation/screens/main_shell_screen.dart';
+import 'package:ift/services/firebase_service.dart';
 
 class NotificationNavigationService {
   NotificationNavigationService._();
@@ -43,8 +43,9 @@ class NotificationNavigationService {
       final type = (data['type'] ?? '').toString().toLowerCase();
       final targetScreen =
           (data['targetScreen'] ?? '').toString().toLowerCase();
-      final targetId = (data['targetId'] ?? '').toString();
+      final targetId = (data['targetId'] ?? '').toString().trim();
 
+      // ── Escalations ───────────────────────────────────────────
       if (targetScreen == 'admin_escalation_dashboard' ||
           type.contains('escalation')) {
         await navigator.push(
@@ -59,6 +60,7 @@ class NotificationNavigationService {
         return;
       }
 
+      // ── Admin Orders ──────────────────────────────────────────
       if (targetScreen == 'admin_orders' ||
           type.contains('admin_assignment_order')) {
         await navigator.push(
@@ -73,8 +75,26 @@ class NotificationNavigationService {
         return;
       }
 
-      // Deep link: order_detail with specific orderId
-      if (targetScreen == 'order_detail' && targetId.isNotEmpty) {
+      // ── Admin Deliveries (legacy admin_rides targetScreen) ────
+      if (targetScreen == 'admin_rides' ||
+          type.contains('admin_assignment_delivery')) {
+        await navigator.push(
+          MaterialPageRoute(
+            builder: (_) => AdminRidesScreen(),
+            settings: RouteSettings(
+              name: 'admin_deliveries',
+              arguments: targetId,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // ── Deep link: Order detail ───────────────────────────────
+      if ((targetScreen == 'order_detail' ||
+              type.contains('order_status_update') ||
+              type.contains('order_created')) &&
+          targetId.isNotEmpty) {
         try {
           final order = await _firebaseService.getOrderById(targetId);
           if (order != null) {
@@ -90,31 +110,30 @@ class NotificationNavigationService {
             return;
           }
         } catch (_) {}
-        // Fallback to orders list
+
         await navigator.push(
           MaterialPageRoute(
             builder: (_) => OrderScreen(),
-            settings: RouteSettings(
-              name: 'orders',
-              arguments: targetId,
-            ),
+            settings: RouteSettings(name: 'orders', arguments: targetId),
           ),
         );
         return;
       }
 
-      // Deep link: ride_detail with specific rideId
-      if ((targetScreen == 'ride_detail' || type.contains('ride') || type.contains('delivery')) &&
+      // ── Legacy ride/delivery notification types → Orders ─────
+      // Since rides were removed, treat ride/delivery payloads as order payloads.
+      if ((targetScreen == 'ride_detail' ||
+              type.contains('ride') ||
+              type.contains('delivery')) &&
           targetId.isNotEmpty) {
         try {
-          final ride = await _firebaseService.getRideById(targetId);
-          if (ride != null) {
-            // Navigate to rider home which shows ride details
+          final order = await _firebaseService.getOrderById(targetId);
+          if (order != null) {
             await navigator.push(
               MaterialPageRoute(
-                builder: (_) => const RiderHomeScreen(),
+                builder: (_) => OrderDetailScreen(order: order),
                 settings: RouteSettings(
-                  name: 'rider_home',
+                  name: 'order_detail',
                   arguments: targetId,
                 ),
               ),
@@ -122,68 +141,46 @@ class NotificationNavigationService {
             return;
           }
         } catch (_) {}
+
         await navigator.push(
           MaterialPageRoute(
-            builder: (_) => const RiderHomeScreen(),
-            settings: RouteSettings(
-              name: 'rider_home',
-              arguments: targetId,
-            ),
+            builder: (_) => OrderScreen(),
+            settings: RouteSettings(name: 'orders', arguments: targetId),
           ),
         );
         return;
       }
 
-      if (targetScreen == 'admin_rides') {
-        await navigator.push(
-          MaterialPageRoute(
-            builder: (_) => const RiderHomeScreen(),
-            settings: RouteSettings(
-              name: 'rider_home',
-              arguments: targetId,
-            ),
-          ),
-        );
-        return;
-      }
-
+      // ── Orders list ───────────────────────────────────────────
       if (type.contains('order') || targetScreen == 'orders') {
         await navigator.push(
           MaterialPageRoute(
             builder: (_) => OrderScreen(),
-            settings: RouteSettings(
-              name: 'orders',
-              arguments: targetId,
-            ),
+            settings: RouteSettings(name: 'orders', arguments: targetId),
           ),
         );
         return;
       }
 
+      // ── Admin dashboard ───────────────────────────────────────
       if (type.contains('admin_assignment') ||
           targetScreen == 'admin_dashboard') {
         await navigator.push(
           MaterialPageRoute(
             builder: (_) => const AdminDashboardScreen(),
-            settings: RouteSettings(
-              name: 'admin_dashboard',
-              arguments: targetId,
-            ),
+            settings: RouteSettings(name: 'admin_dashboard', arguments: targetId),
           ),
         );
         return;
       }
 
+      // ── Fallback ──────────────────────────────────────────────
       await navigator.push(
         MaterialPageRoute(
           builder: (_) => const MainShellScreen(),
-          settings: RouteSettings(
-            name: 'main_shell',
-            arguments: targetId,
-          ),
+          settings: RouteSettings(name: 'main_shell', arguments: targetId),
         ),
       );
-    } catch (_) {
     } finally {
       _isNavigating = false;
     }

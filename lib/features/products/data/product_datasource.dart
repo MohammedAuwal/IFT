@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pfb/models/product_model.dart';
+import 'package:ift/models/product_model.dart';
 
 class ProductDataSource {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pfb/core/theme/app_theme.dart';
+import 'package:ift/core/theme/app_theme.dart';
 
 extension BuildContextThemeX on BuildContext {
   ThemeData get theme => Theme.of(this);

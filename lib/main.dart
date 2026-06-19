@@ -4,10 +4,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:pfb/app.dart';
-import 'package:pfb/services/fcm_service.dart';
-import 'package:pfb/services/local_notification_service.dart';
-import 'package:pfb/firebase_options.dart';
+import 'package:ift/app.dart';
+import 'package:ift/services/fcm_service.dart';
+import 'package:ift/services/local_notification_service.dart';
+import 'package:ift/firebase_options.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pfb/models/payment_session_model.dart';
-import 'package:pfb/services/firebase_service.dart';
-import 'package:pfb/services/payment_service.dart';
-import 'package:pfb/shared/widgets/app_page_scaffold.dart';
-import 'package:pfb/shared/widgets/app_surface_card.dart';
-import 'package:pfb/core/theme/build_context_theme_x.dart';
+import 'package:ift/models/payment_session_model.dart';
+import 'package:ift/services/firebase_service.dart';
+import 'package:ift/services/payment_service.dart';
+import 'package:ift/shared/widgets/app_page_scaffold.dart';
+import 'package:ift/shared/widgets/app_surface_card.dart';
+import 'package:ift/core/theme/build_context_theme_x.dart';
 
 class PaystackVerificationScreen extends StatefulWidget {
   final PaymentSessionModel session;

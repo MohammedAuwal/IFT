@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pfb/core/theme/build_context_theme_x.dart';
+import 'package:ift/core/theme/build_context_theme_x.dart';
 
 class AppPageScaffold extends StatelessWidget {
   final String title;

@@ -12,12 +12,12 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.pfb.app"
+    namespace "com.ift.app"
     compileSdk 36
     ndkVersion "28.2.13676358"
 
     defaultConfig {
-        applicationId "com.pfb.app"
+        applicationId "com.ift.app"
         minSdk 26
         targetSdk 36
         versionCode 1

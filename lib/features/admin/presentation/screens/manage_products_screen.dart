@@ -1,14 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pfb/core/constants/app_constants.dart';
-import 'package:pfb/features/admin/presentation/screens/edit_product_screen.dart';
-import 'package:pfb/features/products/presentation/screens/product_detail_screen.dart';
-import 'package:pfb/models/product_model.dart';
-import 'package:pfb/services/firebase_service.dart';
-import 'package:pfb/shared/widgets/app_page_scaffold.dart';
-import 'package:pfb/shared/widgets/app_surface_card.dart';
-import 'package:pfb/core/theme/build_context_theme_x.dart';
+import 'package:ift/core/constants/app_constants.dart';
+import 'package:ift/features/admin/presentation/screens/edit_product_screen.dart';
+import 'package:ift/features/products/presentation/screens/product_detail_screen.dart';
+import 'package:ift/models/product_model.dart';
+import 'package:ift/services/firebase_service.dart';
+import 'package:ift/shared/widgets/app_page_scaffold.dart';
+import 'package:ift/shared/widgets/app_surface_card.dart';
+import 'package:ift/core/theme/build_context_theme_x.dart';
 
 class ManageProductsScreen extends StatelessWidget {
   ManageProductsScreen({super.key});

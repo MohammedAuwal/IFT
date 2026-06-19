@@ -14,9 +14,10 @@ class RouteNames {
   static const String paystackVerify = '/paystack-verify';
   static const String notifications = '/notifications';
 
+  // ── Redirect Keys ────────────────────────────────────────────────────────────
   static const String redirectMainShell = 'redirect_main_shell';
   static const String redirectCart = 'redirect_cart';
   static const String redirectOrders = 'redirect_orders';
   static const String redirectProfile = 'redirect_profile';
-  static const String redirectRider = 'redirect_rider';
+  // redirectRider removed — IsmailTex is a textile marketplace, not a ride app
 }

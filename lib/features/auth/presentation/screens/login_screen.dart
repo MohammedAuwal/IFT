@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pfb/config/routes/route_names.dart';
-import 'package:pfb/core/routing/app_router.dart';
-import 'package:pfb/core/theme/app_theme.dart';
-import 'package:pfb/features/cart/presentation/screens/cart_screen.dart';
-import 'package:pfb/features/orders/presentation/screens/order_screen.dart';
-import 'package:pfb/features/profile/presentation/screens/profile_screen.dart';
-import 'package:pfb/features/rider/presentation/screens/rider_home_screen.dart';
-import 'package:pfb/services/firebase_auth_service.dart';
-import 'package:pfb/services/firebase_service.dart';
+import 'package:ift/config/routes/route_names.dart';
+import 'package:ift/core/routing/app_router.dart';
+import 'package:ift/core/theme/app_theme.dart';
+import 'package:ift/services/firebase_auth_service.dart';
+import 'package:ift/services/firebase_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? redirectTo;
@@ -52,36 +48,15 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    switch (widget.redirectTo) {
-      case RouteNames.redirectCart:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const CartScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectOrders:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => OrderScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectProfile:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectRider:
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const RiderHomeScreen()),
-          (route) => false,
-        );
-        return;
-      case RouteNames.redirectMainShell:
-      default:
-        await AppRouter.clearAndGo(context, RouteNames.mainShell);
-        return;
-    }
+    // IMPORTANT:
+    // Bottom navigation lives in MainShellScreen.
+    // If we push Profile/Cart/Orders screens directly, the bottom nav disappears.
+    // So after login we always go back to the shell.
+    await AppRouter.clearAndGo(
+      context,
+      RouteNames.mainShell,
+      arguments: widget.redirectTo,
+    );
   }
 
   Future<void> _login() async {
@@ -184,7 +159,6 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Stack(
           children: [
-            // ── Background Glow Circles (Red brand theme) ───────────────
             Positioned(
               top: -90,
               left: -80,
@@ -254,13 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         children: [
                           const SizedBox(height: 60),
-
-                          // ── IsmailTex Brand Logo ───────────────────────
                           _buildBrandLogo(colors, isDark),
-
                           const SizedBox(height: 26),
-
-                          // ── Login Card ─────────────────────────────────
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
@@ -334,7 +303,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       backgroundColor: colors.brandPrimary,
                                       foregroundColor: Colors.white,
                                       elevation: 2,
-                                      shadowColor: colors.brandPrimary.withOpacity(0.35),
+                                      shadowColor:
+                                          colors.brandPrimary.withOpacity(0.35),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
@@ -367,7 +337,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 18),
                                       child: Text(
                                         'or',
                                         style: GoogleFonts.poppins(
@@ -389,10 +360,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: double.infinity,
                                   height: 58,
                                   child: OutlinedButton(
-                                    onPressed: _googleLoading ? null : _loginWithGoogle,
+                                    onPressed: _googleLoading
+                                        ? null
+                                        : _loginWithGoogle,
                                     style: OutlinedButton.styleFrom(
-                                      backgroundColor: colors.surface.withOpacity(0.5),
-                                      side: BorderSide(color: colors.border, width: 1.5),
+                                      backgroundColor:
+                                          colors.surface.withOpacity(0.5),
+                                      side: BorderSide(
+                                          color: colors.border, width: 1.5),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
@@ -407,14 +382,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                           )
                                         : Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
-                                              // Google Logo
                                               Image.network(
                                                 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                                                 width: 22,
                                                 height: 22,
-                                                errorBuilder: (_, __, ___) => Text(
+                                                errorBuilder:
+                                                    (_, __, ___) => Text(
                                                   'G',
                                                   style: GoogleFonts.poppins(
                                                     color: colors.textPrimary,
@@ -499,20 +475,17 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ── Brand Logo Widget ────────────────────────────────────────────────
-
   Widget _buildBrandLogo(AppThemeColors colors, bool isDark) {
     return Column(
       children: [
-        // Logo Icon — Red gradient circle with 'iT'
         Container(
           width: 72,
           height: 72,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [
-                Color(0xFFCC2222), // primary red
-                Color(0xFFA61818), // primaryDark red
+                Color(0xFFCC2222),
+                Color(0xFFA61818),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -539,7 +512,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   letterSpacing: -1,
                 ),
               ),
-              // Dot above 'i' — mirrors logo icon
               Positioned(
                 top: 11,
                 right: 15,
@@ -556,8 +528,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 18),
-
-        // "ISMAIL" + "TEX" — mirrors actual logo typography
         RichText(
           text: TextSpan(
             children: [
@@ -573,7 +543,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextSpan(
                 text: 'TEX',
                 style: GoogleFonts.montserrat(
-                  color: const Color(0xFFCC2222), // brand red
+                  color: const Color(0xFFCC2222),
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1,
@@ -583,8 +553,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 6),
-
-        // Red divider line — mirrors logo
         Container(
           width: 40,
           height: 2.5,
@@ -594,8 +562,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 8),
-
-        // Tagline from logo
         Text(
           'We weave a better tomorrow.',
           style: GoogleFonts.poppins(
@@ -619,8 +585,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-// ── Glass Field Widget ───────────────────────────────────────────────────
 
 class _GlassField extends StatelessWidget {
   final TextEditingController controller;

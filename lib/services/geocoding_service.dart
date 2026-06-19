@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:pfb/models/place_suggestion_model.dart';
+import 'package:ift/models/place_suggestion_model.dart';
 
 class GeocodingResult {
   final String displayName;

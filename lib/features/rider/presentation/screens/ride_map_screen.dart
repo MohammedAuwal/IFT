@@ -1,20 +1,26 @@
-import 'dart:convert';
+// ── ISMAILTEX — Order Delivery Map Screen ─────────────────────────────────────
+// Replaces the old ride_map_screen.dart
+// Now shows a live-updating order delivery address map.
+// No longer listens to the rides collection.
+// Listens to the orders collection for delivery address changes.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:pfb/core/constants/app_constants.dart';
-import 'package:pfb/core/theme/app_theme.dart';
-import 'package:pfb/models/ride_model.dart';
+import 'package:ift/core/constants/app_constants.dart';
+import 'package:ift/core/theme/app_theme.dart';
+import 'package:ift/models/order_model.dart';
+import 'package:ift/shared/widgets/app_status_chip.dart';
 
 class RideMapScreen extends StatefulWidget {
-  final RideModel ride;
+  // ── Class name kept as RideMapScreen for backward compatibility ───────────────
+  final OrderModel order;
 
   const RideMapScreen({
     super.key,
-    required this.ride,
+    required this.order,
   });
 
   @override
@@ -22,25 +28,8 @@ class RideMapScreen extends StatefulWidget {
 }
 
 class _RideMapScreenState extends State<RideMapScreen> {
-  List<LatLng> _decodeRoute(String geometry) {
-    if (geometry.trim().isEmpty) return [];
-
-    try {
-      final map = jsonDecode(geometry) as Map<String, dynamic>;
-      final coords = List<List<dynamic>>.from(map['coordinates'] ?? []);
-      return coords
-          .where((c) => c.length >= 2)
-          .map(
-            (c) => LatLng(
-              (c[1] as num).toDouble(),
-              (c[0] as num).toDouble(),
-            ),
-          )
-          .toList();
-    } catch (_) {
-      return [];
-    }
-  }
+  // Nigeria center as fallback
+  static const _nigeriaCenter = LatLng(9.0820, 8.6753);
 
   LatLngBounds? _boundsFor(List<LatLng> points) {
     if (points.isEmpty) return null;
@@ -50,11 +39,11 @@ class _RideMapScreenState extends State<RideMapScreen> {
     double minLng = points.first.longitude;
     double maxLng = points.first.longitude;
 
-    for (final point in points) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLng) minLng = point.longitude;
-      if (point.longitude > maxLng) maxLng = point.longitude;
+    for (final p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
     }
 
     return LatLngBounds(
@@ -63,68 +52,64 @@ class _RideMapScreenState extends State<RideMapScreen> {
     );
   }
 
+  AppStatusChipTone _statusTone(String status) {
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        return AppStatusChipTone.success;
+      case 'cancelled':
+        return AppStatusChipTone.error;
+      case 'shipped':
+        return AppStatusChipTone.warning;
+      case 'processing':
+        return AppStatusChipTone.info;
+      default:
+        return AppStatusChipTone.neutral;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppTheme.colorsOf(context);
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
-          .collection(AppConstants.ridesCollection)
-          .doc(widget.ride.id)
+          .collection(AppConstants.ordersCollection)
+          .doc(widget.order.id)
           .snapshots(),
       builder: (context, snapshot) {
+        // Use live data if available, fall back to initial order
         final data = snapshot.data?.data();
-        final ride =
-            data != null ? RideModel.fromMap(widget.ride.id, data) : widget.ride;
+        final order = data != null
+            ? OrderModel.fromMap(widget.order.id, data)
+            : widget.order;
 
-        final pickup = (ride.pickupLat != null && ride.pickupLng != null)
-            ? LatLng(ride.pickupLat!, ride.pickupLng!)
-            : null;
+        // For now we show warehouse (Nigeria center) → delivery address
+        // A future enhancement can geocode the delivery address to get coords
+        const warehousePoint = _nigeriaCenter;
 
-        final destination =
-            (ride.destinationLat != null && ride.destinationLng != null)
-                ? LatLng(ride.destinationLat!, ride.destinationLng!)
-                : null;
-
-        final driver = (ride.driverLat != null && ride.driverLng != null)
-            ? LatLng(ride.driverLat!, ride.driverLng!)
-            : null;
-
-        final routePoints = _decodeRoute(ride.routeGeometry);
-
-        final allPoints = <LatLng>[
-          if (pickup != null) pickup,
-          if (destination != null) destination,
-          if (driver != null) driver,
-          ...routePoints,
-        ];
-
-        final center = pickup ??
-            destination ??
-            LatLng(
-              AppConstants.nigeriaCenterLat,
-              AppConstants.nigeriaCenterLng,
-            );
-
+        final allPoints = <LatLng>[warehousePoint];
         final bounds = _boundsFor(allPoints);
 
         return Scaffold(
           backgroundColor: colors.scaffold,
           appBar: AppBar(
             title: Text(
-              ride.type == 'delivery' ? 'Delivery Map' : 'Ride Map',
+              'Order #${order.shortId} — Delivery Map',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
+                fontSize: 14,
               ),
             ),
           ),
           body: Column(
             children: [
+              // ── Map ──────────────────────────────────────────────
               Expanded(
+                flex: 3,
                 child: FlutterMap(
                   options: MapOptions(
-                    initialCenter: center,
+                    initialCenter: warehousePoint,
                     initialZoom: 6,
                     initialCameraFit: bounds != null
                         ? CameraFit.bounds(
@@ -137,105 +122,198 @@ class _RideMapScreenState extends State<RideMapScreen> {
                     TileLayer(
                       urlTemplate:
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.pfb.app',
+                      userAgentPackageName: 'com.maamahsmix.app',
                     ),
-                    if (routePoints.length >= 2)
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: routePoints,
-                            color: colors.warning,
-                            strokeWidth: 5,
-                          ),
-                        ],
-                      ),
                     MarkerLayer(
                       markers: [
-                        if (pickup != null)
-                          const Marker(
-                            point: LatLng(0, 0),
-                            width: 44,
-                            height: 44,
-                            child: SizedBox.shrink(),
+                        // Warehouse/origin
+                        Marker(
+                          point: warehousePoint,
+                          width: 52,
+                          height: 52,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: colors.brandPrimary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.brandPrimary
+                                      .withOpacity(0.4),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.store_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
-                      ]
-                          .where((_) => false)
-                          .toList()
-                        ..addAll([
-                          if (pickup != null)
-                            Marker(
-                              point: pickup,
-                              width: 44,
-                              height: 44,
-                              child: Icon(
-                                Icons.my_location,
-                                color: colors.success,
-                                size: 36,
-                              ),
-                            ),
-                          if (destination != null)
-                            Marker(
-                              point: destination,
-                              width: 44,
-                              height: 44,
-                              child: Icon(
-                                Icons.location_on,
-                                color: colors.error,
-                                size: 36,
-                              ),
-                            ),
-                          if (driver != null)
-                            Marker(
-                              point: driver,
-                              width: 44,
-                              height: 44,
-                              child: Icon(
-                                Icons.local_taxi,
-                                color: colors.brandPrimary,
-                                size: 36,
-                              ),
-                            ),
-                        ]),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: colors.card,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Status: ${ride.status}',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary,
-                      ),
+
+              // ── Order Info Panel ─────────────────────────────────
+              Expanded(
+                flex: 2,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: colors.card,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pickup: ${ride.pickup}',
-                      style: GoogleFonts.poppins(color: colors.textPrimary),
+                    border: Border(
+                      top: BorderSide(color: colors.borderSoft),
                     ),
-                    Text(
-                      'Destination: ${ride.destination}',
-                      style: GoogleFonts.poppins(color: colors.textPrimary),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Status row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Order #${order.shortId}',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textPrimary,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            AppStatusChip(
+                              label: order.status.toUpperCase(),
+                              tone: _statusTone(order.status),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Delivery address
+                        Row(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.location_on_rounded,
+                              size: 16,
+                              color: colors.success,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Delivering To',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      color: colors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    order.deliveryAddress.isNotEmpty
+                                        ? order.deliveryAddress
+                                        : 'Address not specified',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Items summary
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.texture_rounded,
+                              size: 16,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${order.items.length} fabric item${order.items.length == 1 ? '' : 's'}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '₦${order.totalAmount.toStringAsFixed(0)}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: colors.brandPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Date
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 14,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              order.formattedDate,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Assigned admin
+                        if (order.assignedAdminName.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.admin_panel_settings_outlined,
+                                size: 14,
+                                color: colors.textSecondary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Handled by: ${order.assignedAdminName}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
-                    Text(
-                      'Distance: ${ride.distanceKm.toStringAsFixed(1)} km',
-                      style: GoogleFonts.poppins(color: colors.textPrimary),
-                    ),
-                    Text(
-                      'ETA: ${ride.eta}',
-                      style: GoogleFonts.poppins(color: colors.textPrimary),
-                    ),
-                    if (ride.driver != null)
-                      Text(
-                        'Driver: ${ride.driver}',
-                        style: GoogleFonts.poppins(color: colors.textPrimary),
-                      ),
-                  ],
+                  ),
                 ),
               ),
             ],
