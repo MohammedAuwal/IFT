@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ift/core/theme/app_theme.dart';
-import 'package:ift/services/firebase_service.dart';
+import 'package:pfb/core/theme/app_theme.dart';
+import 'package:pfb/services/firebase_service.dart';
 
 class RideEstimateMapPreviewScreen extends StatelessWidget {
   final MovementEstimate estimate;

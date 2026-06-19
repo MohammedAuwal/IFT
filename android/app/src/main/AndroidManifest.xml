@@ -13,7 +13,7 @@
         android:icon="@drawable/ic_launcher_placeholder">
 
         <activity
-            android:name="com.ift.app.MainActivity"
+            android:name="com.pfb.app.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"

@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           if [ ! -d "web" ] || [ ! -f "web/index.html" ]; then
             rm -rf tmp_web web
-            flutter create --platforms web --project-name ift tmp_web
+            flutter create --platforms web --project-name pfb tmp_web
             mv tmp_web/web ./web
             rm -rf tmp_web
           fi

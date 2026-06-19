@@ -166,9 +166,9 @@ Super admin reassigns it directly.
 
 ---
 
-## Scenario C: Shift transition
-Admin A is finishing shift.
-Admin B starts shift.
+## Scenario C: Shpfb transition
+Admin A is finishing shpfb.
+Admin B starts shpfb.
 Super admin reassigns selected requests.
 
 ---

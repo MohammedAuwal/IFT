@@ -216,7 +216,7 @@ This means:
 - but temporarily stop receiving new requests
 
 This is useful for:
-- shift handover
+- shpfb handover
 - temporary absence
 - poor network
 - high workload pause
@@ -325,7 +325,7 @@ This turns the admin system into an actual operational layer.
 
 Recommended later:
 1. weighted load by request type
-2. shift scheduling
+2. shpfb scheduling
 3. active hours
 4. manual reassignment
 5. dashboard load heatmap

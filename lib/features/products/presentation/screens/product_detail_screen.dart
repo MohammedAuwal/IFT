@@ -1,15 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ift/config/routes/route_names.dart';
-import 'package:ift/core/routing/app_router.dart';
-import 'package:ift/models/product_model.dart';
-import 'package:ift/services/firebase_service.dart';
-import 'package:ift/shared/widgets/app_page_scaffold.dart';
-import 'package:ift/shared/widgets/app_section_title.dart';
-import 'package:ift/shared/widgets/app_status_chip.dart';
-import 'package:ift/shared/widgets/app_surface_card.dart';
-import 'package:ift/core/theme/build_context_theme_x.dart';
+import 'package:pfb/config/routes/route_names.dart';
+import 'package:pfb/core/routing/app_router.dart';
+import 'package:pfb/models/product_model.dart';
+import 'package:pfb/services/firebase_service.dart';
+import 'package:pfb/shared/widgets/app_page_scaffold.dart';
+import 'package:pfb/shared/widgets/app_section_title.dart';
+import 'package:pfb/shared/widgets/app_status_chip.dart';
+import 'package:pfb/shared/widgets/app_surface_card.dart';
+import 'package:pfb/core/theme/build_context_theme_x.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductModel product;

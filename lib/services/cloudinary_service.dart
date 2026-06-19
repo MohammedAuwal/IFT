@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:ift/core/constants/cloudinary_config.dart';
+import 'package:pfb/core/constants/cloudinary_config.dart';
 
 class CloudinaryService {
   Future<String> uploadImage(File file) async {

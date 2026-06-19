@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ift/core/constants/app_constants.dart';
-import 'package:ift/features/admin/presentation/widgets/analytics_bar_chart_card.dart';
-import 'package:ift/features/admin/presentation/widgets/comparison_duel_card.dart';
-import 'package:ift/features/admin/presentation/widgets/performance_status_card.dart';
-import 'package:ift/features/admin/presentation/widgets/top_rank_card.dart';
-import 'package:ift/models/order_model.dart';
-import 'package:ift/models/ride_model.dart';
-import 'package:ift/services/firebase_service.dart';
-import 'package:ift/shared/widgets/app_page_scaffold.dart';
-import 'package:ift/shared/widgets/app_section_title.dart';
-import 'package:ift/shared/widgets/app_surface_card.dart';
-import 'package:ift/core/theme/build_context_theme_x.dart';
+import 'package:pfb/core/constants/app_constants.dart';
+import 'package:pfb/features/admin/presentation/widgets/analytics_bar_chart_card.dart';
+import 'package:pfb/features/admin/presentation/widgets/comparison_duel_card.dart';
+import 'package:pfb/features/admin/presentation/widgets/performance_status_card.dart';
+import 'package:pfb/features/admin/presentation/widgets/top_rank_card.dart';
+import 'package:pfb/models/order_model.dart';
+import 'package:pfb/models/ride_model.dart';
+import 'package:pfb/services/firebase_service.dart';
+import 'package:pfb/shared/widgets/app_page_scaffold.dart';
+import 'package:pfb/shared/widgets/app_section_title.dart';
+import 'package:pfb/shared/widgets/app_surface_card.dart';
+import 'package:pfb/core/theme/build_context_theme_x.dart';
 
 enum AnalyticsRange {
   today,

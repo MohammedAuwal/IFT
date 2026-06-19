@@ -1,18 +1,18 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ift/config/routes/route_names.dart';
-import 'package:ift/core/theme/app_theme.dart';
-import 'package:ift/features/auth/presentation/screens/login_screen.dart';
-import 'package:ift/features/rider/presentation/screens/ride_detail_screen.dart';
-import 'package:ift/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
-import 'package:ift/features/rider/presentation/screens/ride_map_screen.dart';
-import 'package:ift/features/rider/presentation/widgets/location_search_field.dart';
-import 'package:ift/features/shared/presentation/widgets/empty_state_card.dart';
-import 'package:ift/models/place_suggestion_model.dart';
-import 'package:ift/models/ride_model.dart';
-import 'package:ift/services/firebase_service.dart';
-import 'package:ift/services/location_service.dart';
+import 'package:pfb/config/routes/route_names.dart';
+import 'package:pfb/core/theme/app_theme.dart';
+import 'package:pfb/features/auth/presentation/screens/login_screen.dart';
+import 'package:pfb/features/rider/presentation/screens/ride_detail_screen.dart';
+import 'package:pfb/features/rider/presentation/screens/ride_estimate_map_preview_screen.dart';
+import 'package:pfb/features/rider/presentation/screens/ride_map_screen.dart';
+import 'package:pfb/features/rider/presentation/widgets/location_search_field.dart';
+import 'package:pfb/features/shared/presentation/widgets/empty_state_card.dart';
+import 'package:pfb/models/place_suggestion_model.dart';
+import 'package:pfb/models/ride_model.dart';
+import 'package:pfb/services/firebase_service.dart';
+import 'package:pfb/services/location_service.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
